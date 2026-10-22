@@ -3,18 +3,8 @@ using Microsoft.AspNetCore.Builder;
 
 namespace Test;
 
-[Collection("Environment variables")]
 public sealed class DatabaseTests
 {
-    private static readonly string[] RequiredEnvironmentVariables =
-    [
-        "DB_HOST",
-        "DB_PORT",
-        "DB_USER",
-        "DB_PASSWORD",
-        "DB_NAME"
-    ];
-
     [Fact]
     public void Configured_connection_string_takes_precedence()
     {
@@ -98,6 +88,3 @@ public sealed class DatabaseTests
         builder.Configuration["DB_NAME"] = database;
     }
 }
-
-[CollectionDefinition("Environment variables", DisableParallelization = true)]
-public sealed class EnvironmentVariablesCollection;
