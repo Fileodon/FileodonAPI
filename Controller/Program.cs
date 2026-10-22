@@ -1,3 +1,4 @@
+using Controller.Middleware;
 using Controller.Utility;
 using Infrastructure;
 using Microsoft.AspNetCore.Identity;
@@ -26,6 +27,12 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
     options.Password.RequireNonAlphanumeric = true;
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy<string, RateLimit>("default");
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -70,9 +77,12 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
-app.MapControllers();
-app.MapGroup("/auth").MapIdentityApi<IdentityUser>();
+app.MapControllers()
+    .RequireRateLimiting("default");
+app.MapGroup("/auth")
+    .RequireRateLimiting("default").MapIdentityApi<IdentityUser>();
 
 app.Run();
 
