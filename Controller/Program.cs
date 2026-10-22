@@ -28,9 +28,11 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+const string PolicyName = "default";
+
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddPolicy<string, RateLimit>("default");
+    options.AddPolicy<string, RateLimit>(PolicyName);
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
@@ -62,6 +64,8 @@ if (!Database.CanConnectToDb(app))
     throw new InvalidOperationException("Cannot connect to the database. Please check your connection string and database server.");
 }
 
+Database.ApplyMigrations(app);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -80,8 +84,8 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapControllers()
-    .RequireRateLimiting("default");
+    .RequireRateLimiting(PolicyName);
 app.MapGroup("/auth")
-    .RequireRateLimiting("default").MapIdentityApi<IdentityUser>();
+    .RequireRateLimiting(PolicyName).MapIdentityApi<IdentityUser>();
 
 app.Run();
