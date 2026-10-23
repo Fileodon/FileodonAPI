@@ -150,7 +150,8 @@ public sealed class UnitOfWorkTests
             new RoleRepository(context, transactionSettings),
             new RolesOrganizationRepository(context, transactionSettings),
             new SFTPConnectionRepository(context, transactionSettings),
-            new UserOrganizationRepository(context, transactionSettings),
+            new SFTPConnectionAuthCodeRepository(context, transactionSettings),
+        new UserOrganizationRepository(context, transactionSettings),
             new UserRepository(context, transactionSettings));
     }
 }

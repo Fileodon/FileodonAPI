@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<UserOrganization> UserOrganizations => Set<UserOrganization>();
     public DbSet<SFTPConnection> SFTPConnections => Set<SFTPConnection>();
+    public DbSet<SFTPConnectionAuthCode> SFTPConnectionAuthCodes => Set<SFTPConnectionAuthCode>();
     public DbSet<RolesOrganization> RolesOrganizations => Set<RolesOrganization>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

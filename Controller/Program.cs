@@ -30,9 +30,11 @@ builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRolesOrganizationRepository, RolesOrganizationRepository>();
 builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
+builder.Services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuthCodeRepository>();
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ISFTPConnectionService, SFTPConnectionService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>(options =>

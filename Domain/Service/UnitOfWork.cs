@@ -15,6 +15,7 @@ public sealed class UnitOfWork(
     IRoleRepository roleRepository,
     IRolesOrganizationRepository rolesOrganizationRepository,
     ISFTPConnectionRepository sftpConnectionRepository,
+    ISFTPConnectionAuthCodeRepository sftpConnectionAuthCodeRepository,
     IUserOrganizationRepository userOrganizationRepository,
     IUserRepository userRepository) : IUnitOfWork
 {
@@ -26,6 +27,7 @@ public sealed class UnitOfWork(
     public IRoleRepository RoleRepository => roleRepository;
     public IRolesOrganizationRepository RolesOrganizationRepository => rolesOrganizationRepository;
     public ISFTPConnectionRepository SFTPConnectionRepository => sftpConnectionRepository;
+    public ISFTPConnectionAuthCodeRepository SFTPConnectionAuthCodeRepository => sftpConnectionAuthCodeRepository;
     public IUserOrganizationRepository UserOrganizationRepository => userOrganizationRepository;
     public IUserRepository UserRepository => userRepository;
     public bool AutomaticTransactionsEnabled => transactionSettings.AutomaticTransactionsEnabled;
