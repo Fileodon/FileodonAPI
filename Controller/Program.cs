@@ -1,8 +1,12 @@
 using Controller.Middleware;
 using Controller.Utility;
+using Domain.Interface;
+using Domain.Service;
 using Infrastructure;
+using Infrastructure.Interface;
+using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
-using Microsoft.AspNetCore.Identity;
+using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
@@ -17,6 +21,18 @@ string connectionString = Database.InitializeConnectionString(builder);
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseNpgsql(connectionString)
 );
+builder.Services.AddScoped<RepositoryTransactionSettings>();
+builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
+    services.GetRequiredService<RepositoryTransactionSettings>());
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRolesOrganizationRepository, RolesOrganizationRepository>();
+builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
+builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>(options =>
