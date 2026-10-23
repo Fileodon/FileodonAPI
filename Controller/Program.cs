@@ -27,6 +27,7 @@ builder.Services.AddIdentityApiEndpoints<User>(options =>
     options.Password.RequireLowercase = true;
     options.Password.RequireNonAlphanumeric = true;
 })
+    .AddRoles<AspNetRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 const string PolicyName = "default";
