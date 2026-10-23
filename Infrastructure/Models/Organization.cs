@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace Infrastructure.Models;
 
-namespace Infrastructure.Models
+public partial class Organization
 {
-    public partial class Organization
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string OrgName { get; set; } = null!;
+    public string OrgName { get; set; } = null!;
 
-        public ICollection<SFTPConnection> SFTPConnections { get; set; } = [];
-        public virtual ICollection<UserOrganization> UserOrganizations { get; set; } = [];
-    }
+    public ICollection<SFTPConnection> SFTPConnections { get; set; } = [];
+    public virtual ICollection<UserOrganization> UserOrganizations { get; set; } = [];
 }
