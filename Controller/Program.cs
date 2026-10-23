@@ -1,6 +1,7 @@
 using Controller.Middleware;
 using Controller.Utility;
 using Infrastructure;
+using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -18,7 +19,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(
 );
 
 builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
+builder.Services.AddIdentityApiEndpoints<User>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
@@ -86,6 +87,6 @@ app.UseRateLimiter();
 app.MapControllers()
     .RequireRateLimiting(PolicyName);
 app.MapGroup("/auth")
-    .RequireRateLimiting(PolicyName).MapIdentityApi<IdentityUser>();
+    .RequireRateLimiting(PolicyName).MapIdentityApi<User>();
 
 app.Run();
