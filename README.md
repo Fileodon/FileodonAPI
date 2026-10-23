@@ -169,6 +169,44 @@ app.MapIdentityApi<IdentityUser>();
 
 This creates standard endpoints for identity operations, such as registration and login, depending on the current ASP.NET Core Identity configuration.
 
+## Repository transactions
+
+Repositories automatically wrap each write operation (`PostAsync`, `PutAsync`, `UpdateAsync`, and
+`DeleteAsync`) in a database transaction. If the operation fails, the transaction is rolled back
+and the exception is rethrown. Read operations are not wrapped because they do not change state.
+
+For a transaction spanning multiple repositories, use the registered `IUnitOfWork` and explicitly
+commit or roll back the shared transaction:
+
+```csharp
+await unitOfWork.BeginTransactionAsync();
+try
+{
+    await unitOfWork.OrganizationRepository.PostAsync(organization);
+    await unitOfWork.ProfileRepository.PostAsync(profile);
+    await unitOfWork.CommitAsync();
+}
+catch
+{
+    await unitOfWork.RollbackAsync();
+    throw;
+}
+```
+
+Automatic per-operation transactions can be temporarily disabled for a scope. This is useful when
+the caller intentionally controls the transaction boundary itself:
+
+```csharp
+using (unitOfWork.DisableAutomaticTransactions())
+{
+    await unitOfWork.OrganizationRepository.PostAsync(organization);
+    await unitOfWork.SaveChangesAsync();
+}
+```
+
+An explicitly started unit-of-work transaction takes precedence over automatic transactions, so
+repository calls inside that scope participate in the same transaction.
+
 ## Swagger / API documentation
 
 Swagger is enabled in development mode:
