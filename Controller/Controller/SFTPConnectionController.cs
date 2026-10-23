@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controller
 {
-    [Route("api/organization/{organizationId}/[controller]")]
+    [Route("api/organization/[controller]")]
     [ApiController]
     public class SFTPConnectionController(UserManager<User> userManager, ISFTPConnectionService sFTPConnectionService) : ControllerBase
     {
@@ -25,7 +25,13 @@ namespace Controller.Controller
                 return Unauthorized();
             }
 
+            if (organizationId is null)
+            {
+                return BadRequest("Organization ID is required.");
+            }
+
             // TODO: Check if they're allowed to generate auth codes?
+            // Both based on permissions and if they're in the organization?
             User? user = await _userManager.GetUserAsync(User);
 
             if (user is null)
