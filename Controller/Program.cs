@@ -28,11 +28,11 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<IRolesOrganizationRepository, RolesOrganizationRepository>();
 builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>(options =>

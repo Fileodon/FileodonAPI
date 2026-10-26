@@ -13,7 +13,6 @@ public sealed class UnitOfWork(
     IOrganizationRepository organizationRepository,
     IProfileRepository profileRepository,
     IRoleRepository roleRepository,
-    IRolesOrganizationRepository rolesOrganizationRepository,
     ISFTPConnectionRepository sftpConnectionRepository,
     IUserOrganizationRepository userOrganizationRepository,
     IUserRepository userRepository) : IUnitOfWork
@@ -24,7 +23,6 @@ public sealed class UnitOfWork(
     public IOrganizationRepository OrganizationRepository => organizationRepository;
     public IProfileRepository ProfileRepository => profileRepository;
     public IRoleRepository RoleRepository => roleRepository;
-    public IRolesOrganizationRepository RolesOrganizationRepository => rolesOrganizationRepository;
     public ISFTPConnectionRepository SFTPConnectionRepository => sftpConnectionRepository;
     public IUserOrganizationRepository UserOrganizationRepository => userOrganizationRepository;
     public IUserRepository UserRepository => userRepository;
