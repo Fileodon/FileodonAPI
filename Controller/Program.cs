@@ -116,6 +116,11 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+});
+
 var app = builder.Build();
 
 if (!Database.CanConnectToDb(app))
