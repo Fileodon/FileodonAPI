@@ -7,7 +7,10 @@ using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Infrastructure.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
 
@@ -16,7 +19,28 @@ var builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration).CreateLogger();
 builder.Services.AddSerilog();
+
+string filepath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(filepath))
+    DotEnv.Load(filepath);
+else
+    DotEnv.CreateEnvFile(filepath);
+
+builder.Configuration.AddEnvironmentVariables();
+
 string connectionString = Database.InitializeConnectionString(builder);
+
+if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+{
+    Log.Warning("JWT key is not set in configuration. Generating a new secret.");
+    string key = await TokenService.GenerateSecret();
+    DotEnv.WriteEntryAndUpdateEnvironmentVariable("JWT_KEY", key);
+    if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+    {
+        Log.Error("Failed to set JWT key in configuration after generating a new secret.");
+        throw new InvalidOperationException("Failed to set JWT key in configuration after generating a new secret.");
+    }
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseNpgsql(connectionString)
@@ -44,7 +68,25 @@ builder.Services.AddIdentityApiEndpoints<User>(options =>
     options.Password.RequireNonAlphanumeric = true;
 })
     .AddRoles<AspNetRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration."))),
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+builder.Services.AddAuthorization();
 
 const string PolicyName = "default";
 
@@ -100,7 +142,5 @@ app.UseRateLimiter();
 
 app.MapControllers()
     .RequireRateLimiting(PolicyName);
-app.MapGroup("/api/auth")
-    .RequireRateLimiting(PolicyName).MapIdentityApi<User>();
 
 app.Run();
