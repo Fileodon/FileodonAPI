@@ -100,7 +100,7 @@ app.UseRateLimiter();
 
 app.MapControllers()
     .RequireRateLimiting(PolicyName);
-app.MapGroup("/auth")
+app.MapGroup("/api/auth")
     .RequireRateLimiting(PolicyName).MapIdentityApi<User>();
 
 app.Run();
