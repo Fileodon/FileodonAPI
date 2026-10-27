@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;
 
-public class ApplicationDbContext : IdentityDbContext<User>
+public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
 {
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options)
@@ -18,8 +18,8 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<UserOrganization> UserOrganizations => Set<UserOrganization>();
     public DbSet<SFTPConnection> SFTPConnections => Set<SFTPConnection>();
-    public DbSet<RolesOrganization> RolesOrganizations => Set<RolesOrganization>();
-
+    public DbSet<AspNetRole> AspNetRoles => Set<AspNetRole>();
+    public DbSet<Permission> Permissions => Set<Permission>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -31,6 +31,17 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
             entity.Property(user => user.CreatedAt)
                 .HasColumnType("timestamp with time zone");
+        });
+
+        modelBuilder.Entity<AspNetRole>(entity =>
+        {
+            entity.HasOne(r => r.Organization)
+                .WithMany()
+                .HasForeignKey(r => r.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(r => r.PermissionMask)
+                .HasColumnType("bigint");
         });
 
         modelBuilder.Entity<AuditLog>(entity =>
@@ -150,30 +161,27 @@ public class ApplicationDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<RolesOrganization>(entity =>
+        modelBuilder.Entity<Permission>(entity =>
         {
-            entity.ToTable("roles_organizations");
-
-            entity.HasKey(membership => membership.Id);
-
-            entity.Property(membership => membership.Id)
+            entity.ToTable("permissions");
+            entity.HasKey(permission => permission.Id);
+            entity.Property(permission => permission.Id)
                 .HasColumnName("id");
+            entity.Property(permission => permission.Navn)
+                .HasColumnName("navn");
+            entity.Property(permission => permission.BitValue)
+                .HasColumnName("bit_value");
+        });
 
-            entity.Property(membership => membership.RoleId)
-                .HasColumnName("role_id");
-
-            entity.Property(membership => membership.OrganizationId)
-                .HasColumnName("organization_id");
-
-            entity.HasOne(membership => membership.Role)
+        modelBuilder.Entity<AspNetRole>(entity =>
+        {
+            entity.HasOne(r => r.Organization)
                 .WithMany()
-                .HasForeignKey(membership => membership.RoleId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(r => r.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(membership => membership.Organization)
-                .WithMany()
-                .HasForeignKey(membership => membership.OrganizationId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(r => r.PermissionMask)
+                .HasColumnType("bigint");
         });
     }
 }

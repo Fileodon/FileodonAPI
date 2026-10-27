@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Infrastructure.Models
+namespace Infrastructure.Models;
+
+public class AspNetRole : IdentityRole
 {
-    public class AspNetRole : IdentityRole<int>
-    {
-    }
+    public int OrganizationId { get; set; }
+    public long PermissionMask { get; set; }
+
+    public virtual Organization Organization { get; set; } = null!;
 }
