@@ -1,3 +1,4 @@
+using Domain.DTO.Auth;
 using Domain.Interface;
 using Domain.Service;
 using Infrastructure;

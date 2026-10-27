@@ -1,4 +1,5 @@
 using Controller.DTO.Auth;
+using Domain.DTO.Auth;
 using Domain.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

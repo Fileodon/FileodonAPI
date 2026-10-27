@@ -1,3 +1,4 @@
+using Domain.DTO.Auth;
 using Infrastructure.Models;
 
 namespace Domain.Interface;
