@@ -57,9 +57,10 @@ builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationReposito
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
-builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<User>(options =>
+builder.Services.AddIdentityCore<User>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
