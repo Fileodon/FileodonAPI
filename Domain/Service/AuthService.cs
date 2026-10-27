@@ -46,6 +46,21 @@ public class AuthService(
         return tokens;
     }
 
+    public Task LogoutAsync(string refreshToken, User user)
+    {
+        string tokenHash = _tokenService.HashRefreshToken(refreshToken);
+        RefreshToken? storedToken = _dbContext.RefreshTokens
+            .SingleOrDefault(token => token.TokenHash == tokenHash && token.UserId == user.Id);
+
+        if (storedToken is not null)
+        {
+            storedToken.RevokedAt = DateTime.UtcNow;
+            return _dbContext.SaveChangesAsync();
+        }
+
+        return Task.CompletedTask;
+    }
+
     public async Task<AuthTokens?> RefreshAsync(string refreshToken)
     {
         string tokenHash = _tokenService.HashRefreshToken(refreshToken);

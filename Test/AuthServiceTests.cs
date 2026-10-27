@@ -106,6 +106,22 @@ public sealed class AuthServiceTests
         Assert.Null(tokens);
     }
 
+    [Fact]
+    public async Task Logout_revokes_the_refresh_token()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+        AuthTokens tokens = (await authService.LoginAsync(user.Email!, "password"))!;
+
+        await authService.LogoutAsync(tokens.RefreshToken, user);
+
+        RefreshToken storedToken = await GetRefreshTokens(scope).SingleAsync();
+        Assert.NotNull(storedToken.RevokedAt);
+    }
+
     private static AuthService CreateAuthService(IServiceScope scope)
     {
         return new AuthService(

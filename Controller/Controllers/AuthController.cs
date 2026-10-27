@@ -36,6 +36,24 @@ namespace Controller.Controllers
                 tokens.RefreshTokenExpiresAt.ToUnixTimeSeconds()));
         }
 
+        [HttpPost("logout")]
+        [Authorize]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        {
+            string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out Guid id))
+            {
+                return Unauthorized("Invalid user ID.");
+            }
+
+            var user = await _authService.GetMeAsync(id);
+            await _authService.LogoutAsync(request.RefreshToken, user);
+            return Ok("Logged out successfully.");
+        }
+
         [HttpPost("refresh")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(AuthResponse), 200)]
