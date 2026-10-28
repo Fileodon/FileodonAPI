@@ -1,6 +1,7 @@
 using Controller.DTO.Auth;
 using Domain.DTO.Auth;
 using Domain.Interface;
+using Infrastructure.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -96,6 +97,7 @@ namespace Controller.Controllers
 
         [HttpGet("me")]
         [Authorize]
+        [ProducesResponseType(typeof(BasicUserInformationResponse), 200)]
         public async Task<IActionResult> GetMe()
         {
             string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -105,8 +107,8 @@ namespace Controller.Controllers
                 return Unauthorized("Invalid user ID.");
             }
 
-            var user = await _authService.GetMeAsync(id);
-            return Ok(new { user.UserName, user.Email });
+            User user = await _authService.GetMeAsync(id);
+            return Ok(user.ToBasicUserInformationResponse());
         }
     }
 }
