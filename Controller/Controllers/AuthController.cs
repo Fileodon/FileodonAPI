@@ -81,8 +81,32 @@ namespace Controller.Controllers
                 tokens.RefreshTokenExpiresAt.ToUnixTimeSeconds()));
         }
 
-        [HttpPost]
-        [Route("register")]
+        [HttpPost("reset-password")]
+        [Authorize]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out Guid id))
+            {
+                return Unauthorized("Invalid user ID.");
+            }
+
+            var user = await _authService.GetMeAsync(id);
+            var result = await _authService.ResetPassword(user, request.OldPassword, request.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors.Select(e => e.Description));
+            }
+
+            return Ok("Password reset successfully.");
+        }
+
+
+        [HttpPost("register")]
         [AllowAnonymous]
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]

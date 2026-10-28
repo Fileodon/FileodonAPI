@@ -90,6 +90,11 @@ public class AuthService(
         await _userManager.CreateAsync(user, password);
     }
 
+    public Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
+    {
+        return _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+    }
+
     private async Task<AuthTokens> IssueTokensAsync(User user)
     {
         string refreshToken = _tokenService.CreateRefreshToken();

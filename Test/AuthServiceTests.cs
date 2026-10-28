@@ -122,6 +122,38 @@ public sealed class AuthServiceTests
         Assert.NotNull(storedToken.RevokedAt);
     }
 
+    [Fact]
+    public async Task ResetPassword_changes_the_users_password()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.ResetPassword(user, "password", "new-password");
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
+        Assert.True(await userManager.CheckPasswordAsync(user, "new-password"));
+        Assert.False(await userManager.CheckPasswordAsync(user, "password"));
+    }
+
+    [Fact]
+    public async Task ResetPassword_rejects_an_incorrect_old_password()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.ResetPassword(user, "incorrect-password", "new-password");
+
+        Assert.False(result.Succeeded);
+        Assert.True(await userManager.CheckPasswordAsync(user, "password"));
+        Assert.False(await userManager.CheckPasswordAsync(user, "new-password"));
+    }
+
     private static AuthService CreateAuthService(IServiceScope scope)
     {
         return new AuthService(
