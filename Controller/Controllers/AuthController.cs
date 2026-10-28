@@ -84,7 +84,7 @@ namespace Controller.Controllers
         [HttpPost]
         [Route("register")]
         [AllowAnonymous]
-        [ProducesResponseType(200)]
+        [ProducesResponseType(201)]
         [ProducesResponseType(400)]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -94,7 +94,7 @@ namespace Controller.Controllers
             }
 
             await _authService.RegisterAsync(request.Username, request.Email, request.Password);
-            return Ok("User registered successfully.");
+            return CreatedAtAction(nameof(Register), new { email = request.Email }, "User registered successfully.");
         }
 
         [HttpGet("me")]
