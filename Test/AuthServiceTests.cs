@@ -184,7 +184,7 @@ public sealed class AuthServiceTests
             scope.ServiceProvider.GetRequiredService<UserManager<User>>(),
             scope.ServiceProvider.GetRequiredService<SignInManager<User>>(),
             scope.ServiceProvider.GetRequiredService<ITokenService>(),
-            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
+            scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
     }
 
     private static DbSet<RefreshToken> GetRefreshTokens(IServiceScope scope)

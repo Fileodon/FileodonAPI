@@ -1,40 +1,33 @@
-﻿using Domain.Interface;
-using Infrastructure;
+using Domain.Interface;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
+
 namespace Domain.Service
 {
     public class RoleService : IRoleService
     {
-        private readonly ApplicationDbContext _context;
-        public RoleService(ApplicationDbContext context)
+        private readonly IUnitOfWork _unitOfWork;
+        public RoleService(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
         public async Task<IEnumerable<AspNetRole>> GetAllAsync()
         {
-            return await _context.Set<AspNetRole>()
-                   .AsNoTracking()
-                   .ToListAsync();
+            IQueryable<AspNetRole> roles = await _unitOfWork.RoleRepository.GetAllAsync();
+            return await roles.AsNoTracking().ToListAsync();
         }
         public async Task<AspNetRole?> GetByIdAsync(string id)
         {
-            return await _context.Set<AspNetRole>()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(role => role.Id == id);
+            return await _unitOfWork.RoleRepository.GetByIdAsync(id);
         }
         public async Task<AspNetRole> CreateAsync(AspNetRole role)
         {
-            _context.Set<AspNetRole>().Add(role);
-            await _context.SaveChangesAsync();
-
-            return role;
+            return await _unitOfWork.RoleRepository.PostAsync(role);
         }
 
         public async Task<AspNetRole?> UpdateAsync(string id, AspNetRole role)
         {
-            var existingRole = await _context.Set<AspNetRole>()
-                .FirstOrDefaultAsync(r => r.Id == id);
+            AspNetRole? existingRole = await _unitOfWork.RoleRepository.GetByIdAsync(id);
 
             if (existingRole is null)
                 return null;
@@ -42,21 +35,18 @@ namespace Domain.Service
             existingRole.Name = role.Name;
             existingRole.OrganizationId = role.OrganizationId;
             existingRole.PermissionMask = role.PermissionMask;
-
-            await _context.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return existingRole;
         }
         public async Task<bool> DeleteAsync(string id)
         {
-            var role = await _context.Set<AspNetRole>()
-                .FirstOrDefaultAsync(r => r.Id == id);
+            AspNetRole? role = await _unitOfWork.RoleRepository.GetByIdAsync(id);
 
             if (role is null)
                 return false;
 
-            _context.Set<AspNetRole>().Remove(role);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.RoleRepository.DeleteAsync(id);
 
             return true;
         }

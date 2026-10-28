@@ -1,7 +1,10 @@
 using Domain.Interface;
 using Domain.Service;
 using Infrastructure;
+using Infrastructure.Interface;
+using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
+using Infrastructure.Repository;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -59,6 +62,18 @@ internal sealed class AuthenticationTestContext : IDisposable
 
         services.AddSingleton(configuration);
         services.AddSingleton(dbContext);
+        services.AddScoped<RepositoryTransactionSettings>();
+        services.AddScoped<IRepositoryTransactionSettings>(services =>
+            services.GetRequiredService<RepositoryTransactionSettings>());
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
+        services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddIdentityCore<User>(identityOptions =>
         {
             IConfigurationSection passwordPolicy = configuration.GetSection("PasswordPolicy");

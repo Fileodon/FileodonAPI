@@ -147,6 +147,7 @@ public sealed class UnitOfWorkTests
             new AuditLogRepository(context, transactionSettings),
             new OrganizationRepository(context, transactionSettings),
             new ProfileRepository(context, transactionSettings),
+            new RefreshTokenRepository(context, transactionSettings),
             new RoleRepository(context, transactionSettings),
             new SFTPConnectionRepository(context, transactionSettings),
             new UserOrganizationRepository(context, transactionSettings),
