@@ -46,7 +46,7 @@ public class AuthService(
         return tokens;
     }
 
-    public Task LogoutAsync(string refreshToken, User user)
+    public async Task LogoutAsync(string refreshToken, User user)
     {
         string tokenHash = _tokenService.HashRefreshToken(refreshToken);
         RefreshToken? storedToken = _dbContext.RefreshTokens
@@ -55,10 +55,8 @@ public class AuthService(
         if (storedToken is not null)
         {
             storedToken.RevokedAt = DateTime.UtcNow;
-            return _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync();
         }
-
-        return Task.CompletedTask;
     }
 
     public async Task<AuthTokens?> RefreshAsync(string refreshToken)
@@ -82,14 +80,14 @@ public class AuthService(
         return tokens;
     }
 
-    public Task RegisterAsync(string username, string email, string password)
+    public async Task RegisterAsync(string username, string email, string password)
     {
         User user = new()
         {
             UserName = username,
             Email = email
         };
-        return _userManager.CreateAsync(user, password);
+        await _userManager.CreateAsync(user, password);
     }
 
     private async Task<AuthTokens> IssueTokensAsync(User user)
