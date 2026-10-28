@@ -24,4 +24,8 @@
     <ProjectReference Include="..\Controller\Controller.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\Controller\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

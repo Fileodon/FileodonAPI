@@ -52,6 +52,8 @@ internal sealed class AuthenticationTestContext : IDisposable
         };
 
         IConfiguration configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false)
             .AddInMemoryCollection(configurationValues)
             .Build();
 
@@ -59,11 +61,12 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddSingleton(dbContext);
         services.AddIdentityCore<User>(identityOptions =>
         {
-            identityOptions.Password.RequireDigit = configuration.GetValue<bool>("Identity:Password:RequireDigit");
-            identityOptions.Password.RequireUppercase = configuration.GetValue<bool>("Identity:Password:RequireUppercase");
-            identityOptions.Password.RequireLowercase = configuration.GetValue<bool>("Identity:Password:RequireLowercase");
-            identityOptions.Password.RequireNonAlphanumeric = configuration.GetValue<bool>("Identity:Password:RequireNonAlphanumeric");
-            identityOptions.Password.RequiredLength = configuration.GetValue<int>("Identity:Password:RequiredLength");
+            IConfigurationSection passwordPolicy = configuration.GetSection("PasswordPolicy");
+            identityOptions.Password.RequireDigit = passwordPolicy.GetValue<bool>(nameof(identityOptions.Password.RequireDigit));
+            identityOptions.Password.RequireUppercase = passwordPolicy.GetValue<bool>(nameof(identityOptions.Password.RequireUppercase));
+            identityOptions.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(identityOptions.Password.RequireLowercase));
+            identityOptions.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(identityOptions.Password.RequireNonAlphanumeric));
+            identityOptions.Password.RequiredLength = passwordPolicy.GetValue<int>(nameof(identityOptions.Password.RequiredLength));
         })
             .AddRoles<AspNetRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()

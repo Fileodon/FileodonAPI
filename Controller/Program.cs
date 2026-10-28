@@ -62,11 +62,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddIdentityCore<User>(options =>
 {
-    options.Password.RequireDigit = builder.Configuration.GetValue<bool>("Password:RequireDigit");
-    options.Password.RequiredLength = builder.Configuration.GetValue<int>("Password:RequiredLength");
-    options.Password.RequireUppercase = builder.Configuration.GetValue<bool>("Password:RequireUppercase");
-    options.Password.RequireLowercase = builder.Configuration.GetValue<bool>("Password:RequireLowercase");
-    options.Password.RequireNonAlphanumeric = builder.Configuration.GetValue<bool>("Password:RequireNonAlphanumeric");
+    IConfigurationSection passwordPolicy = builder.Configuration.GetSection("PasswordPolicy");
+    options.Password.RequireDigit = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireDigit));
+    options.Password.RequiredLength = passwordPolicy.GetValue<int>(nameof(options.Password.RequiredLength));
+    options.Password.RequireUppercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireUppercase));
+    options.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireLowercase));
+    options.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireNonAlphanumeric));
 })
     .AddRoles<AspNetRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
