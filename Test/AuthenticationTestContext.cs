@@ -1,7 +1,7 @@
-using Infrastructure;
-using Infrastructure.Models;
 using Domain.Interface;
 using Domain.Service;
+using Infrastructure;
+using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -59,11 +59,11 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddSingleton(dbContext);
         services.AddIdentityCore<User>(identityOptions =>
         {
-            identityOptions.Password.RequireDigit = false;
-            identityOptions.Password.RequireUppercase = false;
-            identityOptions.Password.RequireLowercase = false;
-            identityOptions.Password.RequireNonAlphanumeric = false;
-            identityOptions.Password.RequiredLength = 6;
+            identityOptions.Password.RequireDigit = configuration.GetValue<bool>("Identity:Password:RequireDigit");
+            identityOptions.Password.RequireUppercase = configuration.GetValue<bool>("Identity:Password:RequireUppercase");
+            identityOptions.Password.RequireLowercase = configuration.GetValue<bool>("Identity:Password:RequireLowercase");
+            identityOptions.Password.RequireNonAlphanumeric = configuration.GetValue<bool>("Identity:Password:RequireNonAlphanumeric");
+            identityOptions.Password.RequiredLength = configuration.GetValue<int>("Identity:Password:RequiredLength");
         })
             .AddRoles<AspNetRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()

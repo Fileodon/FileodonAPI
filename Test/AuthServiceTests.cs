@@ -11,6 +11,9 @@ namespace Test;
 
 public sealed class AuthServiceTests
 {
+    private const string ExistingPassword = "Password1!";
+    private const string NewPassword = "NewPassword1!";
+
     [Fact]
     public async Task Login_returns_access_and_refresh_tokens_and_persists_refresh_token()
     {
@@ -20,7 +23,7 @@ public sealed class AuthServiceTests
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
 
-        AuthTokens? tokens = await authService.LoginAsync(user.Email!, "password");
+        AuthTokens? tokens = await authService.LoginAsync(user.Email!, ExistingPassword);
 
         Assert.NotNull(tokens);
         Assert.NotEqual(tokens.AccessToken, tokens.RefreshToken);
@@ -40,7 +43,7 @@ public sealed class AuthServiceTests
         UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
-        AuthTokens originalTokens = (await authService.LoginAsync(user.Email!, "password"))!;
+        AuthTokens originalTokens = (await authService.LoginAsync(user.Email!, ExistingPassword))!;
 
         AuthTokens? refreshedTokens = await authService.RefreshAsync(originalTokens.RefreshToken);
 
@@ -62,7 +65,7 @@ public sealed class AuthServiceTests
         UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
-        AuthTokens originalTokens = (await authService.LoginAsync(user.Email!, "password"))!;
+        AuthTokens originalTokens = (await authService.LoginAsync(user.Email!, ExistingPassword))!;
 
         Assert.NotNull(await authService.RefreshAsync(originalTokens.RefreshToken));
 
@@ -114,7 +117,7 @@ public sealed class AuthServiceTests
         UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
-        AuthTokens tokens = (await authService.LoginAsync(user.Email!, "password"))!;
+        AuthTokens tokens = (await authService.LoginAsync(user.Email!, ExistingPassword))!;
 
         await authService.LogoutAsync(tokens.RefreshToken, user);
 
@@ -131,11 +134,31 @@ public sealed class AuthServiceTests
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
 
-        IdentityResult result = await authService.ResetPassword(user, "password", "new-password");
+        IdentityResult result = await authService.ResetPassword(user, ExistingPassword, NewPassword);
 
         Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
-        Assert.True(await userManager.CheckPasswordAsync(user, "new-password"));
-        Assert.False(await userManager.CheckPasswordAsync(user, "password"));
+        Assert.True(await userManager.CheckPasswordAsync(user, NewPassword));
+        Assert.False(await userManager.CheckPasswordAsync(user, ExistingPassword));
+    }
+
+    [Theory]
+    [InlineData("short1!")]
+    [InlineData("newpassword!")]
+    [InlineData("NewPassword!")]
+    [InlineData("NewPassword1")]
+    public async Task ResetPassword_rejects_passwords_that_do_not_meet_the_policy(string newPassword)
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.ResetPassword(user, ExistingPassword, newPassword);
+
+        Assert.False(result.Succeeded);
+        Assert.True(await userManager.CheckPasswordAsync(user, ExistingPassword));
+        Assert.False(await userManager.CheckPasswordAsync(user, newPassword));
     }
 
     [Fact]
@@ -147,11 +170,11 @@ public sealed class AuthServiceTests
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
 
-        IdentityResult result = await authService.ResetPassword(user, "incorrect-password", "new-password");
+        IdentityResult result = await authService.ResetPassword(user, "IncorrectPassword1!", NewPassword);
 
         Assert.False(result.Succeeded);
-        Assert.True(await userManager.CheckPasswordAsync(user, "password"));
-        Assert.False(await userManager.CheckPasswordAsync(user, "new-password"));
+        Assert.True(await userManager.CheckPasswordAsync(user, ExistingPassword));
+        Assert.False(await userManager.CheckPasswordAsync(user, NewPassword));
     }
 
     private static AuthService CreateAuthService(IServiceScope scope)
@@ -178,7 +201,7 @@ public sealed class AuthServiceTests
             Email = $"ada-{Guid.NewGuid():N}@example.com",
             EmailConfirmed = true
         };
-        IdentityResult result = await userManager.CreateAsync(user, "password");
+        IdentityResult result = await userManager.CreateAsync(user, ExistingPassword);
         Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
         return user;
     }
