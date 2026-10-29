@@ -14,7 +14,7 @@ namespace Domain.Service
         public async Task<IEnumerable<AspNetRole>> GetAllAsync()
         {
             IQueryable<AspNetRole> roles = await _unitOfWork.RoleRepository.GetAllAsync();
-            return await roles.AsNoTracking().ToListAsync();
+            return roles.AsNoTracking();
         }
         public async Task<AspNetRole?> GetByIdAsync(string id)
         {
