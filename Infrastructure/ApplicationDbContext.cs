@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<SFTPConnection> SFTPConnections => Set<SFTPConnection>();
     public DbSet<AspNetRole> AspNetRoles => Set<AspNetRole>();
     public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -42,6 +43,19 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
 
             entity.Property(r => r.PermissionMask)
                 .HasColumnType("bigint");
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("refresh_tokens");
+            entity.HasKey(token => token.Id);
+            entity.HasIndex(token => token.TokenHash).IsUnique();
+            entity.Property(token => token.TokenHash).HasMaxLength(128).IsRequired();
+            entity.Property(token => token.UserId).IsRequired();
+            entity.HasOne(token => token.User)
+                .WithMany()
+                .HasForeignKey(token => token.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AuditLog>(entity =>
