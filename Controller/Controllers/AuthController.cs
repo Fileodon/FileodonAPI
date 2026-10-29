@@ -115,7 +115,13 @@ namespace Controller.Controllers
                 return BadRequest("Username and password are required.");
             }
 
-            await _authService.RegisterAsync(request.Username, request.Email, request.Password);
+            var result = await _authService.RegisterAsync(request.Username, request.Email, request.Password);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors.Select(e => e.Description));
+            }
+
             return CreatedAtAction(nameof(Register), new { email = request.Email }, "User registered successfully.");
         }
 

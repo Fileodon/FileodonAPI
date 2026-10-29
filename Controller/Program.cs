@@ -69,6 +69,7 @@ builder.Services.AddIdentityCore<User>(options =>
     options.Password.RequireUppercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireUppercase));
     options.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireLowercase));
     options.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireNonAlphanumeric));
+    options.User.RequireUniqueEmail = passwordPolicy.GetValue<bool>(nameof(options.User.RequireUniqueEmail));
 })
     .AddRoles<AspNetRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()

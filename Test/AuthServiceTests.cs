@@ -177,6 +177,62 @@ public sealed class AuthServiceTests
         Assert.False(await userManager.CheckPasswordAsync(user, NewPassword));
     }
 
+    [Fact]
+    public async Task Register_creates_a_user_with_a_password_that_meets_the_policy()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RegisterAsync(
+            "grace",
+            "grace@example.com",
+            NewPassword);
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
+        User user = await userManager.FindByEmailAsync("grace@example.com")
+            ?? throw new InvalidOperationException("Registered user was not found.");
+        Assert.True(await userManager.CheckPasswordAsync(user, NewPassword));
+    }
+
+    [Theory]
+    [InlineData("short1!")]
+    [InlineData("newpassword!")]
+    [InlineData("NewPassword!")]
+    [InlineData("NewPassword1")]
+    public async Task Register_rejects_passwords_that_do_not_meet_the_policy(string password)
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RegisterAsync(
+            "grace",
+            "grace@example.com",
+            password);
+
+        Assert.False(result.Succeeded);
+        Assert.Null(await userManager.FindByEmailAsync("grace@example.com"));
+    }
+
+    [Fact]
+    public async Task Register_rejects_an_email_that_is_already_registered()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        AuthService authService = CreateAuthService(scope);
+        const string email = "grace@example.com";
+
+        IdentityResult firstResult = await authService.RegisterAsync("grace", email, NewPassword);
+        IdentityResult secondResult = await authService.RegisterAsync("another-grace", email, NewPassword);
+
+        Assert.True(firstResult.Succeeded, string.Join("; ", firstResult.Errors.Select(error => error.Description)));
+        Assert.False(secondResult.Succeeded);
+        Assert.Contains(secondResult.Errors, error => error.Code == "DuplicateEmail");
+    }
+
     private static AuthService CreateAuthService(IServiceScope scope)
     {
         return new AuthService(

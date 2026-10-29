@@ -82,6 +82,7 @@ internal sealed class AuthenticationTestContext : IDisposable
             identityOptions.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(identityOptions.Password.RequireLowercase));
             identityOptions.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(identityOptions.Password.RequireNonAlphanumeric));
             identityOptions.Password.RequiredLength = passwordPolicy.GetValue<int>(nameof(identityOptions.Password.RequiredLength));
+            identityOptions.User.RequireUniqueEmail = passwordPolicy.GetValue<bool>(nameof(identityOptions.User.RequireUniqueEmail));
         })
             .AddRoles<AspNetRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()

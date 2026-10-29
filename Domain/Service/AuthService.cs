@@ -75,14 +75,14 @@ public class AuthService(
         return tokens;
     }
 
-    public async Task RegisterAsync(string username, string email, string password)
+    public async Task<IdentityResult> RegisterAsync(string username, string email, string password)
     {
         User user = new()
         {
             UserName = username,
             Email = email
         };
-        await _userManager.CreateAsync(user, password);
+        return await _userManager.CreateAsync(user, password);
     }
 
     public Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
