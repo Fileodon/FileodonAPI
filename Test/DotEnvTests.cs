@@ -81,6 +81,46 @@ public sealed class DotEnvTests
     }
 
     [Fact]
+    public void Creates_env_file_from_env_example_when_available()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            const string exampleContents = "JWT_KEY=example-key\nDATABASE_URL=example-database";
+            File.WriteAllText(".env.example", exampleContents);
+
+            DotEnv.CreateEnvFile(".env");
+
+            Assert.Equal(exampleContents, File.ReadAllText(".env"));
+        });
+    }
+
+    [Fact]
+    public void Creates_empty_env_file_when_env_example_is_unavailable()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            DotEnv.CreateEnvFile(".env");
+
+            Assert.True(File.Exists(".env"));
+            Assert.Equal(string.Empty, File.ReadAllText(".env"));
+        });
+    }
+
+    [Fact]
+    public void Does_not_overwrite_an_existing_env_file()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            File.WriteAllText(".env.example", "JWT_KEY=example-key");
+            File.WriteAllText(".env", "JWT_KEY=existing-key");
+
+            DotEnv.CreateEnvFile(".env");
+
+            Assert.Equal("JWT_KEY=existing-key", File.ReadAllText(".env"));
+        });
+    }
+
+    [Fact]
     public void Updates_an_existing_entry()
     {
         ExecuteInTemporaryDirectory(() =>
