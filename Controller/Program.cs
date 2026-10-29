@@ -14,6 +14,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
 
+const string PolicyName = "default";
+const string CorsPolicyName = "AllowListed";
+
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
@@ -41,6 +44,23 @@ if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
         throw new InvalidOperationException("Failed to set JWT key in configuration after generating a new secret.");
     }
 }
+
+string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS_ALLOWED_HOSTS") ?? string.Empty)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(origin => origin.Trim('"', '\''))
+    .Where(origin => origin.Length > 0)];
+Log.Information("Allowed origins for CORS: {AllowedOrigins}", string.Join(", ", allowedOrigins));
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName,
+                     policy =>
+                     {
+                         policy.WithOrigins(allowedOrigins)
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                     }
+    );
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseNpgsql(connectionString)
@@ -92,8 +112,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-const string PolicyName = "default";
-
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy<string, RateLimit>(PolicyName);
@@ -144,6 +162,8 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseHttpsRedirection();
+
+app.UseCors(CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();

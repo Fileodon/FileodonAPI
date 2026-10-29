@@ -34,7 +34,15 @@ public class DotEnv
     {
         if (!File.Exists(filePath))
         {
-            File.WriteAllText(filePath, string.Empty);
+            // Use .env.example if it exists
+            if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".env.example")))
+            {
+                File.Copy(Path.Combine(Directory.GetCurrentDirectory(), ".env.example"), filePath);
+            }
+            else
+            {
+                File.WriteAllText(filePath, string.Empty);
+            }
         }
     }
 
