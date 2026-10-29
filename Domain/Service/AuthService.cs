@@ -82,11 +82,13 @@ public class AuthService(
             UserName = username,
             Email = email
         };
+        // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
         return await _userManager.CreateAsync(user, password);
     }
 
     public Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
     {
+        // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
         return _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
     }
 
