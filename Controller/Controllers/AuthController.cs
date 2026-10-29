@@ -3,17 +3,15 @@ using Domain.DTO.Auth;
 using Domain.Interface;
 using Infrastructure.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IAuthService authService, UserManager<User> userManager) : ControllerBase
+    public class AuthController(IAuthService authService) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
-        private readonly UserManager<User> _userManager = userManager;
 
         [HttpPost]
         [AllowAnonymous]
@@ -134,7 +132,7 @@ namespace Controller.Controllers
             }
 
             User user = await _authService.GetMeAsync(id);
-            return Ok(await user.ToBasicUserInformationResponse(_userManager));
+            return Ok(await user.ToBasicUserInformationResponse());
         }
     }
 }

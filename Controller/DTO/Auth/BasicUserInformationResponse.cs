@@ -8,20 +8,18 @@ public record class BasicUserInformationResponse(
     string Email,
     string Username,
     bool IsEmailConfirmed,
-    IEnumerable<string> Roles,
     DateTime CreatedAt
 );
 
 public static class BasicUserInformationResponseExtensions
 {
-    public static async Task<BasicUserInformationResponse> ToBasicUserInformationResponse(this User user, UserManager<User> userManager)
+    public static async Task<BasicUserInformationResponse> ToBasicUserInformationResponse(this User user)
     {
         return new BasicUserInformationResponse(
             Guid.Parse(user.Id),
             user.Email ?? string.Empty,
             user.UserName ?? string.Empty,
             user.EmailConfirmed,
-            await userManager.GetRolesAsync(user),
             user.CreatedAt
         );
     }
