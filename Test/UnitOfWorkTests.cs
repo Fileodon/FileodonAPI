@@ -15,7 +15,7 @@ public sealed class UnitOfWorkTests
         using UnitOfWork unitOfWork = CreateUnitOfWork(context);
 
         await unitOfWork.BeginTransactionAsync();
-        await unitOfWork.OrganizationRepository.PostAsync(new Organization { OrgName = "Acme" });
+        await unitOfWork.OrganizationRepository.PostAsync(CreateOrganization());
         await unitOfWork.ProfileRepository.PostAsync(new Profile { DisplayName = "Ada" });
         await unitOfWork.CommitAsync();
 
@@ -30,7 +30,7 @@ public sealed class UnitOfWorkTests
         using UnitOfWork unitOfWork = CreateUnitOfWork(context);
 
         await unitOfWork.BeginTransactionAsync();
-        await unitOfWork.OrganizationRepository.PostAsync(new Organization { OrgName = "Acme" });
+        await unitOfWork.OrganizationRepository.PostAsync(CreateOrganization());
         await unitOfWork.ProfileRepository.PostAsync(new Profile { DisplayName = "Ada" });
         await unitOfWork.RollbackAsync();
 
@@ -98,7 +98,7 @@ public sealed class UnitOfWorkTests
         using UnitOfWork unitOfWork = CreateUnitOfWork(context);
 
         await unitOfWork.BeginTransactionAsync();
-        await unitOfWork.OrganizationRepository.PostAsync(new Organization { OrgName = "Acme" });
+        await unitOfWork.OrganizationRepository.PostAsync(CreateOrganization());
 
         Assert.NotNull(context.Database.CurrentTransaction);
 
@@ -134,8 +134,23 @@ public sealed class UnitOfWorkTests
         ApplicationDbContext context = new(options);
         context.Database.OpenConnection();
         context.Database.EnsureCreated();
+        context.Users.Add(new User
+        {
+            Id = "test-owner",
+            UserName = "test-owner"
+        });
+        context.SaveChanges();
         return context;
     }
+
+    private static Organization CreateOrganization() =>
+        new()
+        {
+            UserOwnerId = "test-owner",
+            OrgName = "Acme",
+            WorkspaceURL = "acme.example.com",
+            ContactEmail = "owner@acme.example.com"
+        };
 
     private static UnitOfWork CreateUnitOfWork(ApplicationDbContext context)
     {
