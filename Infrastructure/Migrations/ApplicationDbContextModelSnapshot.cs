@@ -113,12 +113,26 @@ namespace Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("OrgName")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("org_name");
 
+                    b.Property<string>("UserOwnerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WorkspaceURL")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserOwnerId");
 
                     b.ToTable("organizations", (string)null);
                 });
@@ -459,7 +473,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany()
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Organization");
@@ -473,6 +487,17 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("ChangedByNavigation");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.Organization", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "UserOwner")
+                        .WithMany()
+                        .HasForeignKey("UserOwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UserOwner");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.RefreshToken", b =>
