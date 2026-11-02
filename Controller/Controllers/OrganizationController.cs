@@ -16,7 +16,7 @@ namespace Controller.Controllers
 
         [HttpGet("{organizationId}")]
         [Authorize]
-        [ProducesResponseType(typeof(string), 200)]
+        [ProducesResponseType(typeof(GetOrganizationRequest), 200)]
         [ProducesResponseType(401)]
         public async Task<IActionResult> GetOrganizationById(int organizationId)
         {
@@ -31,7 +31,7 @@ namespace Controller.Controllers
             {
                 return NotFound();
             }
-            return Ok(organization.OrgName);
+            return Ok(organization.ToGetOrganizationRequest());
         }
 
         [HttpPost]
