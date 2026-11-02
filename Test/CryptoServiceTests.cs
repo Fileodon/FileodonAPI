@@ -1,4 +1,7 @@
 using System.Security.Cryptography;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Runtime.Versioning;
 using Domain.Service;
 
 namespace Test;
@@ -30,6 +33,65 @@ public sealed class CryptoServiceTests
 
         Assert.Contains("already exists", exception.Message);
         Assert.Equal(originalKey, File.ReadAllBytes(keyPath));
+    }
+
+    [Fact]
+    public void CreateKey_sets_owner_only_unix_permissions()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using TemporaryDirectory directory = new();
+        string keyPath = Path.Combine(directory.Path, "encryption_key.bin");
+
+        CryptoService.CreateKey(keyPath);
+
+        Assert.Equal(
+            UnixFileMode.UserRead | UnixFileMode.UserWrite,
+            File.GetUnixFileMode(keyPath));
+    }
+
+    [Fact]
+    public void CreateKey_sets_a_restricted_windows_acl()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using TemporaryDirectory directory = new();
+        string keyPath = Path.Combine(directory.Path, "encryption_key.bin");
+
+        CryptoService.CreateKey(keyPath);
+
+        AssertWindowsAcl(keyPath);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void AssertWindowsAcl(string keyPath)
+    {
+        FileSecurity security = new FileInfo(keyPath).GetAccessControl();
+        Assert.True(security.AreAccessRulesProtected);
+
+        string currentUser = WindowsIdentity.GetCurrent().User!.Value;
+        Assert.Contains(
+            security.GetAccessRules(true, true, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>(),
+            rule => rule.IdentityReference.Value == currentUser &&
+                rule.AccessControlType == AccessControlType.Allow &&
+                rule.FileSystemRights.HasFlag(FileSystemRights.FullControl));
+
+        SecurityIdentifier administrators = new(
+            WellKnownSidType.BuiltinAdministratorsSid,
+            null);
+        Assert.Contains(
+            security.GetAccessRules(true, true, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>(),
+            rule => rule.IdentityReference == administrators &&
+                rule.AccessControlType == AccessControlType.Allow &&
+                rule.FileSystemRights.HasFlag(FileSystemRights.Read));
     }
 
     [Fact]
@@ -99,7 +161,7 @@ public sealed class CryptoServiceTests
         ArgumentException exception = Assert.Throws<ArgumentException>(
             () => cryptoService.Encrypt([]));
 
-        Assert.Contains("cannot be null or empty", exception.Message);
+        Assert.Contains("cannot be empty", exception.Message);
     }
 
     [Fact]

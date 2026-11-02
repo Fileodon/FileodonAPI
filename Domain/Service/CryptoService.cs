@@ -1,4 +1,6 @@
+using System.Security.AccessControl;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using Domain.Interface;
 
 namespace Domain.Service;
@@ -48,7 +50,7 @@ public class CryptoService : ICryptoService, IDisposable
         ArgumentNullException.ThrowIfNull(plaintext, nameof(plaintext));
         if (plaintext.Length == 0)
         {
-            throw new ArgumentException("Plaintext cannot be null or empty.", nameof(plaintext));
+            throw new ArgumentException("Plaintext cannot be empty.", nameof(plaintext));
         }
 
         var nonce = RandomNumberGenerator.GetBytes(NonceSize);
@@ -83,7 +85,12 @@ public class CryptoService : ICryptoService, IDisposable
 
         var newKey = RandomNumberGenerator.GetBytes(KeySize);
 
-        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? throw new InvalidOperationException("Invalid path"));
+        string? directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+
+        }
 
         var fsOptions = new FileStreamOptions
         {
@@ -96,11 +103,47 @@ public class CryptoService : ICryptoService, IDisposable
             fsOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite; // Set permissions to 600 on Linux/MacOS
         }
 
-        using var fs = new FileStream(path, fsOptions);
+        using var fs = OperatingSystem.IsWindows()
+                ? CreateRestrictedFile(path)
+                : new FileStream(path, fsOptions);
 
         fs.Write(newKey);
 
         return newKey;
+    }
+
+    /// <summary>
+    /// Creates a file with restricted access permissions on Windows.
+    /// </summary>
+    /// <param name="path">The path of the file to create.</param>
+    /// <returns>A <see cref="FileStream"/> for the newly created file.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the operating system is not Windows.</exception>
+    private static FileStream CreateRestrictedFile(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new InvalidOperationException("This method is only supported on Windows.");
+
+        var security = new FileSecurity();
+        security.SetAccessRuleProtection(true, false); // Protect the ACL from inheritance and remove existing inherited rules
+        // Grant full control to the current user
+        security.AddAccessRule(new FileSystemAccessRule(
+            WindowsIdentity.GetCurrent().Name,
+            FileSystemRights.FullControl,
+            AccessControlType.Allow));
+        // Grant read access to administrators group
+        security.AddAccessRule(new FileSystemAccessRule(
+            new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+            FileSystemRights.Read,
+            AccessControlType.Allow));
+
+        return FileSystemAclExtensions.Create(
+            new FileInfo(path),
+            FileMode.CreateNew,
+            FileSystemRights.Write,
+            FileShare.None,
+            4096,
+            FileOptions.None,
+            security);
     }
 
     public void Dispose()
