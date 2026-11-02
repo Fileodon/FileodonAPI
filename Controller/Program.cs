@@ -31,6 +31,19 @@ else
 
 builder.Configuration.AddEnvironmentVariables();
 
+string? keyPath = builder.Configuration["Encryption:KeyPath"];
+if (string.IsNullOrEmpty(keyPath))
+{
+    Log.Error("Encryption key path is not set in configuration.");
+    throw new InvalidOperationException("Encryption key path is not set in configuration.");
+}
+
+if (!File.Exists(keyPath))
+{
+    Log.Warning("Encryption key file not found at {KeyPath}. Generating a new key.", keyPath);
+    CryptoService.CreateKey(keyPath);
+}
+
 string connectionString = Database.InitializeConnectionString(builder);
 
 if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
@@ -86,6 +99,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IMutationAuthorizationService<Organization>, MutationAuthorizationService<Organization>>();
 builder.Services.AddScoped<IMutationAuthorizationService<SFTPConnectionAuthCode>, MutationAuthorizationService<SFTPConnectionAuthCode>>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+
+// Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
+builder.Services.AddSingleton<ICryptoService>(services =>
+{
+    return new CryptoService(keyPath);
+});
 
 builder.Services.AddIdentityCore<User>(options =>
 {
