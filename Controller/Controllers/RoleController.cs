@@ -1,10 +1,11 @@
 ﻿using Domain.Interface;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
 
-
+[Authorize]
 [ApiController]
 [Route("api/roles")]
 public class RoleController : ControllerBase
@@ -39,7 +40,8 @@ public class RoleController : ControllerBase
         {
             Name = request.Name,
             OrganizationId = request.OrganizationId,
-            PermissionMask = request.PermissionMask
+            PermissionMask = request.PermissionMask,
+            NormalizedName = request.Name.ToUpper()
         };
 
         var createdRole = await _roleService.CreateAsync(role);
@@ -49,7 +51,8 @@ public class RoleController : ControllerBase
             createdRole.Id,
             createdRole.Name,
             createdRole.OrganizationId,
-            createdRole.PermissionMask
+            createdRole.PermissionMask,
+            createdRole.NormalizedName
         });
     }
     [HttpPut("{id}")]
@@ -59,7 +62,8 @@ public class RoleController : ControllerBase
         {
             Name = request.Name,
             OrganizationId = request.OrganizationId,
-            PermissionMask = request.PermissionMask
+            PermissionMask = request.PermissionMask,
+            NormalizedName = request.Name.ToUpper()
         };
 
         var updatedRole = await _roleService.UpdateAsync(id, role);

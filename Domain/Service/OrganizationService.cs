@@ -20,7 +20,7 @@ namespace Domain.Service
         public async Task<Organization?> GetByIdAsync(int id)
         {
             if(id <= 0)
-                throw new ArgumentException("Invalid organization ID", nameof(id));
+                return null;
 
             return await _context.Set<Organization>()
                 .AsNoTracking()
@@ -61,7 +61,10 @@ namespace Domain.Service
                 .FindAsync(id);
 
             if (organization == null)
-                throw new KeyNotFoundException("Organization not found");
+                return null;
+
+            if (await _context.Roles.AnyAsync(role => role.OrganizationId == id))
+                throw new InvalidOperationException("Organization has assigned roles.");
 
             _context.Set<Organization>().Remove(organization);
             await _context.SaveChangesAsync();

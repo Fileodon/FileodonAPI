@@ -4,89 +4,77 @@ using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace Domain.Service
+namespace Domain.Services;
+
+public class PermissionService : IPermissionService
 {
-    public class PermissionService : IPermissionService
+    private readonly ApplicationDbContext _context;
+
+    public PermissionService(ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
+        _context = context;
+    }
 
-        public PermissionService(ApplicationDbContext context)
-        {
-            _context = context;
-        }
+    public async Task<IQueryable<Permission>> GetAllAsync()
+    {
+        return await Task.FromResult(
+            _context.Set<Permission>().AsNoTracking());
+    }
 
-        public async Task<Permission?> GetByIdAsync(int id)
-        {
-            return await _context.Set<Permission>()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
-        }
+    public async Task<Permission?> GetByIdAsync(int id)
+    {
+        return await _context.Set<Permission>()
+            .FindAsync(id);
+    }
 
-        public Task<IQueryable<Permission>> GetAllAsync()
-        {
-            IQueryable<Permission> query = _context.Set<Permission>()
-                .AsNoTracking();
+    public async Task<Permission> PostAsync(Permission entity)
+    {
+        _context.Set<Permission>().Add(entity);
+        await _context.SaveChangesAsync();
 
-            return Task.FromResult(query);
-        }
+        return entity;
+    }
 
-        public async Task<Permission> PostAsync(Permission entity)
-        {
-            _context.Set<Permission>().Add(entity);
+    public async Task<Permission> PutAsync(Permission entity)
+    {
+        _context.Set<Permission>().Update(entity);
+        await _context.SaveChangesAsync();
 
-            await _context.SaveChangesAsync();
+        return entity;
+    }
 
-            return entity;
-        }
+    public async Task<Permission> UpdateAsync(Permission entity)
+    {
+        _context.Set<Permission>().Update(entity);
+        await _context.SaveChangesAsync();
 
-        public async Task<Permission> PutAsync(Permission entity)
-        {
-            _context.Set<Permission>().Update(entity);
+        return entity;
+    }
 
-            await _context.SaveChangesAsync();
+    public async Task<Permission?> DeleteAsync(int id)
+    {
+        var entity = await GetByIdAsync(id);
 
-            return entity;
-        }
+        if (entity is null)
+            return null;
 
-        public async Task<Permission> UpdateAsync(Permission entity)
-        {
-            _context.Set<Permission>().Update(entity);
+        _context.Set<Permission>().Remove(entity);
+        await _context.SaveChangesAsync();
 
-            await _context.SaveChangesAsync();
+        return entity;
+    }
 
-            return entity;
-        }
+    public async Task<IQueryable<Permission>> WhereAsync(
+        Expression<Func<Permission, bool>> predicate,
+        Func<IQueryable<Permission>,
+            IQueryable<Permission>>? includes = null)
+    {
+        IQueryable<Permission> query =
+            _context.Set<Permission>().Where(predicate);
 
-        public async Task<Permission?> DeleteAsync(int id)
-        {
-            var permission = await _context.Set<Permission>()
-                .FindAsync(id);
+        if (includes is not null)
+            query = includes(query);
 
-            if (permission is null)
-                return null;
-
-            _context.Set<Permission>().Remove(permission);
-
-            await _context.SaveChangesAsync();
-
-            return permission;
-        }
-
-        public Task<IQueryable<Permission>> WhereAsync(
-            Expression<Func<Permission, bool>> predicate,
-            Func<IQueryable<Permission>,
-                 IQueryable<Permission>>? includes = null)
-        {
-            IQueryable<Permission> query = _context.Set<Permission>()
-                .AsNoTracking()
-                .Where(predicate);
-
-            if (includes != null)
-            {
-                query = includes(query);
-            }
-
-            return Task.FromResult(query);
-        }
+        return await Task.FromResult(query);
     }
 }

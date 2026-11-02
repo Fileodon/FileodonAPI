@@ -1,8 +1,10 @@
 ﻿using Domain.Interface;
 using Infrastructure.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PermissionController : ControllerBase

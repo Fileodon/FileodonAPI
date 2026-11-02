@@ -15,12 +15,14 @@ namespace Domain.Service
         {
             return await _context.Set<AspNetRole>()
                    .AsNoTracking()
+                   .Include(role => role.Organization)
                    .ToListAsync();
         }
         public async Task<AspNetRole?> GetByIdAsync(string id)
         {
             return await _context.Set<AspNetRole>()
                 .AsNoTracking()
+                .Include(role => role.Organization)
                 .FirstOrDefaultAsync(role => role.Id == id);
         }
         public async Task<AspNetRole> CreateAsync(AspNetRole role)

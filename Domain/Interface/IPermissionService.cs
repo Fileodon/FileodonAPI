@@ -7,6 +7,5 @@ namespace Domain.Interface
 {
     public interface IPermissionService : IBaseInterface<Permission>
     {
-
     }
 }

@@ -1,12 +1,15 @@
+using Controller.Controllers.Authorization;
 using Controller.Middleware;
 using Controller.Utility;
 using Domain.Interface;
 using Domain.Service;
+using Domain.Services;
 using Infrastructure;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Infrastructure.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
@@ -33,8 +36,11 @@ builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationReposito
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IAuthorizationPermissionService, AuthorizationPermissionService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>(options =>
