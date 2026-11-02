@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Infrastructure.Interface;
 
 namespace Infrastructure.Models;
 
-public class SFTPConnectionAuthCode
+public class SFTPConnectionAuthCode : IMutationAuthorizable
 {
     [Key]
     public int Id { get; set; }

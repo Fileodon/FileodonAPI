@@ -23,7 +23,7 @@ public sealed class OrganizationServiceTests
                 organization.Id = 42;
                 return organization;
             });
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         Organization result = await service.CreateOrganizationAsync(
             "Acme",
@@ -56,7 +56,7 @@ public sealed class OrganizationServiceTests
                 "Updated name",
                 userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationResult<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
@@ -78,7 +78,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.DeleteByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationResult<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
@@ -97,7 +97,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationResult<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
@@ -121,7 +121,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationResult<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
@@ -143,7 +143,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
             .ReturnsAsync((Organization?)null);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         Organization? result = await service.GetOrganizationByIdAsync(42, userId);
 
@@ -158,7 +158,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
             .ReturnsAsync((Organization?)null);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationResult<Organization> updateResult =
             await service.UpdateOrganizationAsync(42, "Updated name", userId);
@@ -188,6 +188,10 @@ public sealed class OrganizationServiceTests
             .Returns(Mock.Of<IDisposable>());
         return unitOfWork;
     }
+
+    private static OrganizationService CreateOrganizationService(
+        Mock<IUnitOfWork> unitOfWork) =>
+        new(unitOfWork.Object, new MutationAuthorizationService<Organization>());
 
     private static Organization CreateOrganization(string ownerId) =>
         new()

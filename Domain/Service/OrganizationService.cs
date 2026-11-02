@@ -5,9 +5,10 @@ using Infrastructure.Models;
 
 namespace Domain.Service;
 
-public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
+public class OrganizationService(IUnitOfWork unitOfWork, IMutationAuthorizationService<Organization> mutationAuthorizationService) : IOrganizationService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IMutationAuthorizationService<Organization> _mutationAuthorizationService = mutationAuthorizationService;
 
     public async Task<Organization> CreateOrganizationAsync(
         string organizationName,
@@ -42,7 +43,9 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
 
     public async Task<MutationResult<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
     {
-        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
+        MutationResult<Organization> authorization = await _mutationAuthorizationService.AuthorizeMutationAsync(
+            () => _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId),
+            userId);
         if (authorization.Status != MutationStatus.Success)
         {
             return authorization;
@@ -69,7 +72,9 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
         string organizationName,
         string userId)
     {
-        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
+        MutationResult<Organization> authorization = await _mutationAuthorizationService.AuthorizeMutationAsync(
+            () => _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId),
+            userId);
         if (authorization.Status != MutationStatus.Success)
         {
             return authorization;
@@ -87,29 +92,5 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
 
         await _unitOfWork.SaveChangesAsync();
         return new MutationResult<Organization>(MutationStatus.Success, updatedOrganization);
-    }
-
-    private async Task<MutationResult<Organization>> AuthorizeMutationAsync(
-        int organizationId,
-        string userId)
-    {
-        Organization? membership = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
-
-        if (membership is null)
-        {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
-        }
-
-        if (!string.Equals(
-                membership.UserOwnerId,
-                userId,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return new MutationResult<Organization>(MutationStatus.Forbidden, null);
-        }
-
-        return new MutationResult<Organization>(
-            MutationStatus.Success,
-            membership);
     }
 }

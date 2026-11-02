@@ -1,31 +1,25 @@
 using System;
+using Domain.DTO;
+using Domain.Enum;
 using Domain.Interface;
 using Infrastructure.Models;
 
 namespace Domain.Service;
 
-public class SFTPConnectionService(IUnitOfWork unitOfWork) : ISFTPConnectionService
+public class SFTPConnectionService(IUnitOfWork unitOfWork, IMutationAuthorizationService<SFTPConnectionAuthCode> mutationAuthorizationService) : ISFTPConnectionService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IMutationAuthorizationService<SFTPConnectionAuthCode> _mutationAuthorizationService = mutationAuthorizationService;
 
-    public async Task<SFTPConnectionAuthCode> GenerateVerificationCodeAsync(int organizationId, string userId)
+    public async Task<MutationResult<SFTPConnectionAuthCode>> GenerateVerificationCodeAsync(int organizationId, string userId)
     {
-        string code = GenerateVerificationCode(8);
+        string verificationCode = GenerateVerificationCode(8);
+        MutationResult<SFTPConnectionAuthCode> result = await _mutationAuthorizationService.AuthorizeMutationAsync(
+            () => _unitOfWork.SFTPConnectionAuthCodeRepository.AddAuthCodeAsync(verificationCode, organizationId, userId),
+            userId
+        );
 
-        // Create a new SFTPConnectionAuthCode object
-        var authCode = new SFTPConnectionAuthCode
-        {
-            OrganizationId = organizationId,
-            UserId = userId,
-            VerificationCode = code,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10)
-        };
-
-        await _unitOfWork.BeginTransactionAsync();
-        await _unitOfWork.SFTPConnectionAuthCodeRepository.PostAsync(authCode);
-        await _unitOfWork.CommitAsync();
-
-        return await Task.FromResult(authCode);
+        return result;
     }
 
     private static string GenerateVerificationCode(int length)
