@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Controller.Controller
+namespace Controller.Controllers
 {
     [Route("api/organization/[controller]")]
     [ApiController]
