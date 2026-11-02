@@ -83,6 +83,7 @@ builder.Services.AddScoped<ISFTPConnectionService, SFTPConnectionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 
 builder.Services.AddIdentityCore<User>(options =>
 {

@@ -27,7 +27,13 @@ public sealed class TokenServiceTests
         };
         await userManager.CreateAsync(user);
         ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Organization organization = new() { OrgName = "Test organization" };
+        Organization organization = new()
+        {
+            UserOwnerId = user.Id,
+            OrgName = "Test organization",
+            WorkspaceURL = "test.example.com",
+            ContactEmail = "owner@test.example.com"
+        };
         dbContext.Organizations.Add(organization);
         await dbContext.SaveChangesAsync();
         RoleManager<AspNetRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<AspNetRole>>();

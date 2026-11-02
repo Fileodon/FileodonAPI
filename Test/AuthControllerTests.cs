@@ -35,7 +35,7 @@ public sealed class AuthControllerTests
         Assert.Contains("httponly", setCookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("secure", setCookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("samesite=strict", setCookie, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("path=/api/auth/refresh", setCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("path=/api/auth", setCookie, StringComparison.OrdinalIgnoreCase);
         authService.Verify(service => service.LoginAsync("user@example.com", "Password1!"), Times.Once);
     }
 

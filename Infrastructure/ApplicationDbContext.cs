@@ -40,7 +40,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.HasOne(r => r.Organization)
                 .WithMany()
                 .HasForeignKey(r => r.OrganizationId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.Property(r => r.PermissionMask)
                 .HasColumnType("bigint");
@@ -186,17 +186,6 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
                 .HasColumnName("navn");
             entity.Property(permission => permission.BitValue)
                 .HasColumnName("bit_value");
-        });
-
-        modelBuilder.Entity<AspNetRole>(entity =>
-        {
-            entity.HasOne(r => r.Organization)
-                .WithMany()
-                .HasForeignKey(r => r.OrganizationId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.Property(r => r.PermissionMask)
-                .HasColumnType("bigint");
         });
     }
 }
