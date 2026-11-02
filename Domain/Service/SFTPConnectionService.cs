@@ -10,11 +10,7 @@ public class SFTPConnectionService(IUnitOfWork unitOfWork) : ISFTPConnectionServ
 
     public async Task<SFTPConnectionAuthCode> GenerateVerificationCodeAsync(int organizationId, string userId)
     {
-        // Generate a random verification code
-        var random = new Random();
-        string Generator() => new([.. Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 8).Select(s => s[random.Next(s.Length)])]);
-
-        string code = Generator();
+        string code = GenerateVerificationCode(8);
 
         // Create a new SFTPConnectionAuthCode object
         var authCode = new SFTPConnectionAuthCode
@@ -30,5 +26,12 @@ public class SFTPConnectionService(IUnitOfWork unitOfWork) : ISFTPConnectionServ
         await _unitOfWork.CommitAsync();
 
         return await Task.FromResult(authCode);
+    }
+
+    private static string GenerateVerificationCode(int length)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var random = new Random();
+        return new string([.. Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)])]);
     }
 }
