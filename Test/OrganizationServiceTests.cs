@@ -1,6 +1,7 @@
+using Domain.DTO;
+using Domain.Enum;
 using Domain.Interface;
 using Domain.Service;
-using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Moq;
 
@@ -57,11 +58,11 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = new(unitOfWork.Object);
 
-        OrganizationMutationResult result =
+        MutationResult<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
 
-        Assert.Equal(OrganizationMutationStatus.Success, result.Status);
-        Assert.Same(organization, result.Organization);
+        Assert.Equal(MutationStatus.Success, result.Status);
+        Assert.Same(organization, result.Data);
         unitOfWork.Verify(work => work.SaveChangesAsync(), Times.Once);
     }
 
@@ -79,11 +80,11 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = new(unitOfWork.Object);
 
-        OrganizationMutationResult result =
+        MutationResult<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
 
-        Assert.Equal(OrganizationMutationStatus.Success, result.Status);
-        Assert.Same(organization, result.Organization);
+        Assert.Equal(MutationStatus.Success, result.Status);
+        Assert.Same(organization, result.Data);
         unitOfWork.Verify(work => work.SaveChangesAsync(), Times.Once);
     }
 
@@ -98,11 +99,11 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = new(unitOfWork.Object);
 
-        OrganizationMutationResult result =
+        MutationResult<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
 
-        Assert.Equal(OrganizationMutationStatus.Forbidden, result.Status);
-        Assert.Null(result.Organization);
+        Assert.Equal(MutationStatus.Forbidden, result.Status);
+        Assert.Null(result.Data);
         unitOfWork.Verify(
             work => work.OrganizationRepository.UpdateOrganizationAsync(
                 It.IsAny<int>(),
@@ -122,11 +123,11 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = new(unitOfWork.Object);
 
-        OrganizationMutationResult result =
+        MutationResult<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
 
-        Assert.Equal(OrganizationMutationStatus.Forbidden, result.Status);
-        Assert.Null(result.Organization);
+        Assert.Equal(MutationStatus.Forbidden, result.Status);
+        Assert.Null(result.Data);
         unitOfWork.Verify(
             work => work.OrganizationRepository.DeleteByIdAsync(
                 It.IsAny<int>(),
@@ -159,13 +160,13 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync((Organization?)null);
         OrganizationService service = new(unitOfWork.Object);
 
-        OrganizationMutationResult updateResult =
+        MutationResult<Organization> updateResult =
             await service.UpdateOrganizationAsync(42, "Updated name", userId);
-        OrganizationMutationResult deleteResult =
+        MutationResult<Organization> deleteResult =
             await service.DeleteOrganizationByIdAsync(42, userId);
 
-        Assert.Equal(OrganizationMutationStatus.NotFound, updateResult.Status);
-        Assert.Equal(OrganizationMutationStatus.NotFound, deleteResult.Status);
+        Assert.Equal(MutationStatus.NotFound, updateResult.Status);
+        Assert.Equal(MutationStatus.NotFound, deleteResult.Status);
         unitOfWork.Verify(
             work => work.OrganizationRepository.UpdateOrganizationAsync(
                 It.IsAny<int>(),

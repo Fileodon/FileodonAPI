@@ -1,5 +1,8 @@
 using Controller.DTO.Organization;
+using Domain.DTO;
+using Domain.Enum;
 using Domain.Interface;
+using Infrastructure.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -61,16 +64,16 @@ namespace Controller.Controllers
                 return Unauthorized();
             }
 
-            var result = await _organizationService.DeleteOrganizationByIdAsync(organizationId, userId);
-            if (result.Status == OrganizationMutationStatus.NotFound)
+            MutationResult<Organization> result = await _organizationService.DeleteOrganizationByIdAsync(organizationId, userId);
+            if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
                 return NotFound();
             }
-            if (result.Status == OrganizationMutationStatus.Forbidden)
+            if (result.Status == MutationStatus.Forbidden)
             {
                 return Forbid();
             }
-            return Ok(result.Organization!.OrgName);
+            return Ok(result.Data.OrgName);
         }
 
         [HttpPut("{organizationId}")]
@@ -88,15 +91,15 @@ namespace Controller.Controllers
             }
 
             var result = await _organizationService.UpdateOrganizationAsync(organizationId, newOrganizationName, userId);
-            if (result.Status == OrganizationMutationStatus.NotFound)
+            if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
                 return NotFound();
             }
-            if (result.Status == OrganizationMutationStatus.Forbidden)
+            if (result.Status == MutationStatus.Forbidden)
             {
                 return Forbid();
             }
-            return Ok(result.Organization!.OrgName);
+            return Ok(result.Data.OrgName);
         }
     }
 }

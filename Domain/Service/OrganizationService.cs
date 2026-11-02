@@ -1,3 +1,5 @@
+using Domain.DTO;
+using Domain.Enum;
 using Domain.Interface;
 using Infrastructure.Models;
 
@@ -38,10 +40,10 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
         }
     }
 
-    public async Task<OrganizationMutationResult> DeleteOrganizationByIdAsync(int organizationId, string userId)
+    public async Task<MutationResult<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
     {
-        OrganizationMutationResult authorization = await AuthorizeMutationAsync(organizationId, userId);
-        if (authorization.Status != OrganizationMutationStatus.Success)
+        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
+        if (authorization.Status != MutationStatus.Success)
         {
             return authorization;
         }
@@ -50,11 +52,11 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
             await _unitOfWork.OrganizationRepository.DeleteByIdAsync(organizationId, userId);
         if (deletedOrganization is null)
         {
-            return new OrganizationMutationResult(OrganizationMutationStatus.NotFound, null);
+            return new MutationResult<Organization>(MutationStatus.NotFound, null);
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return new OrganizationMutationResult(OrganizationMutationStatus.Success, deletedOrganization);
+        return new MutationResult<Organization>(MutationStatus.Success, deletedOrganization);
     }
 
     public async Task<Organization?> GetOrganizationByIdAsync(int organizationId, string userId)
@@ -62,13 +64,13 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
         return await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
     }
 
-    public async Task<OrganizationMutationResult> UpdateOrganizationAsync(
+    public async Task<MutationResult<Organization>> UpdateOrganizationAsync(
         int organizationId,
         string organizationName,
         string userId)
     {
-        OrganizationMutationResult authorization = await AuthorizeMutationAsync(organizationId, userId);
-        if (authorization.Status != OrganizationMutationStatus.Success)
+        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
+        if (authorization.Status != MutationStatus.Success)
         {
             return authorization;
         }
@@ -80,14 +82,14 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
                 userId);
         if (updatedOrganization is null)
         {
-            return new OrganizationMutationResult(OrganizationMutationStatus.NotFound, null);
+            return new MutationResult<Organization>(MutationStatus.NotFound, null);
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return new OrganizationMutationResult(OrganizationMutationStatus.Success, updatedOrganization);
+        return new MutationResult<Organization>(MutationStatus.Success, updatedOrganization);
     }
 
-    private async Task<OrganizationMutationResult> AuthorizeMutationAsync(
+    private async Task<MutationResult<Organization>> AuthorizeMutationAsync(
         int organizationId,
         string userId)
     {
@@ -95,7 +97,7 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
 
         if (membership is null)
         {
-            return new OrganizationMutationResult(OrganizationMutationStatus.NotFound, null);
+            return new MutationResult<Organization>(MutationStatus.NotFound, null);
         }
 
         if (!string.Equals(
@@ -103,11 +105,11 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
                 userId,
                 StringComparison.OrdinalIgnoreCase))
         {
-            return new OrganizationMutationResult(OrganizationMutationStatus.Forbidden, null);
+            return new MutationResult<Organization>(MutationStatus.Forbidden, null);
         }
 
-        return new OrganizationMutationResult(
-            OrganizationMutationStatus.Success,
+        return new MutationResult<Organization>(
+            MutationStatus.Success,
             membership);
     }
 }
