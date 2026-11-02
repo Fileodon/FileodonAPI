@@ -117,7 +117,7 @@ public sealed class UnitOfWorkTests
             () => unitOfWork.UserOrganizationRepository.PostAsync(
                 new UserOrganization
                 {
-                    UserId = "missing-user",
+                    UserId = "02efe34f-9e1f-4b11-a887-43fa258265bd",
                     OrganizationId = 999
                 }));
 
@@ -136,7 +136,7 @@ public sealed class UnitOfWorkTests
         context.Database.EnsureCreated();
         context.Users.Add(new User
         {
-            Id = "test-owner",
+            Id = "222c5dcf-42e3-4129-8166-9905f2ed16f1",
             UserName = "test-owner"
         });
         context.SaveChanges();
@@ -146,7 +146,7 @@ public sealed class UnitOfWorkTests
     private static Organization CreateOrganization() =>
         new()
         {
-            UserOwnerId = "test-owner",
+            UserOwnerId = "222c5dcf-42e3-4129-8166-9905f2ed16f1",
             OrgName = "Acme",
             WorkspaceURL = "acme.example.com",
             ContactEmail = "owner@acme.example.com"
