@@ -2,6 +2,7 @@ using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
 using Infrastructure.Models;
+using Infrastructure.Models.Enums;
 
 namespace Domain.Service;
 
@@ -28,8 +29,30 @@ public class OrganizationService(IUnitOfWork unitOfWork, IMutationAuthorizationS
                 WorkspaceURL = workspaceURL,
                 ContactEmail = contactEmail
             };
-
             organization = await _unitOfWork.OrganizationRepository.PostAsync(organization);
+
+            AspNetRole ownerRole = new()
+            {
+                Name = "Owner",
+                NormalizedName = "OWNER",
+                OrganizationId = organization.Id,
+                PermissionMask = (long)PermissionFlags.All
+            };
+            ownerRole = await _unitOfWork.RoleRepository.PostAsync(ownerRole);
+
+            if (string.IsNullOrEmpty(ownerRole.Id))
+            {
+                throw new Exception("Failed to create owner role for organization.");
+            }
+
+            UserOrganization userOrganization = new()
+            {
+                UserId = userId,
+                RoleId = ownerRole.Id,
+                OrganizationId = organization.Id
+            };
+            await _unitOfWork.UserOrganizationRepository.PostAsync(userOrganization);
+
             await _unitOfWork.CommitAsync();
 
             return organization;

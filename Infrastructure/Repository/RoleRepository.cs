@@ -23,4 +23,14 @@ public class RoleRepository(ApplicationDbContext context, IRepositoryTransaction
         await _context.SaveChangesAsync();
         return role;
     }
+
+    public async Task<IEnumerable<AspNetRole>> GetAllRolesAndOrganizations()
+    {
+        return _context.AspNetRoles.AsNoTracking().Include(role => role.Organization);
+    }
+
+    public async Task<AspNetRole?> GetRoleAndOrganizations(string id)
+    {
+        return _context.AspNetRoles.AsNoTracking().Include(role => role.Organization).FirstOrDefault(role => role.Id == id);
+    }
 }
