@@ -54,7 +54,6 @@ public sealed class OrganizationServiceTests
         Assert.Equal("owner@acme.example.com", postedOrganization.ContactEmail);
         Assert.NotNull(postedOwnerRole);
         Assert.Equal("Owner", postedOwnerRole.Name);
-        Assert.Equal("OWNER", postedOwnerRole.NormalizedName);
         Assert.Equal(42, postedOwnerRole.OrganizationId);
         Assert.Equal((long)PermissionFlags.All, postedOwnerRole.PermissionMask);
         Assert.NotNull(postedUserOrganization);

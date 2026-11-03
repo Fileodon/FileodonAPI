@@ -1,8 +1,8 @@
-﻿using Domain.Interface;
+﻿using System.Linq.Expressions;
+using Domain.Interface;
 using Infrastructure;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace Domain.Service;
 
@@ -29,7 +29,7 @@ public class UserOrganizationService : IUserOrganizationService
             .AsNoTracking()
             .AsQueryable());
     }
-    
+
     public async Task<UserOrganization> PostAsync(UserOrganization entity)
     {
         _context.Set<UserOrganization>().Add(entity);
@@ -42,7 +42,7 @@ public class UserOrganizationService : IUserOrganizationService
         await _context.SaveChangesAsync();
         return entity;
     }
-    public async Task<UserOrganization> DeleteAsync(int id)
+    public async Task<UserOrganization?> DeleteAsync(int id)
     {
         var exsistingUserOrg = await _context.Set<UserOrganization>().FindAsync(id);
         if (exsistingUserOrg == null)

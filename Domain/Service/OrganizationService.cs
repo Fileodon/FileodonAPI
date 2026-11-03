@@ -34,7 +34,6 @@ public class OrganizationService(IUnitOfWork unitOfWork, IMutationAuthorizationS
             AspNetRole ownerRole = new()
             {
                 Name = "Owner",
-                NormalizedName = "OWNER",
                 OrganizationId = organization.Id,
                 PermissionMask = (long)PermissionFlags.All
             };

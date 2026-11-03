@@ -240,7 +240,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("organization_id");
 
-                    b.Property<int?>("Port")
+                    b.Property<int>("Port")
                         .HasColumnType("integer")
                         .HasColumnName("port");
 

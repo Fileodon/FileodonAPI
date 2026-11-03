@@ -42,7 +42,7 @@ namespace Controller.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(string), 201)]
+        [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
@@ -63,7 +63,7 @@ namespace Controller.Controllers
             {
                 return Forbid();
             }
-            return Created($"/api/organization/{result.Data.OrganizationId}/sftpconnection/{result.Data.Id}", result.Data.DisplayName);
+            return Ok(result.Data.ToDTO());
         }
     }
 }
