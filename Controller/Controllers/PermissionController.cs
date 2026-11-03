@@ -1,39 +1,84 @@
-﻿using Infrastructure.Models;
+﻿using Domain.Interface;
+using Infrastructure.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace Controller.Controllers;
 
+[Authorize]
 [ApiController]
-[Route("api/permissions")]
+[Route("api/[controller]")]
 public class PermissionController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult GetPermissions()
+    private readonly IPermissionService _permissionService;
+
+    public PermissionController(
+        IPermissionService permissionService)
     {
-        var permissions = Enum.GetValues(typeof(Permission))
-            .Cast<Permission>()
-            .Select(p => new
-            {
-                Id = p,
-                Name = p.ToString()
-            })
-            .ToList();
+        _permissionService = permissionService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPermissions()
+    {
+        var permissions =
+            await _permissionService.GetAllAsync();
+
         return Ok(permissions);
     }
-    [HttpGet("{id}")]
-    public IActionResult GetPermissionById(Permission id)
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetPermissionById(int id)
     {
-        var permission = Enum.GetValues(typeof(Permission))
-            .Cast<Permission>()
-            .FirstOrDefault(p => p == id);
-        if (permission == null)
-        {
+        var permission = await _permissionService.GetByIdAsync(id);
+
+        if (permission is null)
             return NotFound();
-        }
-        return Ok(new
-        {
-            Id = permission,
-            Name = permission.ToString()
-        });
+
+        return Ok(permission);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreatePermission(
+        [FromBody] Permission permission)
+    {
+        var created =
+            await _permissionService.PostAsync(permission);
+
+        return CreatedAtAction(
+            nameof(GetPermissionById),
+            new { id = created.Id },
+            created);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdatePermission(
+        int id,
+        [FromBody] Permission permission)
+    {
+        if (id != permission.Id)
+            return BadRequest();
+
+        var existing =
+            await _permissionService.GetByIdAsync(id);
+
+        if (existing is null)
+            return NotFound();
+
+        var updated =
+            await _permissionService.UpdateAsync(permission);
+
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeletePermission(int id)
+    {
+        var deleted =
+            await _permissionService.DeleteAsync(id);
+
+        if (deleted is null)
+            return NotFound();
+
+        return NoContent();
     }
 }
