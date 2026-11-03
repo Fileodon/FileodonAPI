@@ -1,6 +1,7 @@
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
+using Domain.DTO;
 using Domain.Interface;
 
 namespace Domain.Service;
@@ -114,6 +115,25 @@ public class CryptoService : ICryptoService, IDisposable
         var payloadBytes = Convert.FromBase64String(payload);
         var decryptedBytes = Decrypt(payloadBytes);
         return System.Text.Encoding.UTF8.GetString(decryptedBytes);
+    }
+
+    public RSAKeyPairResult CreateRSAKeyPair()
+    {
+        return CreateRSAKeyPair(4096);
+    }
+
+    public RSAKeyPairResult CreateRSAKeyPair(int keySize)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(keySize, 2048, nameof(keySize));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(keySize, 16384, nameof(keySize)); // RSA theoretically has no limit, but we follow OpenSSL recommendations for practical key sizes.
+        using var rsa = RSA.Create(keySize);
+        var privateKey = rsa.ExportRSAPrivateKey();
+        var publicKey = rsa.ExportRSAPublicKey();
+
+        return new RSAKeyPairResult(
+            publicKey,
+            privateKey
+        );
     }
 
     private static byte[] LoadKey(string path)

@@ -1,7 +1,8 @@
-using System.Security.Cryptography;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using Domain.DTO;
 using Domain.Service;
 
 namespace Test;
@@ -127,6 +128,91 @@ public sealed class CryptoServiceTests
     }
 
     [Fact]
+    public void CreateRSAKeyPair_returns_a_valid_4096_bit_key_pair()
+    {
+        using TemporaryDirectory directory = new();
+        using CryptoService cryptoService = new(CreateKey(directory));
+
+        RSAKeyPairResult keyPair = cryptoService.CreateRSAKeyPair();
+
+        using RSA privateKey = RSA.Create();
+        using RSA publicKey = RSA.Create();
+        privateKey.ImportRSAPrivateKey(keyPair.PrivateKey, out int privateBytesRead);
+        publicKey.ImportRSAPublicKey(keyPair.PublicKey, out int publicBytesRead);
+
+        Assert.Equal(keyPair.PrivateKey.Length, privateBytesRead);
+        Assert.Equal(keyPair.PublicKey.Length, publicBytesRead);
+        Assert.Equal(4096, privateKey.KeySize);
+        Assert.Equal(4096, publicKey.KeySize);
+    }
+
+    [Fact]
+    public void CreateRSAKeyPair_rejects_a_key_size_below_2048_bits()
+    {
+        using TemporaryDirectory directory = new();
+        using CryptoService cryptoService = new(CreateKey(directory));
+
+        ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(
+            () => cryptoService.CreateRSAKeyPair(1024));
+
+        Assert.Contains("must be greater than", exception.Message);
+    }
+
+    [Fact]
+    public void CreateRSAKeyPair_rejects_a_key_size_above_16384_bits()
+    {
+        using TemporaryDirectory directory = new();
+        using CryptoService cryptoService = new(CreateKey(directory));
+
+        ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(
+            () => cryptoService.CreateRSAKeyPair(32768));
+
+        Assert.Contains("must be less than", exception.Message);
+    }
+
+    [Fact]
+    public void CreateRSAKeyPair_private_key_can_sign_data_verified_by_public_key()
+    {
+        using TemporaryDirectory directory = new();
+        using CryptoService cryptoService = new(CreateKey(directory));
+        RSAKeyPairResult keyPair = cryptoService.CreateRSAKeyPair();
+        byte[] data = "SFTP authentication challenge"u8.ToArray();
+
+        using RSA privateKey = RSA.Create();
+        using RSA publicKey = RSA.Create();
+        privateKey.ImportRSAPrivateKey(keyPair.PrivateKey, out _);
+        publicKey.ImportRSAPublicKey(keyPair.PublicKey, out _);
+
+        byte[] signature = privateKey.SignData(
+            data,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1);
+
+        Assert.True(publicKey.VerifyData(
+            data,
+            signature,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1));
+    }
+
+    [Fact]
+    public void RSA_key_pair_can_be_encrypted_for_storage_and_restored()
+    {
+        using TemporaryDirectory directory = new();
+        using CryptoService cryptoService = new(CreateKey(directory));
+        RSAKeyPairResult generatedKeyPair = cryptoService.CreateRSAKeyPair();
+
+        byte[] encryptedPublicKey = cryptoService.Encrypt(generatedKeyPair.PublicKey);
+        byte[] encryptedPrivateKey = cryptoService.Encrypt(generatedKeyPair.PrivateKey);
+        RSAKeyPairResult restoredKeyPair = new(
+            cryptoService.Decrypt(encryptedPublicKey),
+            cryptoService.Decrypt(encryptedPrivateKey));
+
+        Assert.Equal(generatedKeyPair.PublicKey, restoredKeyPair.PublicKey);
+        Assert.Equal(generatedKeyPair.PrivateKey, restoredKeyPair.PrivateKey);
+    }
+
+    [Fact]
     public void Decrypt_rejects_a_modified_payload()
     {
         using TemporaryDirectory directory = new();
@@ -172,11 +258,11 @@ public sealed class CryptoServiceTests
         using CryptoService cryptoService = new(keyPath);
 
         ArgumentNullException encryptException = Assert.Throws<ArgumentNullException>(
-            () => cryptoService.Encrypt(null!));
+            () => cryptoService.Encrypt((byte[])null!));
         Assert.Equal("plaintext", encryptException.ParamName);
 
         ArgumentNullException decryptException = Assert.Throws<ArgumentNullException>(
-            () => cryptoService.Decrypt(null!));
+            () => cryptoService.Decrypt((byte[])null!));
         Assert.Equal("payload", decryptException.ParamName);
     }
 
