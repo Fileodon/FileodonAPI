@@ -1,7 +1,7 @@
 using System;
 using Infrastructure.Models;
 
-namespace Controller.DTO.response;
+namespace Controller.DTO.SFTPConnection;
 
 public class SFTPConnectionAuthCodeDTO
 {

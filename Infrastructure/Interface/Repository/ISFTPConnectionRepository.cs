@@ -2,4 +2,7 @@ using Infrastructure.Models;
 
 namespace Infrastructure.Interface.Repository;
 
-public interface ISFTPConnectionRepository : IBaseRepository<SFTPConnection> { }
+public interface ISFTPConnectionRepository : IBaseRepository<SFTPConnection>
+{
+    Task<SFTPConnection> AddSFTPConnectionAsync(SFTPConnection connection);
+}

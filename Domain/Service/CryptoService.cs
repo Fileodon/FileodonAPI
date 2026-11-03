@@ -117,12 +117,7 @@ public class CryptoService : ICryptoService, IDisposable
         return System.Text.Encoding.UTF8.GetString(decryptedBytes);
     }
 
-    public RSAKeyPairResult CreateRSAKeyPair()
-    {
-        return CreateRSAKeyPair(4096);
-    }
-
-    public RSAKeyPairResult CreateRSAKeyPair(int keySize)
+    public RSAKeyPairResult CreateRSAKeyPair(int keySize = 4096)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(keySize, 2048, nameof(keySize));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(keySize, 16384, nameof(keySize)); // RSA theoretically has no limit, but we follow OpenSSL recommendations for practical key sizes.
