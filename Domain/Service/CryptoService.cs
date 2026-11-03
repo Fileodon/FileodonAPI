@@ -27,6 +27,12 @@ public class CryptoService : ICryptoService, IDisposable
         _aes = new AesGcm(key, TagSize);
     }
 
+    /// <summary>
+    /// Decrypts the given payload using AES-GCM.
+    /// </summary>
+    /// <param name="payload">The encrypted payload to decrypt. It must contain the nonce, ciphertext, and authentication tag.</param>
+    /// <returns>The decrypted plaintext.</returns>
+    /// <exception cref="ArgumentException"></exception>
     public byte[] Decrypt(byte[] payload)
     {
         ArgumentNullException.ThrowIfNull(payload, nameof(payload));
@@ -45,6 +51,12 @@ public class CryptoService : ICryptoService, IDisposable
         return plaintext;
     }
 
+    /// <summary>
+    /// Encrypts the given plaintext using AES-GCM.
+    /// </summary>
+    /// <param name="plaintext">The plaintext to encrypt. It must not be null or empty.</param>
+    /// <returns>The encrypted payload, which includes the nonce, ciphertext, and authentication tag.</returns>
+    /// <exception cref="ArgumentException"></exception>
     public byte[] Encrypt(byte[] plaintext)
     {
         ArgumentNullException.ThrowIfNull(plaintext, nameof(plaintext));
@@ -64,6 +76,44 @@ public class CryptoService : ICryptoService, IDisposable
         tag.CopyTo(result, NonceSize);
         ciphertext.CopyTo(result, NonceSize + TagSize);
         return result;
+    }
+
+    /// <summary>
+    /// Encrypts the given plaintext string using AES-GCM and returns the result as a Base64-encoded string.
+    /// </summary>
+    /// <param name="plainText">The plaintext string to encrypt. It must not be null, empty, or whitespace.</param>
+    /// <returns>The encrypted payload as a Base64-encoded string.</returns>
+    /// <exception cref="ArgumentException"></exception>
+    public string Encrypt(string plainText)
+    {
+        ArgumentNullException.ThrowIfNull(plainText, nameof(plainText));
+        if (string.IsNullOrWhiteSpace(plainText))
+        {
+            throw new ArgumentException("Plaintext cannot be empty or whitespace.", nameof(plainText));
+        }
+
+        var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+        var encryptedBytes = Encrypt(plainBytes);
+        return Convert.ToBase64String(encryptedBytes);
+    }
+
+    /// <summary>
+    /// Decrypts the given Base64-encoded payload string using AES-GCM and returns the result as a plaintext string.
+    /// </summary>
+    /// <param name="payload">The Base64-encoded encrypted payload string to decrypt. It must not be null, empty, or whitespace.</param>
+    /// <returns>The decrypted plaintext string.</returns>
+    /// <exception cref="ArgumentException"></exception>
+    public string Decrypt(string payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload, nameof(payload));
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            throw new ArgumentException("Payload cannot be empty or whitespace.", nameof(payload));
+        }
+
+        var payloadBytes = Convert.FromBase64String(payload);
+        var decryptedBytes = Decrypt(payloadBytes);
+        return System.Text.Encoding.UTF8.GetString(decryptedBytes);
     }
 
     private static byte[] LoadKey(string path)
