@@ -1,87 +1,115 @@
-﻿
+using Domain.DTO;
+using Domain.Enum;
 using Domain.Interface;
-using Infrastructure;
 using Infrastructure.Models;
-using Infrastructure.Models.DTO;
-using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
-namespace Domain.Service
+namespace Domain.Service;
+
+public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
 {
-    public class OrganizationService : IOrganizationService
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+
+    public async Task<Organization> CreateOrganizationAsync(
+        string organizationName,
+        string workspaceURL,
+        string contactEmail,
+        string userId)
     {
-        private readonly ApplicationDbContext _context;
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
 
-        public OrganizationService(ApplicationDbContext context)
+        try
         {
-            _context = context;
-        }
+            Organization organization = new()
+            {
+                UserOwnerId = userId,
+                OrgName = organizationName,
+                WorkspaceURL = workspaceURL,
+                ContactEmail = contactEmail
+            };
 
-        public async Task<Organization?> GetByIdAsync(int id)
-        {
-            if(id <= 0)
-                return null;
-
-            return await _context.Set<Organization>()
-                .AsNoTracking()
-                .Where(x => x.Id == id)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<IQueryable<Organization>> GetAllAsync()
-        {
-            return await Task.FromResult(_context.Set<Organization>()
-                .AsNoTracking()
-                .AsQueryable());
-        }
-
-        public async Task<Organization> PostAsync(Organization entity)
-        {
-            _context.Set<Organization>().Add(entity);
-            await _context.SaveChangesAsync();
-            return entity;
-        }
-
-        public async Task<Organization> PutAsync(Organization entity)
-        {
-            _context.Set<Organization>().Update(entity);
-            await _context.SaveChangesAsync();
-            return entity;
-        }
-
-        public async Task<Organization> UpdateAsync(Organization entity)
-        {
-            _context.Set<Organization>().Update(entity);
-            await _context.SaveChangesAsync();
-            return entity;
-        }
-        public async Task<Organization?> DeleteAsync(int id)
-        {
-            var organization = await _context.Set<Organization>()
-                .FindAsync(id);
-
-            if (organization == null)
-                return null;
-
-            if (await _context.Roles.AnyAsync(role => role.OrganizationId == id))
-                throw new InvalidOperationException("Organization has assigned roles.");
-
-            _context.Set<Organization>().Remove(organization);
-            await _context.SaveChangesAsync();
+            organization = await _unitOfWork.OrganizationRepository.PostAsync(organization);
+            await _unitOfWork.CommitAsync();
 
             return organization;
         }
-
-        public Task<IQueryable<Organization>> WhereAsync(Expression<Func<Organization, bool>> predicate, Func<IQueryable<Organization>, IQueryable<Organization>>? includes = null)
+        catch
         {
-            IQueryable<Organization> query = _context.Set<Organization>()
-                .AsNoTracking()
-                .Where(predicate);
-            if (includes != null)
-            {
-                query = includes(query);
-            }
-            return Task.FromResult(query);
+            await _unitOfWork.RollbackAsync();
+            throw;
         }
+    }
+
+    public async Task<MutationResult<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
+    {
+        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
+        if (authorization.Status != MutationStatus.Success)
+        {
+            return authorization;
+        }
+
+        Organization? deletedOrganization =
+            await _unitOfWork.OrganizationRepository.DeleteByIdAsync(organizationId, userId);
+        if (deletedOrganization is null)
+        {
+            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return new MutationResult<Organization>(MutationStatus.Success, deletedOrganization);
+    }
+
+    public async Task<Organization?> GetOrganizationByIdAsync(int organizationId, string userId)
+    {
+        return await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
+    }
+
+    public async Task<MutationResult<Organization>> UpdateOrganizationAsync(
+        int organizationId,
+        string organizationName,
+        string userId)
+    {
+        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
+        if (authorization.Status != MutationStatus.Success)
+        {
+            return authorization;
+        }
+
+        Organization? updatedOrganization =
+            await _unitOfWork.OrganizationRepository.UpdateOrganizationAsync(
+                organizationId,
+                organizationName,
+                userId);
+        if (updatedOrganization is null)
+        {
+            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return new MutationResult<Organization>(MutationStatus.Success, updatedOrganization);
+    }
+
+    private async Task<MutationResult<Organization>> AuthorizeMutationAsync(
+        int organizationId,
+        string userId)
+    {
+        Organization? membership = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
+
+        if (membership is null)
+        {
+            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+        }
+
+        if (!string.Equals(
+                membership.UserOwnerId,
+                userId,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return new MutationResult<Organization>(MutationStatus.Forbidden, null);
+        }
+
+        return new MutationResult<Organization>(
+            MutationStatus.Success,
+            membership);
     }
 }

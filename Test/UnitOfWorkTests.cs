@@ -15,7 +15,7 @@ public sealed class UnitOfWorkTests
         using UnitOfWork unitOfWork = CreateUnitOfWork(context);
 
         await unitOfWork.BeginTransactionAsync();
-        await unitOfWork.OrganizationRepository.PostAsync(new Organization { OrgName = "Acme" });
+        await unitOfWork.OrganizationRepository.PostAsync(CreateOrganization());
         await unitOfWork.ProfileRepository.PostAsync(new Profile { DisplayName = "Ada" });
         await unitOfWork.CommitAsync();
 
@@ -30,7 +30,7 @@ public sealed class UnitOfWorkTests
         using UnitOfWork unitOfWork = CreateUnitOfWork(context);
 
         await unitOfWork.BeginTransactionAsync();
-        await unitOfWork.OrganizationRepository.PostAsync(new Organization { OrgName = "Acme" });
+        await unitOfWork.OrganizationRepository.PostAsync(CreateOrganization());
         await unitOfWork.ProfileRepository.PostAsync(new Profile { DisplayName = "Ada" });
         await unitOfWork.RollbackAsync();
 
@@ -98,7 +98,7 @@ public sealed class UnitOfWorkTests
         using UnitOfWork unitOfWork = CreateUnitOfWork(context);
 
         await unitOfWork.BeginTransactionAsync();
-        await unitOfWork.OrganizationRepository.PostAsync(new Organization { OrgName = "Acme" });
+        await unitOfWork.OrganizationRepository.PostAsync(CreateOrganization());
 
         Assert.NotNull(context.Database.CurrentTransaction);
 
@@ -117,7 +117,7 @@ public sealed class UnitOfWorkTests
             () => unitOfWork.UserOrganizationRepository.PostAsync(
                 new UserOrganization
                 {
-                    UserId = "missing-user",
+                    UserId = "02efe34f-9e1f-4b11-a887-43fa258265bd",
                     OrganizationId = 999
                 }));
 
@@ -134,8 +134,23 @@ public sealed class UnitOfWorkTests
         ApplicationDbContext context = new(options);
         context.Database.OpenConnection();
         context.Database.EnsureCreated();
+        context.Users.Add(new User
+        {
+            Id = "222c5dcf-42e3-4129-8166-9905f2ed16f1",
+            UserName = "test-owner"
+        });
+        context.SaveChanges();
         return context;
     }
+
+    private static Organization CreateOrganization() =>
+        new()
+        {
+            UserOwnerId = "222c5dcf-42e3-4129-8166-9905f2ed16f1",
+            OrgName = "Acme",
+            WorkspaceURL = "acme.example.com",
+            ContactEmail = "owner@acme.example.com"
+        };
 
     private static UnitOfWork CreateUnitOfWork(ApplicationDbContext context)
     {
@@ -147,8 +162,8 @@ public sealed class UnitOfWorkTests
             new AuditLogRepository(context, transactionSettings),
             new OrganizationRepository(context, transactionSettings),
             new ProfileRepository(context, transactionSettings),
+            new RefreshTokenRepository(context, transactionSettings),
             new RoleRepository(context, transactionSettings),
-            new RolesOrganizationRepository(context, transactionSettings),
             new SFTPConnectionRepository(context, transactionSettings),
             new UserOrganizationRepository(context, transactionSettings),
             new UserRepository(context, transactionSettings));

@@ -12,6 +12,7 @@ public sealed class UnitOfWork(
     IAuditLogRepository auditLogRepository,
     IOrganizationRepository organizationRepository,
     IProfileRepository profileRepository,
+    IRefreshTokenRepository refreshTokenRepository,
     IRoleRepository roleRepository,
     ISFTPConnectionRepository sftpConnectionRepository,
     IUserOrganizationRepository userOrganizationRepository,
@@ -22,6 +23,7 @@ public sealed class UnitOfWork(
     public IAuditLogRepository AuditLogRepository => auditLogRepository;
     public IOrganizationRepository OrganizationRepository => organizationRepository;
     public IProfileRepository ProfileRepository => profileRepository;
+    public IRefreshTokenRepository RefreshTokenRepository => refreshTokenRepository;
     public IRoleRepository RoleRepository => roleRepository;
     public ISFTPConnectionRepository SFTPConnectionRepository => sftpConnectionRepository;
     public IUserOrganizationRepository UserOrganizationRepository => userOrganizationRepository;

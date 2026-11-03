@@ -66,13 +66,6 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         });
     }
 
-    public async Task<IQueryable<T>> WhereAsync(Expression<Func<T, bool>> predicate, Func<IQueryable<T>, IQueryable<T>>? include = null)
-    {
-        var q = DbSet.Where(predicate);
-        if (include != null) q = include(q);
-        return q;
-    }
-
     private async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation)
     {
         if (!_transactionSettings.AutomaticTransactionsEnabled ||

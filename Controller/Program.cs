@@ -9,17 +9,62 @@ using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Infrastructure.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+
+const string PolicyName = "default";
+const string CorsPolicyName = "AllowListed";
 
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration).CreateLogger();
 builder.Services.AddSerilog();
+
+string filepath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(filepath))
+    DotEnv.Load(filepath);
+else
+    DotEnv.CreateEnvFile(filepath);
+
+builder.Configuration.AddEnvironmentVariables();
+
 string connectionString = Database.InitializeConnectionString(builder);
+
+if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+{
+    Log.Warning("JWT key is not set in configuration. Generating a new secret.");
+    string key = await TokenService.GenerateSecret();
+    DotEnv.WriteEntryAndUpdateEnvironmentVariable("JWT_KEY", key);
+    if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+    {
+        Log.Error("Failed to set JWT key in configuration after generating a new secret.");
+        throw new InvalidOperationException("Failed to set JWT key in configuration after generating a new secret.");
+    }
+}
+
+string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS_ALLOWED_HOSTS") ?? string.Empty)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(origin => origin.Trim('"', '\''))
+    .Where(origin => origin.Length > 0)];
+Log.Information("Allowed origins for CORS: {AllowedOrigins}", string.Join(", ", allowedOrigins));
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName,
+                     policy =>
+                     {
+                         policy.WithOrigins(allowedOrigins)
+                               .AllowAnyHeader()
+                               .AllowAnyMethod()
+                               .AllowCredentials();
+                     }
+    );
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseNpgsql(connectionString)
@@ -30,6 +75,7 @@ builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
@@ -41,20 +87,40 @@ builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 
-builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<User>(options =>
+builder.Services.AddIdentityCore<User>(options =>
 {
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 8;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = true;
+    IConfigurationSection passwordPolicy = builder.Configuration.GetSection("PasswordPolicy");
+    options.Password.RequireDigit = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireDigit));
+    options.Password.RequiredLength = passwordPolicy.GetValue<int>(nameof(options.Password.RequiredLength));
+    options.Password.RequireUppercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireUppercase));
+    options.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireLowercase));
+    options.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireNonAlphanumeric));
+    options.User.RequireUniqueEmail = passwordPolicy.GetValue<bool>(nameof(options.User.RequireUniqueEmail));
 })
     .AddRoles<AspNetRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager();
 
-const string PolicyName = "default";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration."))),
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -82,6 +148,11 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+});
+
 var app = builder.Build();
 
 if (!Database.CanConnectToDb(app))
@@ -100,7 +171,12 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = string.Empty;
 });
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors(CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -108,7 +184,5 @@ app.UseRateLimiter();
 
 app.MapControllers()
     .RequireRateLimiting(PolicyName);
-app.MapGroup("/auth")
-    .RequireRateLimiting(PolicyName).MapIdentityApi<User>();
 
 app.Run();

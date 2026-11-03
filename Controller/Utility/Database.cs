@@ -21,14 +21,6 @@ public static class Database
         if (string.IsNullOrEmpty(connectionString))
         {
             Log.Information("Connection string not found in configuration. Attempting to load from environment variables.");
-            string filepath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
-            if (File.Exists(filepath))
-            {
-                Log.Information($"Loading environment variables from {filepath}");
-                DotEnv.Load(filepath);
-            }
-
-            builder.Configuration.AddEnvironmentVariables();
 
             List<string> missingEnvVars = [];
             foreach (string envVar in (List<string>)["DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"])

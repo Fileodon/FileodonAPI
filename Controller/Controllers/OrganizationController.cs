@@ -1,206 +1,101 @@
-﻿using Controller.Controllers.Authorization;
+using Controller.DTO.Organization;
+using Domain.DTO;
+using Domain.Enum;
 using Domain.Interface;
-using Domain.Service;
-using Infrastructure;
 using Infrastructure.Models;
-using Infrastructure.Models.DTO;
-using Infrastructure.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Controller.Controllers;
 
 [Authorize]
-[ApiController]
 [Route("api/[controller]")]
-public class OrganizationController : ControllerBase
+[ApiController]
+public class OrganizationController(IOrganizationService organizationService) : ControllerBase
 {
-    private readonly IOrganizationService _organizationService;
-    private readonly IAuthorizationService _authorizationService;
-    private readonly UserManager<User> _userManager;
-    private readonly ApplicationDbContext _context;
-    private readonly IUserOrganizationService _userOrgService;
+    private readonly IOrganizationService _organizationService = organizationService;
 
-    public OrganizationController(
-        IOrganizationService organizationService,
-        IAuthorizationService authorizationService,
-        UserManager<User> userManager,
-        ApplicationDbContext context,
-        IUserOrganizationService userOrgService)
+    [HttpGet("{organizationId}")]
+    [ProducesResponseType(typeof(GetOrganizationRequest), 200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetOrganizationById(int organizationId)
     {
-        _organizationService = organizationService;
-        _authorizationService = authorizationService;
-        _userManager = userManager;
-        _context = context;
-        _userOrgService = userOrgService;
-    }
-
-
-    private async Task<bool> HasPermissionAsync(
-    int organizationId,
-    PermissionFlags permission)
-    {
-        var result = await _authorizationService.AuthorizeAsync(
-            User,
-            organizationId,
-            new PermissionRequirement(permission));
-
-        return result.Succeeded;
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetOrganizations()
-    {
-        var userId = _userManager.GetUserId(User);
-
-        if (string.IsNullOrWhiteSpace(userId))
-            return Unauthorized();
-
-        var organizations = await _context.UserOrganizations
-            .AsNoTracking()
-            .Where(userOrg =>
-                userOrg.UserId == userId &&
-                userOrg.Organization != null)
-            .Select(userOrg => new
-            {
-                Id = userOrg.Organization!.Id,
-                OrgName = userOrg.Organization!.OrgName
-            })
-            .Distinct()
-            .ToListAsync();
-
-        return Ok(organizations);
-    }
-
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetOrganizationById(int id)
-    {
-        if(!await HasPermissionAsync(id, PermissionFlags.Read))
+        string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            return Forbid();
+            return Unauthorized();
         }
 
-        var organization = await _organizationService.GetByIdAsync(id);
-
-
-        if (organization is null)
+        var organization = await _organizationService.GetOrganizationByIdAsync(organizationId, userId);
+        if (organization == null)
+        {
             return NotFound();
-
-        return Ok(organization);
+        }
+        return Ok(organization.ToGetOrganizationRequest());
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] OrganizationDTO dto)
+    [ProducesResponseType(typeof(string), 201)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest request)
     {
-        if(!await HasPermissionAsync(0, PermissionFlags.Create))
+        string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var createdOrganization = await _organizationService.CreateOrganizationAsync(request.OrgName, request.WorkspaceURL, request.ContactEmail, userId);
+        return Created($"/api/organization/{createdOrganization.Id}", createdOrganization.OrgName);
+    }
+
+    [HttpDelete("{organizationId}")]
+    [ProducesResponseType(typeof(string), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DeleteOrganization(int organizationId)
+    {
+        string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        MutationResult<Organization> result = await _organizationService.DeleteOrganizationByIdAsync(organizationId, userId);
+        if (result.Status == MutationStatus.NotFound || result.Data is null)
+        {
+            return NotFound();
+        }
+        if (result.Status == MutationStatus.Forbidden)
         {
             return Forbid();
         }
-
-        var organization = new Organization
-        {
-            OrgName = dto.Org_Name
-        };
-
-        var result = await _organizationService.PostAsync(organization);
-
-        return Ok(result);
+        return Ok(result.Data.OrgName);
     }
 
-    [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateOrganization(int id, [FromBody] OrganizationDTO organization)
+    [HttpPut("{organizationId}")]
+    [ProducesResponseType(typeof(string), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UpdateOrganization(int organizationId, [FromBody] string newOrganizationName)
     {
-        if (id != organization.Id)
-            return BadRequest();
+        string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
 
-        if(!await HasPermissionAsync(id, PermissionFlags.Update))
+        var result = await _organizationService.UpdateOrganizationAsync(organizationId, newOrganizationName, userId);
+        if (result.Status == MutationStatus.NotFound || result.Data is null)
+        {
+            return NotFound();
+        }
+        if (result.Status == MutationStatus.Forbidden)
         {
             return Forbid();
         }
-
-        var existing = await _organizationService.GetByIdAsync(id);
-
-        if (existing is null)
-            return NotFound();
-
-        existing.OrgName = organization.Org_Name;
-
-        var updated = await _organizationService.UpdateAsync(existing);
-
-        return Ok(updated);
+        return Ok(result.Data.OrgName);
     }
-
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteOrganization(int id)
-    {
-        var authorization = await _authorizationService.AuthorizeAsync(
-            User,
-            id,
-            new PermissionRequirement(PermissionFlags.Delete));
-
-        if (!authorization.Succeeded)
-            return Forbid();
-
-        var deleted = await _organizationService.DeleteAsync(id);
-
-        if (deleted is null)
-            return NotFound();
-
-        return NoContent();
-    }
-
-    [HttpPost("{organizationId:int}/members")]
-    public async Task<IActionResult> AddMember(
-    int organizationId,
-    [FromBody] UserOrgDTO dto)
-    {
-        // Permission på bruger ift. at tilføje medelemmer til organisationen
-        if (!await HasPermissionAsync(organizationId, PermissionFlags.Create))
-            return Forbid();
-
-        if (string.IsNullOrWhiteSpace(dto.UserId) ||
-            string.IsNullOrWhiteSpace(dto.RoleId))
-            return BadRequest("UserId og RoleId skal udfyldes.");
-
-        var user = await _userManager.FindByIdAsync(dto.UserId);
-
-        if (user is null)
-            return NotFound("Brugeren findes ikke."); //status 404
-
-        var role = await _context.AspNetRoles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r =>
-                r.Id == dto.RoleId &&
-                r.OrganizationId == organizationId);
-
-        if (role is null)
-            return BadRequest("Rollen tilhører ikke organisationen."); //status 400
-
-        var alreadyMember = await _context.UserOrganizations
-            .AnyAsync(m =>
-                m.UserId == dto.UserId &&
-                m.OrganizationId == organizationId);
-
-        if (alreadyMember)
-            return Conflict("Brugeren er allerede medlem."); //status 409
-
-        var membership = await _userOrgService.PostAsync(
-            new UserOrganization
-            {
-                UserId = dto.UserId,
-                OrganizationId = organizationId,
-                RoleId = dto.RoleId
-            });
-
-        return Ok(new
-        {
-            membership.Id,
-            membership.UserId,
-            membership.OrganizationId,
-            membership.RoleId
-        });
-    }
-
 }

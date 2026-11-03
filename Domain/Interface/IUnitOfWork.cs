@@ -15,6 +15,7 @@ public interface IUnitOfWork : IDisposable
     IAuditLogRepository AuditLogRepository { get; }
     IOrganizationRepository OrganizationRepository { get; }
     IProfileRepository ProfileRepository { get; }
+    IRefreshTokenRepository RefreshTokenRepository { get; }
     IRoleRepository RoleRepository { get; }
     ISFTPConnectionRepository SFTPConnectionRepository { get; }
     IUserOrganizationRepository UserOrganizationRepository { get; }
