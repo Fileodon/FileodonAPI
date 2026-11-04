@@ -42,4 +42,20 @@ public class SFTPConnectionRepository(ApplicationDbContext context, IRepositoryT
 
         return await query.FirstOrDefaultAsync();
     }
+
+    public async Task<SFTPConnectionStatus?> GetSFTPConnectionStatusByIdAsync(int sFTPConnectionId, string userId)
+    {
+        return await _context.SFTPConnections
+            .Where(c => c.Id == sFTPConnectionId &&
+                c.Organization.UserOrganizations.Any(uo => uo.UserId == userId))
+            .Select(c => (SFTPConnectionStatus?)c.Status)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId)
+    {
+        return await _context.SFTPConnections
+            .Where(c => c.OrganizationId == organizationId &&
+                c.Organization.UserOrganizations.Any(uo => uo.UserId == userId)).ToListAsync();
+    }
 }

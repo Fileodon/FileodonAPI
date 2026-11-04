@@ -129,6 +129,35 @@ public class SFTPConnectionService(
         }
     }
 
+    public async Task<MutationResult<SFTPConnectionStatus>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, string userId)
+    {
+        SFTPConnectionStatus? status = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionStatusByIdAsync(sFTPConnectionId, userId);
+
+        if (status == null)
+        {
+            return new MutationResult<SFTPConnectionStatus>(MutationStatus.NotFound, default);
+        }
+
+        return new MutationResult<SFTPConnectionStatus>(MutationStatus.Success, status.Value);
+    }
+
+    public async Task<MutationResult<SFTPConnection>> GetSFTPConnectionAsync(int sFTPConnectionId, string userId)
+    {
+        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, userId, noTracking: true);
+
+        if (sFTPConnection == null)
+        {
+            return new MutationResult<SFTPConnection>(MutationStatus.NotFound, null);
+        }
+
+        return new MutationResult<SFTPConnection>(MutationStatus.Success, sFTPConnection);
+    }
+
+    public async Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId)
+    {
+        return await _unitOfWork.SFTPConnectionRepository.GetOrganizationSFTPConnectionsAsync(organizationId, userId);
+    }
+
     private static string GenerateVerificationCode(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

@@ -9,14 +9,14 @@ using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Infrastructure.Repository;
+using Infrastructure.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
-using Infrastructure.Service;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";

@@ -1,4 +1,6 @@
 using Controller.DTO.Organization;
+using Controller.DTO.SFTPConnection;
+using Controller.Extensions;
 using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
@@ -11,9 +13,10 @@ namespace Controller.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class OrganizationController(IOrganizationService organizationService) : ControllerBase
+public class OrganizationController(IOrganizationService organizationService, ISFTPConnectionService sFTPConnectionService) : ControllerBase
 {
     private readonly IOrganizationService _organizationService = organizationService;
+    private readonly ISFTPConnectionService _sFTPConnectionService = sFTPConnectionService;
 
     [HttpGet("{organizationId}")]
     [ProducesResponseType(typeof(GetOrganizationRequest), 200)]
@@ -97,5 +100,37 @@ public class OrganizationController(IOrganizationService organizationService) : 
             return Forbid();
         }
         return Ok(result.Data.OrgName);
+    }
+
+    [HttpGet("{organizationId}/sftpconnections")]
+    [ProducesResponseType(typeof(IEnumerable<BaseSFTPConnectionGetResponse>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> GetOrganizationSFTPConnections(int organizationId)
+    {
+        if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+        {
+            return Unauthorized("User ID claim is missing.");
+        }
+
+        IEnumerable<SFTPConnection> result = await _sFTPConnectionService.GetOrganizationSFTPConnectionsAsync(organizationId, userId);
+
+        return Ok(result.Select(conn => conn.ToBaseGetResponseDTO()));
+    }
+
+    [HttpGet("{organizationId}/detailed/sftpconnections")]
+    [ProducesResponseType(typeof(IEnumerable<DetailedSFTPConnectionGetResponse>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> GetDetailedOrganizationSFTPConnections(int organizationId)
+    {
+        if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+        {
+            return Unauthorized("User ID claim is missing.");
+        }
+
+        IEnumerable<SFTPConnection> result = await _sFTPConnectionService.GetOrganizationSFTPConnectionsAsync(organizationId, userId);
+
+        return Ok(result.Select(conn => conn.ToDetailedGetResponseDTO()));
     }
 }
