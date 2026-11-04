@@ -23,6 +23,11 @@ const string CorsPolicyName = "AllowListed";
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+});
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration).CreateLogger();
 builder.Services.AddSerilog();
@@ -175,6 +180,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.Configure<RouteOptions>(options =>
 {
     options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
 });
 
 var app = builder.Build();
