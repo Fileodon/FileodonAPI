@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+using Infrastructure.Service;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";

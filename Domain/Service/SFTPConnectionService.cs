@@ -1,7 +1,9 @@
 using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
+using Infrastructure.Interface;
 using Infrastructure.Models;
+using Infrastructure.Models.DTO;
 using Infrastructure.Models.Enums;
 
 namespace Domain.Service;

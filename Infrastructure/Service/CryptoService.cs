@@ -1,10 +1,10 @@
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
-using Domain.DTO;
-using Domain.Interface;
+using Infrastructure.Interface;
+using Infrastructure.Models.DTO;
 
-namespace Domain.Service;
+namespace Infrastructure.Service;
 
 public class CryptoService : ICryptoService, IDisposable
 {

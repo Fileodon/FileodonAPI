@@ -1,6 +1,6 @@
-using Domain.DTO;
+using Infrastructure.Models.DTO;
 
-namespace Domain.Interface;
+namespace Infrastructure.Interface;
 
 public interface ICryptoService
 {
