@@ -1,4 +1,3 @@
-using System;
 using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
@@ -57,11 +56,6 @@ public class SFTPConnectionService(
                 return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, null);
             }
 
-            RSAKeyPairResult keyPairResult = _cryptoService.CreateRSAKeyPair();
-
-            byte[] encryptedPrivateKey = _cryptoService.Encrypt(keyPairResult.PrivateKey);
-            byte[] encryptedPublicKey = _cryptoService.Encrypt(keyPairResult.PublicKey);
-
             SFTPConnection sFTPConnection = new()
             {
                 DisplayName = displayName,
@@ -69,11 +63,57 @@ public class SFTPConnectionService(
                 Host = host,
                 Port = port,
                 Status = SFTPConnectionStatus.Pending,
-                PublicKey = Convert.ToBase64String(encryptedPublicKey),
-                PrivateKey = Convert.ToBase64String(encryptedPrivateKey)
             };
 
             sFTPConnection = await _unitOfWork.SFTPConnectionRepository.AddSFTPConnectionAsync(sFTPConnection);
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitAsync();
+
+            return new MutationResult<SFTPConnection>(MutationStatus.Success, sFTPConnection);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<MutationResult<SFTPConnection>> UpdateSFTPConnectionStatusAsync(int sFTPConnectionId, string userId, SFTPConnectionStatus newStatus)
+    {
+        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, userId);
+        if (sFTPConnection == null)
+        {
+            return new MutationResult<SFTPConnection>(MutationStatus.NotFound, null);
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            switch (newStatus)
+            {
+                case SFTPConnectionStatus.Accepted:
+                    RSAKeyPairResult keyPairResult = _cryptoService.CreateRSAKeyPair();
+                    sFTPConnection.PublicKey = Convert.ToBase64String(_cryptoService.Encrypt(keyPairResult.PublicKey));
+                    sFTPConnection.PrivateKey = Convert.ToBase64String(_cryptoService.Encrypt(keyPairResult.PrivateKey));
+                    sFTPConnection = _unitOfWork.SFTPConnectionRepository.AcceptSFTPConnection(sFTPConnection);
+                    break;
+                case SFTPConnectionStatus.Rejected:
+                    if (sFTPConnection.PublicKey is not null)
+                    {
+                        sFTPConnection.PublicKey = null;
+                    }
+                    if (sFTPConnection.PrivateKey is not null)
+                    {
+                        sFTPConnection.PrivateKey = null;
+                    }
+                    sFTPConnection = _unitOfWork.SFTPConnectionRepository.RejectSFTPConnection(sFTPConnection);
+                    break;
+                case SFTPConnectionStatus.Pending:
+                    return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, null);
+                default:
+                    return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, null);
+            }
 
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitAsync();

@@ -1,7 +1,7 @@
 namespace Controller.DTO.SFTPConnection;
 
 public record class SFTPConnectionCreateResponse(
-    string Id,
+    int Id,
     string DisplayName,
     string Host,
     int Port,
@@ -14,7 +14,7 @@ public static class SFTPConnectionCreateResponseExtensions
     public static SFTPConnectionCreateResponse ToDTO(this Infrastructure.Models.SFTPConnection sftpConnection)
     {
         return new SFTPConnectionCreateResponse(
-            sftpConnection.Id.ToString(),
+            sftpConnection.Id,
             sftpConnection.DisplayName,
             sftpConnection.Host,
             sftpConnection.Port,
