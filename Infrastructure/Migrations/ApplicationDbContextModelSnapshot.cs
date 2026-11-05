@@ -137,6 +137,51 @@ namespace Infrastructure.Migrations
                     b.ToTable("organizations", (string)null);
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.OrganizationAuditLog", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("organization_audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("Infrastructure.Models.Permission", b =>
                 {
                     b.Property<int>("Id")
@@ -500,6 +545,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("UserOwner");
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.OrganizationAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.Organization", "Organization")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("actor");
+                });
+
             modelBuilder.Entity("Infrastructure.Models.RefreshToken", b =>
                 {
                     b.HasOne("Infrastructure.Models.User", "User")
@@ -598,6 +662,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
+                    b.Navigation("AuditLogs");
+
                     b.Navigation("SFTPConnections");
 
                     b.Navigation("UserOrganizations");

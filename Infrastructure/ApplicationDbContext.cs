@@ -1,6 +1,7 @@
 ﻿using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Infrastructure;
 
@@ -21,6 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<AspNetRole> AspNetRoles => Set<AspNetRole>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<OrganizationAuditLog> OrganizationAuditLogs => Set<OrganizationAuditLog>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -185,6 +187,35 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
                 .HasColumnName("navn");
             entity.Property(permission => permission.BitValue)
                 .HasColumnName("bit_value");
+        });
+
+        modelBuilder.Entity<OrganizationAuditLog>(entity =>
+        {
+            entity.ToTable("organization_audit_logs");
+            entity.Property(e => e.Id)
+                .HasColumnName("id");
+            entity.Property(e => e.ActorId)
+                .HasColumnName("actor_id");
+            entity.Property(e => e.Action)
+                .HasColumnName("action");
+            entity.Property(e => e.Source)
+                .HasColumnName("source");
+            entity.Property(e => e.OldData)
+                .HasColumnName("old_data")
+                .HasColumnType("jsonb");
+            entity.Property(e => e.NewData)
+                .HasColumnName("new_data")
+                .HasColumnType("jsonb");
+            entity.Property(e => e.Timestamp)
+                .HasColumnName("timestamp");
+
+            entity.Property(e => e.OrganizationId)
+                .HasColumnName("organization_id");
+
+            entity.HasOne(e => e.Organization)
+                .WithMany(organization => organization.AuditLogs)
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
