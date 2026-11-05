@@ -2,9 +2,11 @@ using Controller.Controllers.Authorization;
 using Controller.Extensions;
 using Controller.Middleware;
 using Controller.Utility;
+using Controller.Validators.SFTPConnectionModels;
 using Domain.Interface;
 using Domain.Service;
 using Domain.Services;
+using FluentValidation;
 using Infrastructure;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
@@ -18,6 +20,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
@@ -112,6 +115,9 @@ builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
+builder.Services.AddFluentValidationAutoValidation();
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
 builder.Services.AddSingleton<ICryptoService>(services =>
