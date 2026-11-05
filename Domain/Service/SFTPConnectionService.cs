@@ -113,8 +113,10 @@ public class SFTPConnectionService(
                     sFTPConnection = _unitOfWork.SFTPConnectionRepository.RejectSFTPConnection(sFTPConnection);
                     break;
                 case SFTPConnectionStatus.Pending:
+                    await _unitOfWork.RollbackAsync();
                     return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, sFTPConnection);
                 default:
+                    await _unitOfWork.RollbackAsync();
                     return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, null);
             }
 
