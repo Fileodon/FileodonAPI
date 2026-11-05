@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+using Infrastructure.Interceptors;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
@@ -67,8 +68,12 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(
-    options => options.UseNpgsql(connectionString)
+    (sp,options) => {
+        options.UseNpgsql(connectionString);
+        options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
+    }
 );
+builder.Services.AddScoped<AuditLogInterceptor>();
 builder.Services.AddScoped<RepositoryTransactionSettings>();
 builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
     services.GetRequiredService<RepositoryTransactionSettings>());
