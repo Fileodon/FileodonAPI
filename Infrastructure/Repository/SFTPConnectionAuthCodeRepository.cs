@@ -13,9 +13,10 @@ public class SFTPConnectionAuthCodeRepository(ApplicationDbContext context, IRep
     public async Task<SFTPConnectionAuthCode?> AddAuthCodeAsync(string authCode, int organizationId, string userId)
     {
         Organization? organization = await _context.Organizations
-            .Include(o => o.UserOrganizations)
-            .ThenInclude(uo => uo.User)
-            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOrganizations.Any(uo => uo.UserId == userId));
+            .Where(o =>
+                o.Id == organizationId &&
+                o.UserOrganizations.Any(uo => uo.UserId == userId))
+            .FirstOrDefaultAsync();
 
         if (organization == null)
         {
@@ -35,24 +36,17 @@ public class SFTPConnectionAuthCodeRepository(ApplicationDbContext context, IRep
     }
 
     /// <summary>
-    /// Retrieves an SFTPConnectionAuthCode by its verification code and user ID, including the associated organization and user details.
+    /// Retrieves an SFTPConnectionAuthCode entity based on the provided authCode and organizationId.
     /// </summary>
     /// <param name="authCode"></param>
-    /// <param name="userId"></param>
-    /// <returns>>An SFTPConnectionAuthCode if found; otherwise, null.</returns>
-    /// <remarks>
-    /// This method ensures that the retrieved SFTPConnectionAuthCode is associated with an organization that
-    /// has a UserOrganization entry for the specified user ID. It includes the related Organization and User details in the result.
-    /// </remarks>
-    public Task<SFTPConnectionAuthCode?> GetAuthCodeAsync(string authCode, string userId)
+    /// <param name="organizationId"></param>
+    /// <returns></returns>
+    public Task<SFTPConnectionAuthCode?> GetAuthCodeAsync(string authCode, int organizationId)
     {
         return _context.SFTPConnectionAuthCodes
-            .Include(ac => ac.Organization)
-            .ThenInclude(o => o!.UserOrganizations)
-            .ThenInclude(uo => uo.User)
-            .FirstOrDefaultAsync(ac =>
+            .Where(ac =>
                 ac.VerificationCode == authCode &&
-                ac.Organization != null &&
-                ac.Organization.UserOrganizations.Any(uo => uo.UserId == userId));
+                ac.Organization!.Id == organizationId)
+            .FirstOrDefaultAsync();
     }
 }

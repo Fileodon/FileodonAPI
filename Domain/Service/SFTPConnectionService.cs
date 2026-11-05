@@ -40,12 +40,12 @@ public class SFTPConnectionService(
         }
     }
 
-    public async Task<MutationResult<SFTPConnection>> AddSFTPConnectionAsync(string authCode, string userId, string displayName, string host, int port)
+    public async Task<MutationResult<SFTPConnection>> AddSFTPConnectionAsync(string authCode, int organizationId, string displayName, string host, int port)
     {
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            SFTPConnectionAuthCode? sFTPConnectionAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.GetAuthCodeAsync(authCode, userId);
+            SFTPConnectionAuthCode? sFTPConnectionAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.GetAuthCodeAsync(authCode, organizationId);
 
             if (sFTPConnectionAuthCode == null)
             {
@@ -82,9 +82,9 @@ public class SFTPConnectionService(
         }
     }
 
-    public async Task<MutationResult<SFTPConnection>> UpdateSFTPConnectionStatusAsync(int sFTPConnectionId, string userId, SFTPConnectionStatus newStatus)
+    public async Task<MutationResult<SFTPConnection>> UpdateSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId, string userId, SFTPConnectionStatus newStatus)
     {
-        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, userId);
+        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, organizationId, userId);
         if (sFTPConnection == null)
         {
             return new MutationResult<SFTPConnection>(MutationStatus.NotFound, null);
@@ -113,7 +113,7 @@ public class SFTPConnectionService(
                     sFTPConnection = _unitOfWork.SFTPConnectionRepository.RejectSFTPConnection(sFTPConnection);
                     break;
                 case SFTPConnectionStatus.Pending:
-                    return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, null);
+                    return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, sFTPConnection);
                 default:
                     return new MutationResult<SFTPConnection>(MutationStatus.Forbidden, null);
             }
@@ -130,21 +130,21 @@ public class SFTPConnectionService(
         }
     }
 
-    public async Task<MutationResult<SFTPConnectionStatus>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, string userId)
+    public async Task<MutationResult<SFTPConnection>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId, string userId)
     {
-        SFTPConnectionStatus? status = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionStatusByIdAsync(sFTPConnectionId, userId);
+        SFTPConnection? sftpConnectionStatus = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionStatusByIdAsync(sFTPConnectionId, organizationId, userId);
 
-        if (status == null)
+        if (sftpConnectionStatus == null)
         {
-            return new MutationResult<SFTPConnectionStatus>(MutationStatus.NotFound, default);
+            return new MutationResult<SFTPConnection>(MutationStatus.NotFound, default);
         }
 
-        return new MutationResult<SFTPConnectionStatus>(MutationStatus.Success, status.Value);
+        return new MutationResult<SFTPConnection>(MutationStatus.Success, sftpConnectionStatus);
     }
 
-    public async Task<MutationResult<SFTPConnection>> GetSFTPConnectionAsync(int sFTPConnectionId, string userId)
+    public async Task<MutationResult<SFTPConnection>> GetSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId)
     {
-        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, userId, noTracking: true);
+        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, organizationId, userId, noTracking: true);
 
         if (sFTPConnection == null)
         {
@@ -157,6 +157,38 @@ public class SFTPConnectionService(
     public async Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId)
     {
         return await _unitOfWork.SFTPConnectionRepository.GetOrganizationSFTPConnectionsAsync(organizationId, userId);
+    }
+
+    public async Task<MutationResult<SFTPConnection>> DeleteSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId)
+    {
+        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, organizationId, userId);
+
+        if (sFTPConnection == null)
+        {
+            return new MutationResult<SFTPConnection>(MutationStatus.NotFound, null);
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            SFTPConnection? deletedConnection = await _unitOfWork.SFTPConnectionRepository.DeleteAsync(sFTPConnectionId);
+
+            if (deletedConnection == null)
+            {
+                await _unitOfWork.RollbackAsync();
+                return new MutationResult<SFTPConnection>(MutationStatus.NotFound, null);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitAsync();
+
+            return new MutationResult<SFTPConnection>(MutationStatus.Success, deletedConnection);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
     }
 
     private static string GenerateVerificationCode(int length)

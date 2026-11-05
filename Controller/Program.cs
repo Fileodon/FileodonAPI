@@ -1,4 +1,5 @@
 using Controller.Controllers.Authorization;
+using Controller.Extensions;
 using Controller.Middleware;
 using Controller.Utility;
 using Domain.Interface;
@@ -173,6 +174,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         [new OpenApiSecuritySchemeReference("bearer", document)] = []
     });
+    options.OperationFilter<PollStatusExamplesOperationFilter>();
 });
 
 builder.Services.Configure<RouteOptions>(options =>

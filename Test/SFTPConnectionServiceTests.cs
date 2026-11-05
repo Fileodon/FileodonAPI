@@ -63,6 +63,7 @@ public sealed class SFTPConnectionServiceTests
     public async Task UpdateSFTPConnectionStatus_accepts_connection_and_generates_encrypted_keys()
     {
         const string userId = "037918b6-4687-4f33-8209-78cb27cba577";
+        const int organizationId = 42;
         SFTPConnection connection = new()
         {
             Id = 7,
@@ -73,7 +74,7 @@ public sealed class SFTPConnectionServiceTests
         };
         Mock<ISFTPConnectionRepository> repository = new();
         repository
-            .Setup(item => item.GetSFTPConnectionByIdAsync(connection.Id, userId, false))
+            .Setup(item => item.GetSFTPConnectionByIdAsync(connection.Id, organizationId, userId, false))
             .ReturnsAsync(connection);
         repository
             .Setup(item => item.AcceptSFTPConnection(connection))
@@ -90,7 +91,7 @@ public sealed class SFTPConnectionServiceTests
         SFTPConnectionService service = CreateService(unitOfWork, cryptoService.Object);
 
         MutationResult<SFTPConnection> result =
-            await service.UpdateSFTPConnectionStatusAsync(connection.Id, userId, SFTPConnectionStatus.Accepted);
+            await service.UpdateSFTPConnectionStatusAsync(connection.Id, organizationId, userId, SFTPConnectionStatus.Accepted);
 
         Assert.Equal(MutationStatus.Success, result.Status);
         Assert.Same(connection, result.Data);
@@ -106,6 +107,7 @@ public sealed class SFTPConnectionServiceTests
     public async Task UpdateSFTPConnectionStatus_rejects_connection_and_clears_existing_keys()
     {
         const string userId = "037918b6-4687-4f33-8209-78cb27cba577";
+        const int organizationId = 42;
         SFTPConnection connection = new()
         {
             Id = 8,
@@ -118,7 +120,7 @@ public sealed class SFTPConnectionServiceTests
         };
         Mock<ISFTPConnectionRepository> repository = new();
         repository
-            .Setup(item => item.GetSFTPConnectionByIdAsync(connection.Id, userId, false))
+            .Setup(item => item.GetSFTPConnectionByIdAsync(connection.Id, organizationId, userId, false))
             .ReturnsAsync(connection);
         repository
             .Setup(item => item.RejectSFTPConnection(connection))
@@ -128,7 +130,7 @@ public sealed class SFTPConnectionServiceTests
         SFTPConnectionService service = CreateService(unitOfWork, Mock.Of<ICryptoService>());
 
         MutationResult<SFTPConnection> result =
-            await service.UpdateSFTPConnectionStatusAsync(connection.Id, userId, SFTPConnectionStatus.Rejected);
+            await service.UpdateSFTPConnectionStatusAsync(connection.Id, organizationId, userId, SFTPConnectionStatus.Rejected);
 
         Assert.Equal(MutationStatus.Success, result.Status);
         Assert.Null(connection.PublicKey);
@@ -141,15 +143,17 @@ public sealed class SFTPConnectionServiceTests
     [Fact]
     public async Task UpdateSFTPConnectionStatus_returns_not_found_when_user_cannot_access_connection()
     {
+        const string userId = "037918b6-4687-4f33-8209-78cb27cba577";
+        const int organizationId = 42;
         Mock<ISFTPConnectionRepository> repository = new();
         repository
-            .Setup(item => item.GetSFTPConnectionByIdAsync(It.IsAny<int>(), It.IsAny<string>(), false))
+            .Setup(item => item.GetSFTPConnectionByIdAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), false))
             .ReturnsAsync((SFTPConnection?)null);
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork(repository);
         SFTPConnectionService service = CreateService(unitOfWork, Mock.Of<ICryptoService>());
 
         MutationResult<SFTPConnection> result =
-            await service.UpdateSFTPConnectionStatusAsync(7, "unknown-user", SFTPConnectionStatus.Accepted);
+            await service.UpdateSFTPConnectionStatusAsync(7, organizationId, userId, SFTPConnectionStatus.Accepted);
 
         Assert.Equal(MutationStatus.NotFound, result.Status);
         Assert.Null(result.Data);
