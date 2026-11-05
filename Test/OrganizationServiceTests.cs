@@ -246,7 +246,7 @@ public sealed class OrganizationServiceTests
 
     private static OrganizationService CreateOrganizationService(
         Mock<IUnitOfWork> unitOfWork) =>
-        new(unitOfWork.Object, new MutationAuthorizationService<Organization>());
+        new(unitOfWork.Object);
 
     private static Organization CreateOrganization(string ownerId) =>
         new()

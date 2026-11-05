@@ -44,7 +44,6 @@ public sealed class SFTPConnectionServiceTests
             .ReturnsAsync(1);
         SFTPConnectionService service = new(
             unitOfWork.Object,
-            new MutationAuthorizationService<SFTPConnectionAuthCode>(),
             Mock.Of<ICryptoService>());
 
         MutationResult<SFTPConnectionAuthCode> result =
@@ -163,7 +162,6 @@ public sealed class SFTPConnectionServiceTests
         ICryptoService cryptoService) =>
         new(
             unitOfWork.Object,
-            Mock.Of<IMutationAuthorizationService<SFTPConnectionAuthCode>>(),
             cryptoService);
 
     private static Mock<IUnitOfWork> CreateUnitOfWork(Mock<ISFTPConnectionRepository> repository)

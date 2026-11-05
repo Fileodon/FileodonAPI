@@ -110,8 +110,6 @@ builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler
 builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IMutationAuthorizationService<Organization>, MutationAuthorizationService<Organization>>();
-builder.Services.AddScoped<IMutationAuthorizationService<SFTPConnectionAuthCode>, MutationAuthorizationService<SFTPConnectionAuthCode>>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path

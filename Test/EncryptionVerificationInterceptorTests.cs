@@ -167,7 +167,7 @@ public sealed class EncryptionVerificationInterceptorTests
         {
             Context.Dispose();
             connection.Dispose();
-            cryptoService.Dispose();
+            CryptoService.Dispose();
             File.Delete(keyPath);
         }
     }

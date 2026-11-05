@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using Infrastructure.Interface;
 
 namespace Infrastructure.Models;
 
-public partial class Organization : IMutationAuthorizable
+public partial class Organization
 {
     public int Id { get; set; }
 

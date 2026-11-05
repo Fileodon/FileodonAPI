@@ -10,11 +10,9 @@ namespace Domain.Service;
 
 public class SFTPConnectionService(
     IUnitOfWork unitOfWork,
-    IMutationAuthorizationService<SFTPConnectionAuthCode> mutationAuthorizationService,
     ICryptoService cryptoService) : ISFTPConnectionService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IMutationAuthorizationService<SFTPConnectionAuthCode> _mutationAuthorizationService = mutationAuthorizationService;
     private readonly ICryptoService _cryptoService = cryptoService;
 
     public async Task<MutationResult<SFTPConnectionAuthCode>> GenerateVerificationCodeAsync(int organizationId, string userId)
@@ -23,14 +21,17 @@ public class SFTPConnectionService(
         try
         {
             string verificationCode = GenerateVerificationCode(8);
-            MutationResult<SFTPConnectionAuthCode> result = await _mutationAuthorizationService.AuthorizeMutationAsync(
-                () => _unitOfWork.SFTPConnectionAuthCodeRepository.AddAuthCodeAsync(verificationCode, organizationId, userId),
-                userId
-            );
+            SFTPConnectionAuthCode? sftpAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.AddAuthCodeAsync(verificationCode, organizationId, userId);
+
+            if (sftpAuthCode == null)
+            {
+                await _unitOfWork.RollbackAsync();
+                return new MutationResult<SFTPConnectionAuthCode>(MutationStatus.NotFound, null);
+            }
 
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitAsync();
-            return result;
+            return new MutationResult<SFTPConnectionAuthCode>(MutationStatus.Success, sftpAuthCode);
         }
         catch
         {
