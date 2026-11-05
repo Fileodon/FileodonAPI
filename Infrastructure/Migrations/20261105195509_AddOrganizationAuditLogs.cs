@@ -15,7 +15,7 @@ namespace Infrastructure.Migrations
                 name: "organization_audit_logs",
                 columns: table => new
                 {
-                    id = table.Column<string>(type: "text", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     organization_id = table.Column<int>(type: "integer", nullable: false),
                     actor_id = table.Column<string>(type: "text", nullable: false),
                     action = table.Column<string>(type: "text", nullable: true),

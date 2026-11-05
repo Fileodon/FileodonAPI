@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
 using Infrastructure.Interceptors;
+using Infrastructure.Services;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
@@ -67,13 +68,8 @@ builder.Services.AddCors(options =>
     );
 });
 
-builder.Services.AddDbContext<ApplicationDbContext>(
-    (sp,options) => {
-        options.UseNpgsql(connectionString);
-        options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
-    }
-);
-builder.Services.AddScoped<AuditLogInterceptor>();
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<RepositoryTransactionSettings>();
 builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
     services.GetRequiredService<RepositoryTransactionSettings>());
@@ -95,6 +91,7 @@ builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<UserContextService>();
 
 builder.Services.AddIdentityCore<User>(options =>
 {
@@ -157,6 +154,15 @@ builder.Services.Configure<RouteOptions>(options =>
 {
     options.LowercaseUrls = true;
 });
+
+builder.Services.AddScoped<AuditLogInterceptor>();
+
+builder.Services.AddDbContext<ApplicationDbContext>(
+    (sp,options) => {
+        options.UseNpgsql(connectionString);
+        options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
+    }
+);
 
 var app = builder.Build();
 
