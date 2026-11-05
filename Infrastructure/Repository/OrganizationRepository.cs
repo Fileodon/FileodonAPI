@@ -21,7 +21,7 @@ public class OrganizationRepository(ApplicationDbContext context, IRepositoryTra
 
         var organization = await _context.Organizations
             .Include(o => o.UserOrganizations)
-            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOrganizations.Any(uo => uo.UserId == userId));
+            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOwnerId == userId || o.UserOrganizations.Any(uo => uo.UserId == userId));
 
         if (organization == null)
         {
@@ -45,14 +45,14 @@ public class OrganizationRepository(ApplicationDbContext context, IRepositoryTra
         return await _context.Organizations
             .Include(o => o.UserOrganizations)
             .ThenInclude(uo => uo.User)
-            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOrganizations.Any(uo => uo.UserId == userId));
+            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOwnerId == userId || o.UserOrganizations.Any(uo => uo.UserId == userId));
     }
 
     public async Task<Organization?> UpdateOrganizationAsync(int organizationId, string newOrganizationName, string userId)
     {
         var organization = await _context.Organizations
             .Include(o => o.UserOrganizations)
-            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOrganizations.Any(uo => uo.UserId == userId));
+            .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOwnerId == userId || o.UserOrganizations.Any(uo => uo.UserId == userId));
 
         if (organization == null)
         {
