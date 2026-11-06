@@ -89,7 +89,7 @@ namespace Controller.Controllers
             {
                 return Forbid();
             }
-            return Ok(new SFTPConnectionUpdateResponse(result.Data.DisplayName));
+            return Ok(result.Data.ToSFTPConnectionUpdateResponse());
         }
 
         [HttpGet("{sFTPConnectionId}/detailed")]
