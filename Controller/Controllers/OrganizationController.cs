@@ -1,6 +1,4 @@
 using Controller.DTO.Organization;
-using Controller.DTO.SFTPConnection;
-using Controller.Extensions;
 using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
@@ -13,10 +11,9 @@ namespace Controller.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class OrganizationController(IOrganizationService organizationService, ISFTPConnectionService sFTPConnectionService) : ControllerBase
+public class OrganizationController(IOrganizationService organizationService) : ControllerBase
 {
     private readonly IOrganizationService _organizationService = organizationService;
-    private readonly ISFTPConnectionService _sFTPConnectionService = sFTPConnectionService;
 
     [HttpGet("{organizationId}")]
     [ProducesResponseType(typeof(GetOrganizationRequest), 200)]
