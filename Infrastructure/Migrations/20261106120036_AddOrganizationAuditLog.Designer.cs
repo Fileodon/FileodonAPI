@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261105195509_AddOrganizationAuditLogs")]
-    partial class AddOrganizationAuditLogs
+    [Migration("20261106120036_AddOrganizationAuditLog")]
+    partial class AddOrganizationAuditLog
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -551,7 +551,7 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Infrastructure.Models.OrganizationAuditLog", b =>
                 {
-                    b.HasOne("Infrastructure.Models.User", "actor")
+                    b.HasOne("Infrastructure.Models.User", "Actor")
                         .WithMany()
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -560,12 +560,12 @@ namespace Infrastructure.Migrations
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany("AuditLogs")
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Organization");
+                    b.Navigation("Actor");
 
-                    b.Navigation("actor");
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.RefreshToken", b =>

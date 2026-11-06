@@ -92,7 +92,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             }
             else if(entry.Entity is SFTPConnection sftpConnection)
             {
-
+                
             }
             else if (entry.Entity is AspNetRole role)
             {

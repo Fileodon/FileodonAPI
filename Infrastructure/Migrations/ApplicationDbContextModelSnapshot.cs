@@ -548,7 +548,7 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Infrastructure.Models.OrganizationAuditLog", b =>
                 {
-                    b.HasOne("Infrastructure.Models.User", "actor")
+                    b.HasOne("Infrastructure.Models.User", "Actor")
                         .WithMany()
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -557,12 +557,12 @@ namespace Infrastructure.Migrations
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany("AuditLogs")
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Organization");
+                    b.Navigation("Actor");
 
-                    b.Navigation("actor");
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.RefreshToken", b =>

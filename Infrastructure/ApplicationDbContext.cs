@@ -215,7 +215,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.HasOne(e => e.Organization)
                 .WithMany(organization => organization.AuditLogs)
                 .HasForeignKey(e => e.OrganizationId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
