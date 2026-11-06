@@ -15,6 +15,7 @@ public sealed class UnitOfWork(
     IRoleRepository roleRepository,
     ISFTPConnectionRepository sftpConnectionRepository,
     IUserOrganizationRepository userOrganizationRepository,
+    IAuditLogRepository auditLogRepository,
     IUserRepository userRepository) : IUnitOfWork
 {
     private IDbContextTransaction? _transaction;
@@ -26,6 +27,7 @@ public sealed class UnitOfWork(
     public ISFTPConnectionRepository SFTPConnectionRepository => sftpConnectionRepository;
     public IUserOrganizationRepository UserOrganizationRepository => userOrganizationRepository;
     public IUserRepository UserRepository => userRepository;
+    public IAuditLogRepository AuditLogRepository => auditLogRepository;
     public bool AutomaticTransactionsEnabled => transactionSettings.AutomaticTransactionsEnabled;
 
     public async Task BeginTransactionAsync()

@@ -81,6 +81,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthorizationPermissionService, AuthorizationPermissionService>();
@@ -92,6 +93,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
 
 builder.Services.AddIdentityCore<User>(options =>
 {

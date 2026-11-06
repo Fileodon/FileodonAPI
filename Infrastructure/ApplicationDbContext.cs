@@ -23,6 +23,10 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<OrganizationAuditLog> OrganizationAuditLogs => Set<OrganizationAuditLog>();
+    public DbSet<SFTPConnectionAuditLog> SFTPConnectionAuditLogs => Set<SFTPConnectionAuditLog>();
+    public DbSet<UserOrganizationAuditLog> UserOrganizationAuditLogs => Set<UserOrganizationAuditLog>();
+    public DbSet<RoleAuditLog> RoleAuditLogs => Set<RoleAuditLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

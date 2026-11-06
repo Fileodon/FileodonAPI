@@ -1,3 +1,4 @@
+using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 
 namespace Domain.Interface;
@@ -18,6 +19,7 @@ public interface IUnitOfWork : IDisposable
     IRoleRepository RoleRepository { get; }
     ISFTPConnectionRepository SFTPConnectionRepository { get; }
     IUserOrganizationRepository UserOrganizationRepository { get; }
+    IAuditLogRepository AuditLogRepository { get; }
     IUserRepository UserRepository { get; }
     Task BeginTransactionAsync();
     Task CommitAsync();
