@@ -14,7 +14,6 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     }
 
     // Users og Roles arves fra IdentityDbContext.
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<UserOrganization> UserOrganizations => Set<UserOrganization>();
@@ -58,37 +57,6 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
                 .WithMany()
                 .HasForeignKey(token => token.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AuditLog>(entity =>
-        {
-            entity.ToTable("audit_logs");
-
-            entity.HasKey(log => log.Id);
-
-            entity.Property(log => log.Id).HasColumnName("id");
-            entity.Property(log => log.Action).HasColumnName("action");
-            entity.Property(log => log.RecordId).HasColumnName("record_id");
-            entity.Property(log => log.TableName).HasColumnName("table_name");
-            entity.Property(log => log.ChangedBy).HasColumnName("changed_by");
-
-            entity.Property(log => log.ChangedAt)
-                .HasColumnName("changed_at")
-                .HasColumnType("timestamp with time zone")
-                .HasDefaultValueSql("now()");
-
-            entity.Property(log => log.NewData)
-                .HasColumnName("new_data")
-                .HasColumnType("jsonb");
-
-            entity.Property(log => log.OldData)
-                .HasColumnName("old_data")
-                .HasColumnType("jsonb");
-
-            entity.HasOne(log => log.ChangedByNavigation)
-                .WithMany(user => user.AuditLogs)
-                .HasForeignKey(log => log.ChangedBy)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Organization>(entity =>

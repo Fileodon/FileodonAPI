@@ -65,7 +65,6 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<RepositoryTransactionSettings>();
         services.AddScoped<IRepositoryTransactionSettings>(services =>
             services.GetRequiredService<RepositoryTransactionSettings>());
-        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

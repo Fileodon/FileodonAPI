@@ -159,7 +159,6 @@ public sealed class UnitOfWorkTests
         return new UnitOfWork(
             context,
             transactionSettings,
-            new AuditLogRepository(context, transactionSettings),
             new OrganizationRepository(context, transactionSettings),
             new ProfileRepository(context, transactionSettings),
             new RefreshTokenRepository(context, transactionSettings),

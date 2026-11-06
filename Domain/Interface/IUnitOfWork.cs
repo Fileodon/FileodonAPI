@@ -12,7 +12,6 @@ namespace Domain.Interface;
 /// </remarks>
 public interface IUnitOfWork : IDisposable
 {
-    IAuditLogRepository AuditLogRepository { get; }
     IOrganizationRepository OrganizationRepository { get; }
     IProfileRepository ProfileRepository { get; }
     IRefreshTokenRepository RefreshTokenRepository { get; }

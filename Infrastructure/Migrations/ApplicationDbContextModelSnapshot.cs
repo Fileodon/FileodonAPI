@@ -56,54 +56,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
-            modelBuilder.Entity("Infrastructure.Models.AuditLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("action");
-
-                    b.Property<DateTime?>("ChangedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("changed_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("ChangedBy")
-                        .HasColumnType("text")
-                        .HasColumnName("changed_by");
-
-                    b.Property<string>("NewData")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("new_data");
-
-                    b.Property<string>("OldData")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("old_data");
-
-                    b.Property<int>("RecordId")
-                        .HasColumnType("integer")
-                        .HasColumnName("record_id");
-
-                    b.Property<string>("TableName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("table_name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChangedBy");
-
-                    b.ToTable("audit_logs", (string)null);
-                });
-
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
                     b.Property<int>("Id")
@@ -525,16 +477,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("Organization");
                 });
 
-            modelBuilder.Entity("Infrastructure.Models.AuditLog", b =>
-                {
-                    b.HasOne("Infrastructure.Models.User", "ChangedByNavigation")
-                        .WithMany("AuditLogs")
-                        .HasForeignKey("ChangedBy")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ChangedByNavigation");
-                });
-
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
                     b.HasOne("Infrastructure.Models.User", "UserOwner")
@@ -672,8 +614,6 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Infrastructure.Models.User", b =>
                 {
-                    b.Navigation("AuditLogs");
-
                     b.Navigation("UserOrganizations");
                 });
 #pragma warning restore 612, 618

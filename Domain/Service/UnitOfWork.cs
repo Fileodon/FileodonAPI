@@ -9,7 +9,6 @@ namespace Domain.Service;
 public sealed class UnitOfWork(
     ApplicationDbContext context,
     IRepositoryTransactionSettings transactionSettings,
-    IAuditLogRepository auditLogRepository,
     IOrganizationRepository organizationRepository,
     IProfileRepository profileRepository,
     IRefreshTokenRepository refreshTokenRepository,
@@ -20,7 +19,6 @@ public sealed class UnitOfWork(
 {
     private IDbContextTransaction? _transaction;
 
-    public IAuditLogRepository AuditLogRepository => auditLogRepository;
     public IOrganizationRepository OrganizationRepository => organizationRepository;
     public IProfileRepository ProfileRepository => profileRepository;
     public IRefreshTokenRepository RefreshTokenRepository => refreshTokenRepository;
