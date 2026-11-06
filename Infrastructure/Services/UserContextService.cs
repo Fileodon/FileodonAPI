@@ -17,4 +17,9 @@ public class UserContextService
         var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("id"); // Får id claim fra JWT
         return userIdClaim?.Value;
     }
+
+    public string? getUserAgent()
+    {
+        return _httpContextAccessor.HttpContext?.Request?.Headers["User-Agent"].ToString();
+    }
 }

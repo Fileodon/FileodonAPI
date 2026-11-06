@@ -1,6 +1,8 @@
-﻿namespace Infrastructure.Models;
+﻿using Infrastructure.Interface;
 
-public partial class UserOrganization
+namespace Infrastructure.Models;
+
+public partial class UserOrganization: IAuditAble
 {
     public int Id { get; set; }
 

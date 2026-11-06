@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Infrastructure.Services;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Infrastructure.Interceptors;
 
@@ -20,70 +21,103 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         Console.WriteLine("Intercepter called saving changes");
-        return base.SavingChanges(eventData, result);
-    }
-
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
-    {
-        Console.WriteLine("Intercepter called saving changes async");
         var context = eventData.Context;
         if(context is null)
         {
-            return base.SavingChangesAsync(eventData, result, cancellationToken);
+            return base.SavingChanges(eventData, result);
         }
-
-        CreateAuditEntries(context);
+        try
+        {
+            CreateAuditEntries(context);
+        }catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating audit entries: {ex.Message}");
+        }
         
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
+        return base.SavingChanges(eventData, result);
     }
 
-    private List<IAuditLog> CreateAuditEntries(DbContext context)
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        var entries = new List<IAuditLog>();
+        Console.WriteLine("Intercepter called saving changes async");
+        var context = eventData.Context;
+
+        if(context is null)
+        {
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+        
+        try
+        {
+            CreateAuditEntries(context);
+        }catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating audit entries: {ex.Message}");
+        }
+        
+        return await base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private void CreateAuditEntries(DbContext context)
+    {
         string userid = _userContextService.GetCurrentUserId() ?? "Unknown";
+        string userAgent = _userContextService.getUserAgent() ?? "Unknown";
         context.ChangeTracker.DetectChanges();
 
         foreach (var entry in context.ChangeTracker.Entries<IAuditAble>())
         {
+            if(entry.Entity is OrganizationAuditLog)
+            {
+                continue;
+            }
+
             if (entry.State is EntityState.Detached or EntityState.Unchanged)
             {
+                Console.WriteLine($"Continuing, entry.State: {entry.State}");
                 continue;
             }
 
             if (entry.Entity is Organization organization)
             {             
-                var oldVals = entry.Properties.Where(p => p.IsModified && p.OriginalValue != p.CurrentValue).ToDictionary(p => p.Metadata.Name, p => p.OriginalValue);
-                var newVals = entry.Properties.Where(p => p.IsModified && p.OriginalValue != p.CurrentValue).ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
-                Console.WriteLine($"Modified properties: {string.Join(", ", oldVals.Select(kv => $"{kv.Key}: {kv.Value}"))}");
-                Console.WriteLine($"Modified properties: {string.Join(", ", newVals.Select(kv => $"{kv.Key}: {kv.Value}"))}");
                 OrganizationAuditLog auditLog = new OrganizationAuditLog
                 {
                     ActorId = userid,
-                    NewData = JsonSerializer.Serialize(newVals),
-                    OldData = JsonSerializer.Serialize(oldVals),
-                    OrganizationId = organization.Id,   
-                    Source = "API",
+                    NewData = SerializeNewValues(entry),
+                    OldData = SerializeOldValues(entry),
+                    Organization = organization,
+                    Source = userAgent,
+                    Action = entry.State.ToString(),
                 };
+                context.Set<OrganizationAuditLog>().Add(auditLog);
+            }
+            else if(entry.Entity is SFTPConnection sftpConnection)
+            {
 
-                context.Add(auditLog);
+            }
+            else if (entry.Entity is AspNetRole role)
+            {
+                
+            }
+            else if(entry.Entity is UserOrganization userOrgannization)
+            {
+                
             }
 
-            // switch (entry.Entity)
-            // {
-            //     case entry.Entity is Organization:
-
-            //         Organization organization = (Organization)entry.Entity;
-
-                    
-            //         break;
-            //     default:
-            //         Console.WriteLine($"Creating audit log for entity type: {entry.Entity.GetType().Name}");
-            //         break;
-            // }
-
         }
-
-        return entries;
     }
 
+    private string SerializeOldValues(EntityEntry<IAuditAble> entry)
+    {
+        var vals = entry.Properties
+            .Where(p => p.IsModified && p.OriginalValue != p.CurrentValue)
+            .ToDictionary(p => p.Metadata.Name, p => p.OriginalValue);
+        return JsonSerializer.Serialize(vals);
+    }
+    private string SerializeNewValues(EntityEntry<IAuditAble> entry)
+    {
+        var vals = entry.Properties
+            .Where(p => p.IsModified && p.OriginalValue != p.CurrentValue)
+            .ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
+        return JsonSerializer.Serialize(vals);
+    }
 } 
