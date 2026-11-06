@@ -10,26 +10,26 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers
 {
-    [Route("api/organization/{organizationId}/[controller]")]
+    [Route("api/organization/{organizationid}/[controller]")]
     [Authorize]
     [ApiController]
     public class SFTPConnectionController(ISFTPConnectionService sFTPConnectionService) : ControllerBase
     {
         private readonly ISFTPConnectionService _sFTPConnectionService = sFTPConnectionService;
 
-        [HttpGet("{sFTPConnectionId}")]
+        [HttpGet("{sftpconnectionid}")]
         [ProducesResponseType(typeof(BaseSFTPConnectionGetResponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetSFTPConnection(int organizationId, int sFTPConnectionId)
+        public async Task<IActionResult> GetSFTPConnection(int organizationid, int sftpconnectionid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sFTPConnectionId, organizationId, userId);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -42,19 +42,19 @@ namespace Controller.Controllers
             return Ok(result.Data.ToBaseGetResponseDTO());
         }
 
-        [HttpDelete("{sFTPConnectionId}")]
+        [HttpDelete("{sftpconnectionid}")]
         [ProducesResponseType(typeof(SFTPConnectionDeleteResponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> DeleteSFTPConnection(int organizationId, int sFTPConnectionId)
+        public async Task<IActionResult> DeleteSFTPConnection(int organizationid, int sftpconnectionid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.DeleteSFTPConnectionAsync(sFTPConnectionId, organizationId, userId);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.DeleteSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -67,19 +67,19 @@ namespace Controller.Controllers
             return Ok(result.Data.ToSFTPConnectionDeleteResponse());
         }
 
-        [HttpPatch("{sFTPConnectionId}")]
+        [HttpPatch("{sftpconnectionid}")]
         [ProducesResponseType(typeof(SFTPConnectionUpdateResponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> UpdateSFTPConnection(int organizationId, int sFTPConnectionId, [FromBody] SFTPConnectionUpdateRequest request)
+        public async Task<IActionResult> UpdateSFTPConnection(int organizationid, int sftpconnectionid, [FromBody] SFTPConnectionUpdateRequest request)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sFTPConnectionId, organizationId, userId, request.DisplayName);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -92,19 +92,19 @@ namespace Controller.Controllers
             return Ok(result.Data.ToSFTPConnectionUpdateResponse());
         }
 
-        [HttpGet("{sFTPConnectionId}/detailed")]
+        [HttpGet("{sftpconnectionid}/detailed")]
         [ProducesResponseType(typeof(DetailedSFTPConnectionGetResponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetDetailedSFTPConnection(int organizationId, int sFTPConnectionId)
+        public async Task<IActionResult> GetDetailedSFTPConnection(int organizationid, int sftpconnectionid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sFTPConnectionId, organizationId, userId);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -117,7 +117,7 @@ namespace Controller.Controllers
             return Ok(result.Data.ToDetailedGetResponseDTO());
         }
 
-        [HttpGet("{sFTPConnectionId}/poll")]
+        [HttpGet("{sftpconnectionid}/poll")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 200, Description = "Rejected")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 202, Description = "Pending")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 303, Description = "Accepted")]
@@ -125,14 +125,14 @@ namespace Controller.Controllers
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> PollStatus(int organizationId, int sFTPConnectionId)
+        public async Task<IActionResult> PollStatus(int organizationid, int sftpconnectionid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sFTPConnectionId, organizationId, userId);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -165,14 +165,14 @@ namespace Controller.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> RequestCode(int organizationId)
+        public async Task<IActionResult> RequestCode(int organizationid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnectionAuthCode> result = await _sFTPConnectionService.GenerateVerificationCodeAsync(organizationId, userId);
+            MutationResult<SFTPConnectionAuthCode> result = await _sFTPConnectionService.GenerateVerificationCodeAsync(organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -191,9 +191,9 @@ namespace Controller.Controllers
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         [AllowAnonymous]
-        public async Task<IActionResult> AddServer(int organizationId, [FromBody] SFTPConnectionCreateRequest request)
+        public async Task<IActionResult> AddServer(int organizationid, [FromBody] SFTPConnectionCreateRequest request)
         {
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(request.AuthCode, organizationId, request.DisplayName, request.Host, request.Port);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(request.AuthCode, organizationid, request.DisplayName, request.Host, request.Port);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -211,14 +211,14 @@ namespace Controller.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> UpdateStatus(int organizationId, [FromBody] SFTPConnectionStatusUpdateRequest request)
+        public async Task<IActionResult> UpdateStatus(int organizationid, [FromBody] SFTPConnectionStatusUpdateRequest request)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionStatusAsync(request.SFTPConnectionId, organizationId, userId, request.NewStatus);
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionStatusAsync(request.SFTPConnectionId, organizationid, userId, request.NewStatus);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -235,14 +235,14 @@ namespace Controller.Controllers
         [ProducesResponseType(typeof(IEnumerable<BaseSFTPConnectionGetResponse>), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
-        public async Task<IActionResult> GetOrganizationSFTPConnections(int organizationId)
+        public async Task<IActionResult> GetOrganizationSFTPConnections(int organizationid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            IEnumerable<SFTPConnection> result = await _sFTPConnectionService.GetOrganizationSFTPConnectionsAsync(organizationId, userId);
+            IEnumerable<SFTPConnection> result = await _sFTPConnectionService.GetOrganizationSFTPConnectionsAsync(organizationid, userId);
 
             return Ok(result.Select(conn => conn.ToBaseGetResponseDTO()));
         }
@@ -251,14 +251,14 @@ namespace Controller.Controllers
         [ProducesResponseType(typeof(IEnumerable<DetailedSFTPConnectionGetResponse>), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
-        public async Task<IActionResult> GetDetailedOrganizationSFTPConnections(int organizationId)
+        public async Task<IActionResult> GetDetailedOrganizationSFTPConnections(int organizationid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
                 return Unauthorized("User ID claim is missing.");
             }
 
-            IEnumerable<SFTPConnection> result = await _sFTPConnectionService.GetOrganizationSFTPConnectionsAsync(organizationId, userId);
+            IEnumerable<SFTPConnection> result = await _sFTPConnectionService.GetOrganizationSFTPConnectionsAsync(organizationid, userId);
 
             return Ok(result.Select(conn => conn.ToDetailedGetResponseDTO()));
         }
