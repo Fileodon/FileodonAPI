@@ -67,6 +67,31 @@ namespace Controller.Controllers
             return Ok(result.Data.ToSFTPConnectionDeleteResponse());
         }
 
+        [HttpPatch("{sFTPConnectionId}")]
+        [ProducesResponseType(typeof(SFTPConnectionUpdateResponse), 200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> UpdateSFTPConnection(int organizationId, int sFTPConnectionId, [FromBody] SFTPConnectionUpdateRequest request)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sFTPConnectionId, organizationId, userId, request.DisplayName);
+
+            if (result.Status == MutationStatus.NotFound || result.Data is null)
+            {
+                return NotFound();
+            }
+            if (result.Status == MutationStatus.Forbidden)
+            {
+                return Forbid();
+            }
+            return Ok(new SFTPConnectionUpdateResponse(result.Data.DisplayName));
+        }
+
         [HttpGet("{sFTPConnectionId}/detailed")]
         [ProducesResponseType(typeof(DetailedSFTPConnectionGetResponse), 200)]
         [ProducesResponseType(401)]

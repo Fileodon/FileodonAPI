@@ -13,4 +13,5 @@ public interface ISFTPConnectionService
     public Task<MutationResult<SFTPConnection>> GetSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId);
     public Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId);
     public Task<MutationResult<SFTPConnection>> DeleteSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId);
+    public Task<MutationResult<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName);
 }

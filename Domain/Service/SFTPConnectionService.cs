@@ -193,6 +193,33 @@ public class SFTPConnectionService(
         }
     }
 
+    public async Task<MutationResult<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName)
+    {
+        SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, organizationId, userId);
+
+        if (sFTPConnection == null)
+        {
+            return new MutationResult<SFTPConnection>(MutationStatus.NotFound, null);
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            sFTPConnection.DisplayName = displayName;
+            SFTPConnection updatedConnection = await _unitOfWork.SFTPConnectionRepository.UpdateAsync(sFTPConnection);
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitAsync();
+
+            return new MutationResult<SFTPConnection>(MutationStatus.Success, updatedConnection);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+
     private static string GenerateVerificationCode(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
