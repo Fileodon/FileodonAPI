@@ -18,6 +18,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using Infrastructure.Interceptors;
 using Infrastructure.Services;
+using Infrastructure.Interface.Service;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
@@ -90,7 +91,7 @@ builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
-builder.Services.AddScoped<UserContextService>();
+builder.Services.AddScoped<IUserContextService, UserContextService>();
 
 builder.Services.AddIdentityCore<User>(options =>
 {

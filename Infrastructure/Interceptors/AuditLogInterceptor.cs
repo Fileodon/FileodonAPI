@@ -7,13 +7,14 @@ using Microsoft.AspNetCore.Http;
 using Infrastructure.Services;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Infrastructure.Interface.Service;
 
 namespace Infrastructure.Interceptors;
 
 public sealed class AuditLogInterceptor: SaveChangesInterceptor
 {
-    private readonly UserContextService _userContextService;
-    public AuditLogInterceptor(UserContextService userContextService)
+    private readonly IUserContextService _userContextService;
+    public AuditLogInterceptor(IUserContextService userContextService)
     {
         _userContextService = userContextService;
     }
