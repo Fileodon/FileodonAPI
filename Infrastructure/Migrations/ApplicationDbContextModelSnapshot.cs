@@ -215,6 +215,53 @@ namespace Infrastructure.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.RoleAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("role_audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
                 {
                     b.Property<int>("Id")
@@ -259,6 +306,52 @@ namespace Infrastructure.Migrations
                     b.HasIndex("OrganizationId");
 
                     b.ToTable("sftp_connections", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<int>("SFTPConnectionID")
+                        .HasColumnType("integer")
+                        .HasColumnName("sftp_connection_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("SFTPConnectionID");
+
+                    b.ToTable("sftp_connection_audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("Infrastructure.Models.User", b =>
@@ -358,6 +451,52 @@ namespace Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("users_organizations", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.UserOrganizationAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<int>("UserOrganizationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_organization_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("UserOrganizationId");
+
+                    b.ToTable("user_organization_audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -518,6 +657,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.RoleAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.AspNetRole", "Role")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
                 {
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
@@ -527,6 +685,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.SFTPConnection", "SFTPConnnection")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("SFTPConnectionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("SFTPConnnection");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.UserOrganization", b =>
@@ -550,6 +727,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.UserOrganizationAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.UserOrganization", "UserOrganization")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("UserOrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("UserOrganization");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -603,6 +799,11 @@ namespace Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.AspNetRole", b =>
+                {
+                    b.Navigation("AuditLogs");
+                });
+
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
                     b.Navigation("AuditLogs");
@@ -612,9 +813,19 @@ namespace Infrastructure.Migrations
                     b.Navigation("UserOrganizations");
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
+                {
+                    b.Navigation("AuditLogs");
+                });
+
             modelBuilder.Entity("Infrastructure.Models.User", b =>
                 {
                     b.Navigation("UserOrganizations");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.UserOrganization", b =>
+                {
+                    b.Navigation("AuditLogs");
                 });
 #pragma warning restore 612, 618
         }

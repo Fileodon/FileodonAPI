@@ -8,4 +8,6 @@ public class AspNetRole : IdentityRole, IAuditAble
     public long PermissionMask { get; set; }
 
     public virtual Organization Organization { get; set; } = null!;
+    public virtual ICollection<RoleAuditLog> AuditLogs { get; set; } = [];
+
 }

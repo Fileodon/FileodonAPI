@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure;
 
@@ -160,22 +161,8 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
         modelBuilder.Entity<OrganizationAuditLog>(entity =>
         {
             entity.ToTable("organization_audit_logs");
-            entity.Property(e => e.Id)
-                .HasColumnName("id");
-            entity.Property(e => e.ActorId)
-                .HasColumnName("actor_id");
-            entity.Property(e => e.Action)
-                .HasColumnName("action");
-            entity.Property(e => e.Source)
-                .HasColumnName("source");
-            entity.Property(e => e.OldData)
-                .HasColumnName("old_data")
-                .HasColumnType("jsonb");
-            entity.Property(e => e.NewData)
-                .HasColumnName("new_data")
-                .HasColumnType("jsonb");
-            entity.Property(e => e.Timestamp)
-                .HasColumnName("timestamp");
+
+            ModifyBaseAuditLogColumns(entity);
 
             entity.Property(e => e.OrganizationId)
                 .HasColumnName("organization_id");
@@ -185,5 +172,73 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
                 .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<RoleAuditLog>(entity =>
+        {
+            entity.ToTable("role_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.RoleId)
+                .HasColumnName("role_id");
+
+            entity.HasOne(e => e.Role)
+                .WithMany(role => role.AuditLogs)
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SFTPConnectionAuditLog>(entity =>
+        {
+            entity.ToTable("sftp_connection_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.SFTPConnectionID)
+                .HasColumnName("sftp_connection_id");
+
+            entity.HasOne(e => e.SFTPConnnection)
+                .WithMany(sftpConnection => sftpConnection.AuditLogs)
+                .HasForeignKey(e => e.SFTPConnectionID)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserOrganizationAuditLog>(entity =>
+        {
+            entity.ToTable("user_organization_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.UserOrganizationId)
+                .HasColumnName("user_organization_id");
+
+            entity.HasOne(e => e.UserOrganization)
+                .WithMany(userOrganization => userOrganization.AuditLogs)
+                .HasForeignKey(e => e.UserOrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+    }
+
+    private void ModifyBaseAuditLogColumns<TEntity>(EntityTypeBuilder<TEntity> entity)
+        where TEntity : BaseAuditLog
+    {
+        entity.Property(e => e.Id)
+            .HasColumnName("id");
+        entity.Property(e => e.ActorId)
+            .HasColumnName("actor_id");
+        entity.Property(e => e.Action)
+            .HasColumnName("action");
+        entity.Property(e => e.Source)
+            .HasColumnName("source");
+        entity.Property(e => e.OldData)
+            .HasColumnName("old_data")
+            .HasColumnType("jsonb");
+        entity.Property(e => e.NewData)
+            .HasColumnName("new_data")
+            .HasColumnType("jsonb");
+        entity.Property(e => e.Timestamp)
+            .HasColumnName("timestamp");
     }
 }

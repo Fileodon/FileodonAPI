@@ -14,4 +14,5 @@ public partial class UserOrganization: IAuditAble
     public virtual Organization? Organization { get; set; }
     public virtual User? User { get; set; }
     public virtual AspNetRole Role { get; set; } = null!;
+    public virtual ICollection<UserOrganizationAuditLog> AuditLogs { get; set; } = [];
 }

@@ -92,15 +92,42 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             }
             else if(entry.Entity is SFTPConnection sftpConnection)
             {
-                
+                SFTPConnectionAuditLog auditLog = new SFTPConnectionAuditLog
+                {
+                    ActorId = userid,
+                    NewData = SerializeNewValues(entry),
+                    OldData = SerializeOldValues(entry),
+                    SFTPConnnection = sftpConnection,
+                    Source = userAgent,
+                    Action = entry.State.ToString(),
+                };
+                context.Set<SFTPConnectionAuditLog>().Add(auditLog);
             }
             else if (entry.Entity is AspNetRole role)
             {
-                
+                RoleAuditLog auditLog = new RoleAuditLog
+                {
+                    ActorId = userid,
+                    NewData = SerializeNewValues(entry),
+                    OldData = SerializeOldValues(entry),
+                    Role = role,
+                    Source = userAgent,
+                    Action = entry.State.ToString(),
+                };
+                context.Set<RoleAuditLog>().Add(auditLog);
             }
             else if(entry.Entity is UserOrganization userOrgannization)
             {
-                
+                UserOrganizationAuditLog auditLog = new UserOrganizationAuditLog
+                {
+                    ActorId = userid,
+                    NewData = SerializeNewValues(entry),
+                    OldData = SerializeOldValues(entry),
+                    UserOrganization = userOrgannization,
+                    Source = userAgent,
+                    Action = entry.State.ToString(),
+                };
+                context.Set<UserOrganizationAuditLog>().Add(auditLog);
             }
 
         }

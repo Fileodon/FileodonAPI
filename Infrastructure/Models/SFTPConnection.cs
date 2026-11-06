@@ -14,4 +14,6 @@ public partial class SFTPConnection: IAuditAble
     public SFTPConnectionStatus Status { get; set; }
     public string? PublicKey { get; set; }
     public string? PrivateKey { get; set; }
+    public virtual ICollection<SFTPConnectionAuditLog> AuditLogs { get; set; } = [];
+
 }
