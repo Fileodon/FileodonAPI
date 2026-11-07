@@ -19,7 +19,12 @@ public class AuditLogController(IAuditLogService service): ControllerBase
         // Authorize - Måske det skulle authorizes pr resource, altså som man altid kan blive vist audit logs på de resourcer man har read på.
         var data = await _service.GetAllAuditLogsInOrganization(organizationId);
 
-        GetAllAuditLogsResponse dto = new GetAllAuditLogsResponse(data);
+        GetAllAuditLogsResponse dto = new GetAllAuditLogsResponse(
+            data.organizationAuditLogs,
+            data.SFTPConnectionAuditLogs,
+            data.UserOrganizationAuditLogs,
+            data.RoleAuditLogs
+        );
         return Ok(dto);
     }
 }

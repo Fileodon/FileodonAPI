@@ -14,7 +14,9 @@ public class AuditLogRepository(ApplicationDbContext context): IAuditLogReposito
     }
     public async Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogsFromOrganizationId(int id)
     {
-        return _context.SFTPConnectionAuditLogs.Where(audit => audit.SFTPConnectionID == id);
+        return _context.SFTPConnectionAuditLogs
+            .Include(audit => audit.SFTPConnnection)
+            .Where(audit => audit.SFTPConnnection.OrganizationId == id);
     }
     public async Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogsFromOrganizationId(int id)
     {
@@ -24,6 +26,8 @@ public class AuditLogRepository(ApplicationDbContext context): IAuditLogReposito
     }
     public async Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogsFromOrganizationId(int id)
     {
-        return _context.UserOrganizationAuditLogs.Where(audit => audit.UserOrganizationId == id);
+        return _context.UserOrganizationAuditLogs
+            .Include(audit => audit.UserOrganization)
+            .Where(audit => audit.UserOrganization.OrganizationId == id);
     }
 }
