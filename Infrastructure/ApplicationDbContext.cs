@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure;
 
@@ -26,6 +28,13 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<SFTPConnectionAuditLog> SFTPConnectionAuditLogs => Set<SFTPConnectionAuditLog>();
     public DbSet<UserOrganizationAuditLog> UserOrganizationAuditLogs => Set<UserOrganizationAuditLog>();
     public DbSet<RoleAuditLog> RoleAuditLogs => Set<RoleAuditLog>();
+
+    // Kan bruges til at se kørte sql commands - brug kun i under development!
+    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // {
+    //     optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).EnableSensitiveDataLogging();
+    //     base.OnConfiguring(optionsBuilder);
+    // }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
