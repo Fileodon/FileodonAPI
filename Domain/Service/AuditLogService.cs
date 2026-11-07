@@ -37,4 +37,61 @@ public class AuditLogService: IAuditLogService
             throw;
         }
     }
+
+    public async Task<IEnumerable<OrganizationAuditLog>> GetOrganizationAuditLogs(int id)
+    {
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            return await _unitOfWork.OrganizationRepository.GetOrganizationAuditLogsAsync(id);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+    public async Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogs(int id)
+    {
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            return await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionAuditLogsAsync(id);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+    public async Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogs(string id)
+    {
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            return await _unitOfWork.RoleRepository.GetRoleAuditLogsAsync(id);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }  
+    }
+    public async Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogs(int id)
+    {
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            return await _unitOfWork.UserOrganizationRepository.GetUserOrganizationAuditLogsAsync(id);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        } 
+    }
 }

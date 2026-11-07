@@ -33,4 +33,10 @@ public class RoleRepository(ApplicationDbContext context, IRepositoryTransaction
     {
         return _context.AspNetRoles.AsNoTracking().Include(role => role.Organization).FirstOrDefault(role => role.Id == id);
     }
+
+    public async Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogsAsync(string roleId)
+    {
+        return _context.RoleAuditLogs
+            .Where(audit => audit.RoleId == roleId);
+    }
 }

@@ -22,10 +22,10 @@ public class GetAllAuditLogsResponse
     public int total { get; set; } = 0;
     public IList<AuditLogDTO> auditLogs {get; set;}
     public GetAllAuditLogsResponse(
-        IEnumerable<OrganizationAuditLog>? organizationAuditLogs,
-        IEnumerable<SFTPConnectionAuditLog>? sFTPConnectionAuditLogs,
-        IEnumerable<UserOrganizationAuditLog>? userOrganizationAuditLogs,
-        IEnumerable<RoleAuditLog>? roleAuditLogs
+        IEnumerable<OrganizationAuditLog>? organizationAuditLogs = null,
+        IEnumerable<SFTPConnectionAuditLog>? sFTPConnectionAuditLogs = null,
+        IEnumerable<UserOrganizationAuditLog>? userOrganizationAuditLogs = null,
+        IEnumerable<RoleAuditLog>? roleAuditLogs = null
     )
     {
         auditLogs = new List<AuditLogDTO>();

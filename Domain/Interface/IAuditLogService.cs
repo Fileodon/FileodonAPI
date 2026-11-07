@@ -13,4 +13,8 @@ public record class AllAuditLogsServiceReturn
 public interface IAuditLogService
 {
     Task<AllAuditLogsServiceReturn> GetAllAuditLogsInOrganization(int id);
+    Task<IEnumerable<OrganizationAuditLog>> GetOrganizationAuditLogs(int id);
+    Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogs(int id);
+    Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogs(string id);
+    Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogs(int id);
 }

@@ -64,4 +64,11 @@ public class OrganizationRepository(ApplicationDbContext context, IRepositoryTra
 
         return organization;
     }
+
+    public async Task<IEnumerable<OrganizationAuditLog>> GetOrganizationAuditLogsAsync(int organizationId)
+    {
+        return _context.OrganizationAuditLogs
+            .Where(audit => audit.OrganizationId == organizationId);
+    }
+
 }
