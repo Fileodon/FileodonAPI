@@ -2,22 +2,24 @@ using Infrastructure.Models;
 
 namespace Controller.DTO.AuditLog;
 
-public record AuditLogDTO
+public record class AuditLogDTO
 (
-    string Id,
+    Guid Id,
+    DateTime Timestamp,
     string ActorId,
     string? Action,
     string Source,
-    string? oldData,
-    string? newData,
-    int? OrganizationId,
-    int? SFTPConnectionId,
-    string? RoleId,
-    int? UserOrganizationId
+    string? OldData,
+    string? NewData,
+    int? OrganizationId = null,
+    int? SFTPConnectionId = null,
+    string? RoleId = null,
+    int? UserOrganizationId = null
 );
 
 public class GetAllAuditLogsResponse
 {
+    public int total { get; set; } = 0;
     public IList<AuditLogDTO> auditLogs {get; set;}
     public GetAllAuditLogsResponse(
         IEnumerable<OrganizationAuditLog>? organizationAuditLogs,
@@ -31,75 +33,58 @@ public class GetAllAuditLogsResponse
         {
             foreach (var auditLog in organizationAuditLogs)
             {
-                auditLogs.Add(new AuditLogDTO(
-                    auditLog.Id.ToString(),
-                    auditLog.ActorId,
-                    auditLog.Action,
-                    auditLog.Source,
-                    auditLog.OldData,
-                    auditLog.NewData,
-                    auditLog.OrganizationId,
-                    null,
-                    null,
-                    null
-                ));
+                auditLogs.Add(FormatBaseAuditLog(auditLog) with
+                {
+                    UserOrganizationId = auditLog.OrganizationId
+                });
             }
+            total += organizationAuditLogs.Count();
         }
         if (sFTPConnectionAuditLogs != null)
         {
             foreach (var auditLog in sFTPConnectionAuditLogs)
             {
-                auditLogs.Add(new AuditLogDTO(
-                    auditLog.Id.ToString(),
-                    auditLog.ActorId,
-                    auditLog.Action,
-                    auditLog.Source,
-                    auditLog.OldData,
-                    auditLog.NewData,
-                    null,
-                    auditLog.SFTPConnectionID,
-                    null,
-                    null
-                ));
+                auditLogs.Add(FormatBaseAuditLog(auditLog) with
+                {
+                    SFTPConnectionId = auditLog.SFTPConnectionID
+                });
             }
+            total += sFTPConnectionAuditLogs.Count();
         }
         if (userOrganizationAuditLogs != null)
         {
             foreach (var auditLog in userOrganizationAuditLogs)
             {
-                auditLogs.Add(new AuditLogDTO(
-                    auditLog.Id.ToString(),
-                    auditLog.ActorId,
-                    auditLog.Action,
-                    auditLog.Source,
-                    auditLog.OldData,
-                    auditLog.NewData,
-                    null,
-                    null,
-                    null,
-                    auditLog.UserOrganizationId
-                ));
+                auditLogs.Add(FormatBaseAuditLog(auditLog) with
+                {
+                    UserOrganizationId = auditLog.UserOrganizationId
+                });
             }
+            total += userOrganizationAuditLogs.Count();
         }
         if (roleAuditLogs != null)
         {
             foreach (var auditLog in roleAuditLogs)
             {
-                auditLogs.Add(new AuditLogDTO(
-                    auditLog.Id.ToString(),
-                    auditLog.ActorId,
-                    auditLog.Action,
-                    auditLog.Source,
-                    auditLog.OldData,
-                    auditLog.NewData,
-                    null,
-                    null,
-                    auditLog.RoleId,
-                    null
-                ));
+                auditLogs.Add(FormatBaseAuditLog(auditLog) with
+                {
+                    RoleId = auditLog.RoleId
+                });
             }
+            total += roleAuditLogs.Count();
         }
+    }
 
-
+    private AuditLogDTO FormatBaseAuditLog(BaseAuditLog auditLog)
+    {
+        return new AuditLogDTO(
+            Id: auditLog.Id,
+            Timestamp: auditLog.Timestamp,
+            ActorId: auditLog.ActorId,
+            Action: auditLog.Action,
+            Source: auditLog.Source,
+            OldData: auditLog.OldData,
+            NewData: auditLog.NewData
+        );
     }
 };
