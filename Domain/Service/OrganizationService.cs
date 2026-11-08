@@ -33,7 +33,7 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
             AspNetRole ownerRole = new()
             {
                 Name = "Owner",
-                NormalizedName = "OWNER",
+                // NormalizedName = "OWNER",
                 OrganizationId = organization.Id,
                 PermissionMask = (long)PermissionFlags.All
             };

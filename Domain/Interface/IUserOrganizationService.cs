@@ -7,5 +7,6 @@ namespace Domain.Interface
 {
     public interface IUserOrganizationService : IBaseInterface<UserOrganization>
     {
+        Task<IEnumerable<UserOrganization>>? GetAllUserOrganizations(string userId);
     }
 }

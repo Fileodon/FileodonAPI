@@ -1,5 +1,6 @@
 ﻿using Domain.Interface;
 using Infrastructure;
+using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -9,9 +10,11 @@ namespace Domain.Service;
 public class UserOrganizationService : IUserOrganizationService
 {
     private readonly ApplicationDbContext _context;
-    public UserOrganizationService(ApplicationDbContext context)
+    private readonly IUserOrganizationRepository _userOrganizationRepository;
+    public UserOrganizationService(ApplicationDbContext context, IUserOrganizationRepository userOrganizationRepository)
     {
         _context = context;
+        _userOrganizationRepository = userOrganizationRepository;
     }
 
     public async Task<UserOrganization?> GetByIdAsync(int id)
@@ -71,5 +74,11 @@ public class UserOrganizationService : IUserOrganizationService
             query = includes(query);
         }
         return Task.FromResult(query);
+    }
+
+    public async Task<IEnumerable<UserOrganization>> GetAllUserOrganizations(string userId)
+    {
+        var organizations = await _userOrganizationRepository.GetOrganizationsFromUserIdAsync(userId);
+        return organizations ?? Enumerable.Empty<UserOrganization>();
     }
 }
