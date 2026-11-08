@@ -165,6 +165,7 @@ public sealed class UnitOfWorkTests
             new RoleRepository(context, transactionSettings),
             new SFTPConnectionRepository(context, transactionSettings),
             new UserOrganizationRepository(context, transactionSettings),
+            new AuditLogRepository(context),
             new UserRepository(context, transactionSettings));
     }
 }

@@ -71,6 +71,7 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
         services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddIdentityCore<User>(identityOptions =>
