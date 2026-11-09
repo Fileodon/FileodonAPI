@@ -11,7 +11,7 @@ namespace Domain.Service;
 public class AuthService : IAuthService
 {
     private readonly TimeSpan RefreshTokenLifetime;
-
+    private readonly IConfiguration _configuration;
     private readonly IEmailSender<User> _emailSender;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
@@ -27,6 +27,7 @@ public class AuthService : IAuthService
         IUnitOfWork unitOfWork
         )
     {
+        _configuration = configuration;
         _emailSender = emailSender;
         _userManager = userManager;
         _signInManager = signInManager;
@@ -145,9 +146,10 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User email is not set.");
         }
 
+        string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("SMTP:HOST is not configured.");
+
         string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        string encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        string link = $"https://fileodon.dev/confirm-email?userId={user.Id}&token={encodedToken}";
+        string link = $"{host}/confirm-email?userId={user.Id}&token={token}";
 
         await _emailSender.SendConfirmationLinkAsync(user, user.Email, link);
     }

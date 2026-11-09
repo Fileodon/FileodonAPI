@@ -50,11 +50,12 @@ public class SmtpEmailSender : IEmailSender<User>
     private async Task SendAsync(string to, string subject, string html)
     {
         var message = new MimeMessage();
-        string from = _configuration["EmailSettings:FromEmail"] ?? throw new InvalidOperationException("FromEmail is not configured.");
-        string host = _configuration["EmailSettings:SmtpHost"] ?? throw new InvalidOperationException("SmtpHost is not configured.");
-        int port = Convert.ToInt32(_configuration["EmailSettings:SmtpPort"] ?? throw new InvalidOperationException("SmtpPort is not configured."));
-        string username = _configuration["EmailSettings:Username"] ?? throw new InvalidOperationException("Username is not configured.");
-        string password = _configuration["EmailSettings:Password"] ?? throw new InvalidOperationException("Password is not configured.");
+        string from = _configuration["SMTP:FROM_ADDRESS"] ?? throw new InvalidOperationException("SMTP:FROM_ADDRESS is not configured.");
+        string host = _configuration["SMTP:HOST"] ?? throw new InvalidOperationException("SMTP:HOST is not configured.");
+        int port = Convert.ToInt32(_configuration["SMTP:PORT"] ?? throw new InvalidOperationException("SMTP:PORT is not configured."));
+        string username = _configuration["SMTP:USER"] ?? throw new InvalidOperationException("SMTP:USER is not configured.");
+        string password = _configuration["SMTP:PASSWORD"] ?? throw new InvalidOperationException("SMTP:PASSWORD is not configured.");
+        bool useStartTls = Convert.ToBoolean(_configuration["SMTP:USE_STARTTLS"] ?? "false");
 
         try
         {
@@ -84,7 +85,7 @@ public class SmtpEmailSender : IEmailSender<User>
         using var client = new SmtpClient();
         try
         {
-            var socketOptions = SecureSocketOptions.SslOnConnect;
+            var socketOptions = useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.SslOnConnect;
 
             await client.ConnectAsync(host, port, socketOptions);
             await client.AuthenticateAsync(username, password);
