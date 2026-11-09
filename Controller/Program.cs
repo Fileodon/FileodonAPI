@@ -59,7 +59,7 @@ if (!File.Exists(keyPath))
 
 string connectionString = Database.InitializeConnectionString(builder);
 
-if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+if (string.IsNullOrEmpty(builder.Configuration["JWT:KEY"]))
 {
     Log.Warning("JWT key is not set in configuration. Generating a new secret.");
     string key = await TokenService.GenerateSecret();
@@ -68,11 +68,11 @@ if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
         Log.Error("Failed to generate JWT secret.");
         throw new InvalidOperationException("Failed to generate JWT secret.");
     }
-    DotEnv.WriteEntry("JWT_KEY", key);
-    builder.Configuration["JWT_KEY"] = key;
+    DotEnv.WriteEntry("JWT:KEY", key);
+    builder.Configuration["JWT:KEY"] = key;
 }
 
-string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS_ALLOWED_HOSTS") ?? string.Empty)
+string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS:ALLOWED_HOSTS") ?? string.Empty)
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
     .Select(origin => origin.Trim('"', '\''))
     .Where(origin => origin.Length > 0)];
@@ -158,7 +158,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration."))),
+            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration."))),
             ClockSkew = TimeSpan.FromMinutes(1)
         };
     });

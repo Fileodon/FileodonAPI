@@ -6,6 +6,7 @@ using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Test;
 
@@ -194,6 +195,10 @@ public sealed class AuthServiceTests
         User user = await userManager.FindByEmailAsync("grace@example.com")
             ?? throw new InvalidOperationException("Registered user was not found.");
         Assert.True(await userManager.CheckPasswordAsync(user, NewPassword));
+        context.EmailSender.Verify(sender => sender.SendConfirmationLinkAsync(
+            It.Is<User>(candidate => candidate.Id == user.Id),
+            "grace@example.com",
+            It.Is<string>(link => link.Contains($"userId={user.Id}"))), Times.Once);
     }
 
     [Theory]
@@ -237,6 +242,7 @@ public sealed class AuthServiceTests
     {
         return new AuthService(
             scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>(),
+            scope.ServiceProvider.GetRequiredService<IEmailSender<User>>(),
             scope.ServiceProvider.GetRequiredService<UserManager<User>>(),
             scope.ServiceProvider.GetRequiredService<SignInManager<User>>(),
             scope.ServiceProvider.GetRequiredService<ITokenService>(),

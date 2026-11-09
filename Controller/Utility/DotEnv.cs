@@ -26,7 +26,29 @@ public class DotEnv
             if (parts.Length != 2)
                 continue;
 
-            Environment.SetEnvironmentVariable(parts[0], parts[1]);
+            string entry = parts[0].Trim().ToUpperInvariant();
+            Environment.SetEnvironmentVariable(entry, parts[1]);
+            ConvertLegacyEnvironmentVariable(entry);
+        }
+    }
+
+    /// <summary>
+    /// Converts an existing single-underscore environment variable to the
+    /// double-underscore form used for hierarchical .NET configuration keys.
+    /// </summary>
+    /// <param name="entry">The environment variable name to check.</param>
+    public static void ConvertLegacyEnvironmentVariable(string entry)
+    {
+        string normalizedEntry = entry.Trim().ToUpperInvariant();
+        if (!normalizedEntry.Contains('_') || normalizedEntry.Contains("__"))
+            return;
+
+        string? value = Environment.GetEnvironmentVariable(normalizedEntry);
+        if (value is not null)
+        {
+            Environment.SetEnvironmentVariable(
+                normalizedEntry.Replace("_", "__", StringComparison.Ordinal),
+                value);
         }
     }
 

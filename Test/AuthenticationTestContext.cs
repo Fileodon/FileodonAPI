@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Test;
 
@@ -19,11 +20,15 @@ internal sealed class AuthenticationTestContext : IDisposable
 
     private AuthenticationTestContext(
         ServiceProvider serviceProvider,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        Mock<IEmailSender<User>> emailSender)
     {
         _serviceProvider = serviceProvider;
         _dbContext = dbContext;
+        EmailSender = emailSender;
     }
+
+    public Mock<IEmailSender<User>> EmailSender { get; }
 
     public IServiceScope CreateScope() => _serviceProvider.CreateScope();
 
@@ -48,7 +53,7 @@ internal sealed class AuthenticationTestContext : IDisposable
 
         Dictionary<string, string?> configurationValues = new()
         {
-            ["JWT_KEY"] = Convert.ToBase64String(new byte[32]),
+            ["JWT:KEY"] = Convert.ToBase64String(new byte[32]),
             ["Jwt:Issuer"] = "fileodon-tests",
             ["Jwt:Audience"] = "fileodon-test-client",
             ["Jwt:RefreshTokenValidityInDays"] = "30"
@@ -75,6 +80,27 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        Mock<IEmailSender<User>> emailSender = new();
+        emailSender
+            .Setup(sender => sender.SendConfirmationLinkAsync(
+                It.IsAny<User>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        emailSender
+            .Setup(sender => sender.SendPasswordResetCodeAsync(
+                It.IsAny<User>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        emailSender
+            .Setup(sender => sender.SendPasswordResetLinkAsync(
+                It.IsAny<User>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        services.AddSingleton(emailSender);
+        services.AddSingleton<IEmailSender<User>>(emailSender.Object);
         services.AddIdentityCore<User>(identityOptions =>
         {
             IConfigurationSection passwordPolicy = configuration.GetSection("PasswordPolicy");
@@ -87,9 +113,10 @@ internal sealed class AuthenticationTestContext : IDisposable
         })
             .AddRoles<AspNetRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddSignInManager();
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
         services.AddScoped<ITokenService, TokenService>();
 
-        return new AuthenticationTestContext(services.BuildServiceProvider(), dbContext);
+        return new AuthenticationTestContext(services.BuildServiceProvider(), dbContext, emailSender);
     }
 }
