@@ -146,7 +146,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User email is not set.");
         }
 
-        string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("SMTP:HOST is not configured.");
+        string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
 
         string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         string link = $"{host}/confirm-email?userId={user.Id}&token={token}";
