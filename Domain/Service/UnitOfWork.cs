@@ -27,7 +27,6 @@ public sealed class UnitOfWork : IUnitOfWork
     public UnitOfWork(
     ApplicationDbContext context,
     IRepositoryTransactionSettings transactionSettings,
-    IAuditLogRepository auditLogRepository,
     IOrganizationRepository organizationRepository,
     IProfileRepository profileRepository,
     IRefreshTokenRepository refreshTokenRepository,
@@ -35,6 +34,7 @@ public sealed class UnitOfWork : IUnitOfWork
     ISFTPConnectionRepository sftpConnectionRepository,
     ISFTPConnectionAuthCodeRepository sftpConnectionAuthCodeRepository,
     IUserOrganizationRepository userOrganizationRepository,
+    IAuditLogRepository auditLogRepository,
     IUserRepository userRepository)
     {
         _context = context;

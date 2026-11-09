@@ -1,8 +1,9 @@
-﻿using Infrastructure.Models.Enums;
+﻿using Infrastructure.Interface;
+using Infrastructure.Models.Enums;
 
 namespace Infrastructure.Models;
 
-public partial class SFTPConnection
+public partial class SFTPConnection: IAuditAble
 {
     public int Id { get; set; }
     public string DisplayName { get; set; } = null!;
@@ -13,4 +14,6 @@ public partial class SFTPConnection
     public SFTPConnectionStatus Status { get; set; }
     public string? PublicKey { get; set; }
     public string? PrivateKey { get; set; }
+    public virtual ICollection<SFTPConnectionAuditLog> AuditLogs { get; set; } = [];
+
 }

@@ -65,7 +65,6 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<RepositoryTransactionSettings>();
         services.AddScoped<IRepositoryTransactionSettings>(services =>
             services.GetRequiredService<RepositoryTransactionSettings>());
-        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -73,6 +72,7 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
         services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuthCodeRepository>();
         services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddIdentityCore<User>(identityOptions =>

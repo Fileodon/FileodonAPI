@@ -20,6 +20,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+using Infrastructure.Interceptors;
+using Infrastructure.Services;
+using Infrastructure.Interface.Service;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 const string PolicyName = "default";
@@ -89,13 +92,11 @@ builder.Services.AddCors(options =>
     );
 });
 
-builder.Services.AddDbContext<ApplicationDbContext>(
-    options => options.UseNpgsql(connectionString)
-);
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<RepositoryTransactionSettings>();
 builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
     services.GetRequiredService<RepositoryTransactionSettings>());
-builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -104,6 +105,7 @@ builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>(
 builder.Services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuthCodeRepository>();
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISFTPConnectionService, SFTPConnectionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -115,6 +117,9 @@ builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IUserContextService, UserContextService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
 
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
@@ -188,6 +193,15 @@ builder.Services.Configure<RouteOptions>(options =>
     options.LowercaseUrls = true;
     options.LowercaseQueryStrings = true;
 });
+
+builder.Services.AddScoped<AuditLogInterceptor>();
+
+builder.Services.AddDbContext<ApplicationDbContext>(
+    (sp,options) => {
+        options.UseNpgsql(connectionString);
+        options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
+    }
+);
 
 var app = builder.Build();
 

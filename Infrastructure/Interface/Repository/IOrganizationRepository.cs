@@ -7,4 +7,5 @@ public interface IOrganizationRepository : IBaseRepository<Organization>
     Task<Organization?> GetByIdAsync(int organizationId, string userId);
     Task<Organization?> DeleteByIdAsync(int organizationId, string userId);
     Task<Organization?> UpdateOrganizationAsync(int organizationId, string newOrganizationName, string userId);
+    Task<IEnumerable<OrganizationAuditLog>> GetOrganizationAuditLogsAsync(int organizationId);
 }

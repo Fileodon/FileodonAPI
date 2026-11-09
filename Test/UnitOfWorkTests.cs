@@ -159,14 +159,14 @@ public sealed class UnitOfWorkTests
         return new UnitOfWork(
             context,
             transactionSettings,
-            new AuditLogRepository(context, transactionSettings),
             new OrganizationRepository(context, transactionSettings),
             new ProfileRepository(context, transactionSettings),
             new RefreshTokenRepository(context, transactionSettings),
             new RoleRepository(context, transactionSettings),
             new SFTPConnectionRepository(context, transactionSettings),
             new SFTPConnectionAuthCodeRepository(context, transactionSettings),
-        new UserOrganizationRepository(context, transactionSettings),
+            new UserOrganizationRepository(context, transactionSettings),
+            new AuditLogRepository(context),
             new UserRepository(context, transactionSettings));
     }
 }

@@ -1,6 +1,8 @@
-﻿namespace Infrastructure.Models;
+﻿using Infrastructure.Interface;
 
-public partial class UserOrganization
+namespace Infrastructure.Models;
+
+public partial class UserOrganization: IAuditAble
 {
     public int Id { get; set; }
 
@@ -12,4 +14,5 @@ public partial class UserOrganization
     public virtual Organization? Organization { get; set; }
     public virtual User? User { get; set; }
     public virtual AspNetRole Role { get; set; } = null!;
+    public virtual ICollection<UserOrganizationAuditLog> AuditLogs { get; set; } = [];
 }

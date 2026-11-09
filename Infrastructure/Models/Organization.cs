@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using Infrastructure.Interface;
 
 namespace Infrastructure.Models;
 
-public partial class Organization
+public partial class Organization: IAuditAble
 {
     public int Id { get; set; }
 
@@ -17,4 +18,5 @@ public partial class Organization
     public virtual ICollection<UserOrganization> UserOrganizations { get; set; } = [];
 
     public string? UserId => UserOwnerId;
+    public virtual ICollection<OrganizationAuditLog> AuditLogs { get; set; } = [];
 }
