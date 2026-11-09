@@ -1,26 +1,36 @@
 using Controller.Controllers.Authorization;
+using Controller.Extensions;
 using Controller.Middleware;
 using Controller.Utility;
+using Controller.Validators.SFTPConnectionModels;
 using Domain.Interface;
 using Domain.Service;
 using Domain.Services;
+using FluentValidation;
 using Infrastructure;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Infrastructure.Repository;
+using Infrastructure.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+});
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration).CreateLogger();
@@ -33,6 +43,19 @@ else
     DotEnv.CreateEnvFile(filepath);
 
 builder.Configuration.AddEnvironmentVariables();
+
+string? keyPath = builder.Configuration["Encryption:KeyPath"];
+if (string.IsNullOrEmpty(keyPath))
+{
+    Log.Error("Encryption key path is not set in configuration.");
+    throw new InvalidOperationException("Encryption key path is not set in configuration.");
+}
+
+if (!File.Exists(keyPath))
+{
+    Log.Warning("Encryption key file not found at {KeyPath}. Generating a new key.", keyPath);
+    CryptoService.CreateKey(keyPath);
+}
 
 string connectionString = Database.InitializeConnectionString(builder);
 
@@ -78,9 +101,11 @@ builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
+builder.Services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuthCodeRepository>();
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ISFTPConnectionService, SFTPConnectionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthorizationPermissionService, AuthorizationPermissionService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
@@ -90,6 +115,15 @@ builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
+builder.Services.AddFluentValidationAutoValidation();
+
+// Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
+builder.Services.AddSingleton<ICryptoService>(services =>
+{
+    return new CryptoService(keyPath);
+});
 
 builder.Services.AddIdentityCore<User>(options =>
 {
@@ -146,11 +180,13 @@ builder.Services.AddSwaggerGen(options =>
     {
         [new OpenApiSecuritySchemeReference("bearer", document)] = []
     });
+    options.OperationFilter<PollStatusExamplesOperationFilter>();
 });
 
 builder.Services.Configure<RouteOptions>(options =>
 {
     options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
 });
 
 var app = builder.Build();

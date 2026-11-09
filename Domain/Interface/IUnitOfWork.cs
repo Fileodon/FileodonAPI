@@ -18,6 +18,7 @@ public interface IUnitOfWork : IDisposable
     IRefreshTokenRepository RefreshTokenRepository { get; }
     IRoleRepository RoleRepository { get; }
     ISFTPConnectionRepository SFTPConnectionRepository { get; }
+    ISFTPConnectionAuthCodeRepository SFTPConnectionAuthCodeRepository { get; }
     IUserOrganizationRepository UserOrganizationRepository { get; }
     IUserRepository UserRepository { get; }
     Task BeginTransactionAsync();

@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<UserOrganization> UserOrganizations => Set<UserOrganization>();
     public DbSet<SFTPConnection> SFTPConnections => Set<SFTPConnection>();
+    public DbSet<SFTPConnectionAuthCode> SFTPConnectionAuthCodes => Set<SFTPConnectionAuthCode>();
     public DbSet<AspNetRole> AspNetRoles => Set<AspNetRole>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

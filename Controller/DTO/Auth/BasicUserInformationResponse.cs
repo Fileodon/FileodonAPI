@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Controller.DTO.Auth;
 
-public record class BasicUserInformationResponse(
+public record BasicUserInformationResponse(
     Guid Id,
     string Email,
     string Username,

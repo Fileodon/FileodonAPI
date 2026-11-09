@@ -5,9 +5,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public sealed class RefreshTokenRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : BaseRepository<RefreshToken>(context, transactionSettings), IRefreshTokenRepository
+public sealed class RefreshTokenRepository : BaseRepository<RefreshToken>, IRefreshTokenRepository
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly ApplicationDbContext _context;
+
+    public RefreshTokenRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : base(context, transactionSettings)
+    {
+        _context = context;
+    }
+
     public Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, bool includeUser = false)
     {
         IQueryable<RefreshToken> query = _context.RefreshTokens;

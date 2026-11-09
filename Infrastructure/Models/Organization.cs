@@ -15,4 +15,6 @@ public partial class Organization
     public virtual User? UserOwner { get; set; }
     public ICollection<SFTPConnection> SFTPConnections { get; set; } = [];
     public virtual ICollection<UserOrganization> UserOrganizations { get; set; } = [];
+
+    public string? UserId => UserOwnerId;
 }
