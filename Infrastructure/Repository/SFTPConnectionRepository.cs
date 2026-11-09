@@ -80,7 +80,6 @@ public class SFTPConnectionRepository : BaseRepository<SFTPConnection>, ISFTPCon
             .Where(c => c.OrganizationId == organizationId &&
                 c.Organization.UserOrganizations.Any(uo => uo.UserId == userId)).ToListAsync();
     }
-    private readonly ApplicationDbContext _context = context;
     public async Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogsAsync(int sftpConnectionId)
     {
         return _context.SFTPConnectionAuditLogs
