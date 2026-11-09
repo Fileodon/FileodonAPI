@@ -49,24 +49,10 @@ public class SFTPConnectionService : ISFTPConnectionService
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            SFTPConnectionAuthCode? sFTPConnectionAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.GetAuthCodeAsync(authCode, organizationId);
-
-            if (sFTPConnectionAuthCode == null)
-            {
-                await _unitOfWork.RollbackAsync();
-                return new MutationEnvelope<SFTPConnection>(MutationStatus.NotFound, null);
-            }
-
-            if (sFTPConnectionAuthCode.ExpiresAt < DateTime.UtcNow)
-            {
-                await _unitOfWork.RollbackAsync();
-                return new MutationEnvelope<SFTPConnection>(MutationStatus.Forbidden, null);
-            }
-
             SFTPConnection sFTPConnection = new()
             {
                 DisplayName = displayName,
-                OrganizationId = sFTPConnectionAuthCode.OrganizationId,
+                OrganizationId = organizationId,
                 Host = host,
                 Port = port,
                 Status = SFTPConnectionStatus.Pending,
@@ -222,6 +208,18 @@ public class SFTPConnectionService : ISFTPConnectionService
             await _unitOfWork.RollbackAsync();
             throw;
         }
+    }
+
+    public async Task<MutationEnvelope<SFTPConnectionAuthCode>> GetSFTPConnectionAuthCodeAsync(string authCode, int organizationId)
+    {
+        SFTPConnectionAuthCode? sFTPConnectionAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.GetAuthCodeAsync(authCode, organizationId);
+
+        if (sFTPConnectionAuthCode == null)
+        {
+            return new MutationEnvelope<SFTPConnectionAuthCode>(MutationStatus.NotFound, null);
+        }
+
+        return new MutationEnvelope<SFTPConnectionAuthCode>(MutationStatus.Success, sFTPConnectionAuthCode);
     }
 
     private static string GenerateVerificationCode(int length)

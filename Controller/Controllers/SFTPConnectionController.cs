@@ -198,7 +198,17 @@ namespace Controller.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> AddServer(int organizationid, [FromBody] SFTPConnectionCreateRequest request)
         {
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(request.AuthCode, organizationid, request.DisplayName, request.Host, request.Port);
+            MutationEnvelope<SFTPConnectionAuthCode> AuthCode = await _sFTPConnectionService.GetSFTPConnectionAuthCodeAsync(request.AuthCode, organizationid);
+            if (AuthCode.Status == MutationStatus.NotFound || AuthCode.Data is null)
+            {
+                return NotFound();
+            }
+            if (AuthCode.Data.ExpiresAt < DateTime.UtcNow)
+            {
+                return Forbid("Auth code has expired.");
+            }
+
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(AuthCode.Data.VerificationCode, organizationid, request.DisplayName, request.Host, request.Port);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
