@@ -56,7 +56,8 @@ internal sealed class AuthenticationTestContext : IDisposable
             ["JWT:KEY"] = Convert.ToBase64String(new byte[32]),
             ["Jwt:Issuer"] = "fileodon-tests",
             ["Jwt:Audience"] = "fileodon-test-client",
-            ["Jwt:RefreshTokenValidityInDays"] = "30"
+            ["Jwt:RefreshTokenValidityInDays"] = "30",
+            ["API:HOST"] = "http://localhost:5000",
         };
 
         IConfiguration configuration = new ConfigurationBuilder()
