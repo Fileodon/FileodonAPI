@@ -37,39 +37,40 @@ public class PermissionController : ControllerBase
         return Ok(permission);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreatePermission(
-        //[FromBody] DTO.Permission.CreatePermissionRequest permission)
-        [FromBody] Permission permission)
-    {
-        var created =
-            await _permissionService.PostAsync(permission);
+    //I TVIVL OM VI SKAL HAVE POST OG PUT METODER HER, DA PERMISSIONER IKKE ÆNDRES. SKAL LAVES NÅR VI GÅR TIL AT LAVE RESURSE BASERET PERMISSIONS
 
-        return CreatedAtAction(
-            nameof(GetPermissionById),
-            new { id = created.Id },
-            created);
-    }
+    //[HttpPost]
+    //public async Task<IActionResult> CreatePermission(
+    //    [FromBody] DTO.Permission.CreatePermissionRequest permission)
+    //{
+    //    var created =
+    //        await _permissionService.PostAsync(permission);
 
-    [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdatePermission(
-        int id,
-        [FromBody] Permission permission)
-    {
-        if (id != permission.Id)
-            return BadRequest();
+    //    return CreatedAtAction(
+    //        nameof(GetPermissionById),
+    //        new { id = created.Id },
+    //        created);
+    //}
 
-        var existing =
-            await _permissionService.GetByIdAsync(id);
+    //[HttpPut("{id:int}")]
+    //public async Task<IActionResult> UpdatePermission(
+    //    int id,
+    //    [FromBody] Permission permission)
+    //{
+    //    if (id != permission.Id)
+    //        return BadRequest();
 
-        if (existing is null)
-            return NotFound();
+    //    var existing =
+    //        await _permissionService.GetByIdAsync(id);
 
-        var updated =
-            await _permissionService.UpdateAsync(permission);
+    //    if (existing is null)
+    //        return NotFound();
 
-        return Ok(updated);
-    }
+    //    var updated =
+    //        await _permissionService.UpdateAsync(permission);
+
+    //    return Ok(updated);
+    //}
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletePermission(int id)

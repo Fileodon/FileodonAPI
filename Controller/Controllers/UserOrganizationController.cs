@@ -32,10 +32,10 @@ public class UserOrganizationController : ControllerBase
         if (userId != currentUserId)
             return Forbid();
 
-        var query = await _userOrgService.WhereAsync(
+        var userOrganizationsQuery = await _userOrgService.WhereAsync(
             x => x.UserId == userId);
 
-        var userOrganizations = await query.ToListAsync();
+        var userOrganizations = await userOrganizationsQuery.ToListAsync();
 
         return Ok(userOrganizations.Select(org =>
       new GetUserOrganizationRequest(

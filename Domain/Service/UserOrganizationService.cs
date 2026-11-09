@@ -9,12 +9,10 @@ namespace Domain.Service;
 
 public class UserOrganizationService : IUserOrganizationService
 {
-    private readonly ApplicationDbContext _context;
     private readonly IUnitOfWork _unit;
     private readonly IUserOrganizationRepository _userOrgRepository;
-    public UserOrganizationService(ApplicationDbContext context, IUnitOfWork unit, IUserOrganizationRepository userOrgRepository)
+    public UserOrganizationService(IUnitOfWork unit, IUserOrganizationRepository userOrgRepository)
     {
-        _context = context;
         _unit = unit;
         _userOrgRepository = userOrgRepository;
     }
@@ -49,16 +47,11 @@ public class UserOrganizationService : IUserOrganizationService
         return await _userOrgRepository.UpdateAsync(entity);
     }
 
-    public Task<IQueryable<UserOrganization>> WhereAsync(Expression<Func<UserOrganization, bool>> predicate, Func<IQueryable<UserOrganization>, IQueryable<UserOrganization>>? includes = null)
+    public Task<IQueryable<UserOrganization>> WhereAsync(
+        Expression<Func<UserOrganization, bool>> predicate,
+        Func<IQueryable<UserOrganization>, IQueryable<UserOrganization>>? includes = null)
     {
-        IQueryable<UserOrganization> query = _context.Set<UserOrganization>()
-            .AsNoTracking()
-            .Where(predicate);
-        if (includes != null)
-        {
-            query = includes(query);
-        }
-        return Task.FromResult(query);
+        return _userOrgRepository.WhereAsync(predicate, includes);
     }
 
     public async Task<UserOrganization> CreateUserOrganizationAsync(

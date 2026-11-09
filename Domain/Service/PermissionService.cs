@@ -1,5 +1,7 @@
 ﻿using Domain.Interface;
+using Domain.Service;
 using Infrastructure;
+using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -8,73 +10,50 @@ namespace Domain.Services;
 
 public class PermissionService : IPermissionService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IPermissionRepository _permissionRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public PermissionService(ApplicationDbContext context)
+    public PermissionService(IPermissionRepository permissionRepository, IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _permissionRepository = permissionRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IQueryable<Permission>> GetAllAsync()
     {
-        return await Task.FromResult(
-            _context.Set<Permission>().AsNoTracking());
+        return await _permissionRepository.GetAllAsync();
     }
 
     public async Task<Permission?> GetByIdAsync(int id)
     {
-        return await _context.Set<Permission>()
-            .FindAsync(id);
+        return await _permissionRepository.GetByIdAsync(id);
     }
 
     public async Task<Permission> PostAsync(Permission entity)
     {
-        _context.Set<Permission>().Add(entity);
-        await _context.SaveChangesAsync();
-
-        return entity;
+        return await _permissionRepository.PostAsync(entity);
     }
 
     public async Task<Permission> PutAsync(Permission entity)
     {
-        _context.Set<Permission>().Update(entity);
-        await _context.SaveChangesAsync();
-
-        return entity;
+        return await _permissionRepository.PutAsync(entity);
     }
 
     public async Task<Permission> UpdateAsync(Permission entity)
     {
-        _context.Set<Permission>().Update(entity);
-        await _context.SaveChangesAsync();
-
-        return entity;
+        return await _permissionRepository.UpdateAsync(entity);
     }
 
     public async Task<Permission?> DeleteAsync(int id)
     {
-        var entity = await GetByIdAsync(id);
+        return await _permissionRepository.DeleteAsync(id);
 
-        if (entity is null)
-            return null;
-
-        _context.Set<Permission>().Remove(entity);
-        await _context.SaveChangesAsync();
-
-        return entity;
     }
 
     public async Task<IQueryable<Permission>> WhereAsync(
         Expression<Func<Permission, bool>> predicate,
-        Func<IQueryable<Permission>,
-            IQueryable<Permission>>? includes = null)
+        Func<IQueryable<Permission>, IQueryable<Permission>>? includes = null)
     {
-        IQueryable<Permission> query =
-            _context.Set<Permission>().Where(predicate);
-
-        if (includes is not null)
-            query = includes(query);
-
-        return await Task.FromResult(query);
+        return await _permissionRepository.WhereAsync(predicate, includes);
     }
 }
