@@ -10,7 +10,7 @@ public partial class SFTPConnection: IAuditAble
     public int OrganizationId { get; set; }
     public virtual Organization Organization { get; set; } = null!;
     public required string Host { get; set; }
-    public int? Port { get; set; }
+    public int Port { get; set; }
     public SFTPConnectionStatus Status { get; set; }
     public string? PublicKey { get; set; }
     public string? PrivateKey { get; set; }

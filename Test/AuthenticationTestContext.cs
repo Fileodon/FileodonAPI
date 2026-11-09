@@ -70,6 +70,7 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<ISFTPConnectionRepository, SFTPConnectionRepository>();
+        services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuthCodeRepository>();
         services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();

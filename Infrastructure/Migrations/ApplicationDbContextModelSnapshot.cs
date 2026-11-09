@@ -285,7 +285,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("organization_id");
 
-                    b.Property<int?>("Port")
+                    b.Property<int>("Port")
                         .HasColumnType("integer")
                         .HasColumnName("port");
 
@@ -352,6 +352,39 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SFTPConnectionID");
 
                     b.ToTable("sftp_connection_audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuthCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VerificationCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SFTPConnectionAuthCodes");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.User", b =>
@@ -704,6 +737,23 @@ namespace Infrastructure.Migrations
                     b.Navigation("Actor");
 
                     b.Navigation("SFTPConnnection");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuthCode", b =>
+                {
+                    b.HasOne("Infrastructure.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.UserOrganization", b =>

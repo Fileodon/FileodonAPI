@@ -16,5 +16,7 @@ public partial class Organization: IAuditAble
     public virtual User? UserOwner { get; set; }
     public ICollection<SFTPConnection> SFTPConnections { get; set; } = [];
     public virtual ICollection<UserOrganization> UserOrganizations { get; set; } = [];
+
+    public string? UserId => UserOwnerId;
     public virtual ICollection<OrganizationAuditLog> AuditLogs { get; set; } = [];
 }

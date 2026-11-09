@@ -164,6 +164,7 @@ public sealed class UnitOfWorkTests
             new RefreshTokenRepository(context, transactionSettings),
             new RoleRepository(context, transactionSettings),
             new SFTPConnectionRepository(context, transactionSettings),
+            new SFTPConnectionAuthCodeRepository(context, transactionSettings),
             new UserOrganizationRepository(context, transactionSettings),
             new AuditLogRepository(context),
             new UserRepository(context, transactionSettings));

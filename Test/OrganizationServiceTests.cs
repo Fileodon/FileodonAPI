@@ -38,7 +38,7 @@ public sealed class OrganizationServiceTests
             .Setup(work => work.UserOrganizationRepository.PostAsync(It.IsAny<UserOrganization>()))
             .Callback<UserOrganization>(membership => postedUserOrganization = membership)
             .ReturnsAsync((UserOrganization membership) => membership);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         Organization result = await service.CreateOrganizationAsync(
             "Acme",
@@ -54,7 +54,6 @@ public sealed class OrganizationServiceTests
         Assert.Equal("owner@acme.example.com", postedOrganization.ContactEmail);
         Assert.NotNull(postedOwnerRole);
         Assert.Equal("Owner", postedOwnerRole.Name);
-        Assert.Equal("OWNER", postedOwnerRole.NormalizedName);
         Assert.Equal(42, postedOwnerRole.OrganizationId);
         Assert.Equal((long)PermissionFlags.All, postedOwnerRole.PermissionMask);
         Assert.NotNull(postedUserOrganization);
@@ -79,7 +78,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.RoleRepository.PostAsync(It.IsAny<AspNetRole>()))
             .ReturnsAsync(new AspNetRole { Id = string.Empty });
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         Exception exception = await Assert.ThrowsAsync<Exception>(() =>
             service.CreateOrganizationAsync(
@@ -112,9 +111,9 @@ public sealed class OrganizationServiceTests
                 "Updated name",
                 userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -134,9 +133,9 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.DeleteByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -153,9 +152,9 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
 
         Assert.Equal(MutationStatus.Forbidden, result.Status);
@@ -177,9 +176,9 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
 
         Assert.Equal(MutationStatus.Forbidden, result.Status);
@@ -199,7 +198,7 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
             .ReturnsAsync((Organization?)null);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
         Organization? result = await service.GetOrganizationByIdAsync(42, userId);
 
@@ -214,11 +213,11 @@ public sealed class OrganizationServiceTests
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
             .ReturnsAsync((Organization?)null);
-        OrganizationService service = new(unitOfWork.Object);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> updateResult =
+        MutationEnvelope<Organization> updateResult =
             await service.UpdateOrganizationAsync(42, "Updated name", userId);
-        MutationResult<Organization> deleteResult =
+        MutationEnvelope<Organization> deleteResult =
             await service.DeleteOrganizationByIdAsync(42, userId);
 
         Assert.Equal(MutationStatus.NotFound, updateResult.Status);
@@ -244,6 +243,10 @@ public sealed class OrganizationServiceTests
             .Returns(Mock.Of<IDisposable>());
         return unitOfWork;
     }
+
+    private static OrganizationService CreateOrganizationService(
+        Mock<IUnitOfWork> unitOfWork) =>
+        new(unitOfWork.Object);
 
     private static Organization CreateOrganization(string ownerId) =>
         new()

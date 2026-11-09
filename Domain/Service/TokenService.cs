@@ -10,10 +10,16 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Domain.Service;
 
-public class TokenService(IConfiguration configuration, UserManager<User> userManager) : ITokenService
+public class TokenService : ITokenService
 {
-    private readonly IConfiguration _configuration = configuration;
-    private readonly UserManager<User> _userManager = userManager;
+    private readonly IConfiguration _configuration;
+    private readonly UserManager<User> _userManager;
+
+    public TokenService(IConfiguration configuration, UserManager<User> userManager)
+    {
+        _configuration = configuration;
+        _userManager = userManager;
+    }
 
     public async Task<string> CreateTokenAsync(User user)
     {
