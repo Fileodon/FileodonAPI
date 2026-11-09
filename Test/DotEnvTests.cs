@@ -25,6 +25,51 @@ public sealed class DotEnvTests
     }
 
     [Fact]
+    public void Converts_a_legacy_environment_variable_to_double_underscore_form()
+    {
+        const string legacyKey = "FILEODON_TEST_LEGACY";
+        const string convertedKey = "FILEODON__TEST__LEGACY";
+        string filePath = CreateEnvFile($"{legacyKey}=test-value");
+
+        try
+        {
+            RemoveEnvironmentVariable(legacyKey);
+            RemoveEnvironmentVariable(convertedKey);
+
+            DotEnv.Load(filePath);
+
+            Assert.Equal("test-value", Environment.GetEnvironmentVariable(convertedKey));
+        }
+        finally
+        {
+            RemoveEnvironmentVariable(legacyKey);
+            RemoveEnvironmentVariable(convertedKey);
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
+    public void Does_not_convert_an_already_nested_environment_variable()
+    {
+        const string key = "FILEODON_TEST__NESTED";
+        string filePath = CreateEnvFile($"{key}=test-value");
+
+        try
+        {
+            RemoveEnvironmentVariable(key);
+
+            DotEnv.Load(filePath);
+
+            Assert.Equal("test-value", Environment.GetEnvironmentVariable(key));
+        }
+        finally
+        {
+            RemoveEnvironmentVariable(key);
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public void Ignores_blank_lines_and_comments()
     {
         const string key = "FILEODON_TEST_DOTENV_COMMENT";

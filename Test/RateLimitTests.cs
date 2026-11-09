@@ -1,9 +1,9 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Controller.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
-using System.Threading.RateLimiting;
 
 namespace Test;
 
@@ -123,7 +123,7 @@ public sealed class RateLimitTests
         if (userId is not null)
         {
             context.User = new ClaimsPrincipal(new ClaimsIdentity(
-                [new Claim(ClaimTypes.NameIdentifier, userId)],
+                [new Claim("id", userId)],
                 authenticationType: "test"));
         }
 
