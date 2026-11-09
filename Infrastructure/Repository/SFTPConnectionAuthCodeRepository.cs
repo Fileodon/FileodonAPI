@@ -50,7 +50,7 @@ public class SFTPConnectionAuthCodeRepository : BaseRepository<SFTPConnectionAut
     {
         return _context.SFTPConnectionAuthCodes
             .Where(ac =>
-                ac.VerificationCode == authCode &&
+                string.Equals(ac.VerificationCode, authCode, StringComparison.OrdinalIgnoreCase) &&
                 ac.Organization!.Id == organizationId)
             .FirstOrDefaultAsync();
     }
