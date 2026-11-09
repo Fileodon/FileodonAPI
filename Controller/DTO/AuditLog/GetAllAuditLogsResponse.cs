@@ -2,7 +2,7 @@ using Infrastructure.Models;
 
 namespace Controller.DTO.AuditLog;
 
-public record class AuditLogDTO
+public record AuditLogDTO
 (
     Guid Id,
     DateTime Timestamp,

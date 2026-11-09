@@ -9,9 +9,15 @@ namespace Controller.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class AuditLogController(IAuditLogService service): ControllerBase
+public class AuditLogController : ControllerBase
 {
-    private readonly IAuditLogService _service = service;
+    private readonly IAuditLogService _service;
+
+    public AuditLogController(IAuditLogService service)
+    {
+        _service = service;
+    }
+
     [HttpGet("all/{organizationId}")]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAuditLogs(int organizationId, [FromQuery] string? filter)

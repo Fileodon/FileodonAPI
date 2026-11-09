@@ -19,9 +19,13 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
         _userContextService = userContextService;
     }
 
+    private List<OrganizationAuditLog> organizationAuditLogs = new List<OrganizationAuditLog>();
+    private List<SFTPConnectionAuditLog> sftpConnectionAuditLogs = new List<SFTPConnectionAuditLog>();
+    private List<RoleAuditLog> roleAuditLogs = new List<RoleAuditLog>();
+    private List<UserOrganizationAuditLog> userOrganizationAuditLogs = new List<UserOrganizationAuditLog>();
+
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        Console.WriteLine("Intercepter called saving changes");
         var context = eventData.Context;
         if(context is null)
         {
@@ -29,7 +33,15 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
         }
         try
         {
-            CreateAuditEntries(context);
+            CreateAuditEntries(context.ChangeTracker);
+            context.Set<OrganizationAuditLog>().AddRange(organizationAuditLogs);
+            context.Set<SFTPConnectionAuditLog>().AddRange(sftpConnectionAuditLogs);
+            context.Set<RoleAuditLog>().AddRange(roleAuditLogs);
+            context.Set<UserOrganizationAuditLog>().AddRange(userOrganizationAuditLogs);
+            organizationAuditLogs.Clear();
+            sftpConnectionAuditLogs.Clear();
+            roleAuditLogs.Clear();
+            userOrganizationAuditLogs.Clear();
         }catch (Exception ex)
         {
             Console.WriteLine($"Error creating audit entries: {ex.Message}");
@@ -40,7 +52,6 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
 
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        Console.WriteLine("Intercepter called saving changes async");
         var context = eventData.Context;
 
         if(context is null)
@@ -50,7 +61,15 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
         
         try
         {
-            CreateAuditEntries(context);
+            CreateAuditEntries(context.ChangeTracker);
+            context.Set<OrganizationAuditLog>().AddRange(organizationAuditLogs);
+            context.Set<SFTPConnectionAuditLog>().AddRange(sftpConnectionAuditLogs);
+            context.Set<RoleAuditLog>().AddRange(roleAuditLogs);
+            context.Set<UserOrganizationAuditLog>().AddRange(userOrganizationAuditLogs);
+            organizationAuditLogs.Clear();
+            sftpConnectionAuditLogs.Clear();
+            roleAuditLogs.Clear();
+            userOrganizationAuditLogs.Clear();
         }catch (Exception ex)
         {
             Console.WriteLine($"Error creating audit entries: {ex.Message}");
@@ -59,13 +78,13 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void CreateAuditEntries(DbContext context)
+    private void CreateAuditEntries(ChangeTracker changeTracker)
     {
         string userid = _userContextService.GetCurrentUserId() ?? "Unknown";
         string userAgent = _userContextService.getUserAgent() ?? "Unknown";
-        context.ChangeTracker.DetectChanges();
+        changeTracker.DetectChanges();
 
-        foreach (var entry in context.ChangeTracker.Entries<IAuditAble>())
+        foreach (var entry in changeTracker.Entries<IAuditAble>())
         {
             if(entry.Entity is OrganizationAuditLog)
             {
@@ -82,6 +101,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             {             
                 OrganizationAuditLog auditLog = new OrganizationAuditLog
                 {
+                    Id = Guid.NewGuid(),
                     ActorId = userid,
                     NewData = SerializeNewValues(entry),
                     OldData = SerializeOldValues(entry),
@@ -89,12 +109,13 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
                     Source = userAgent,
                     Action = entry.State.ToString(),
                 };
-                context.Set<OrganizationAuditLog>().Add(auditLog);
+                organizationAuditLogs.Add(auditLog);
             }
             else if(entry.Entity is SFTPConnection sftpConnection)
             {
                 SFTPConnectionAuditLog auditLog = new SFTPConnectionAuditLog
                 {
+                    Id = Guid.NewGuid(),
                     ActorId = userid,
                     NewData = SerializeNewValues(entry),
                     OldData = SerializeOldValues(entry),
@@ -102,12 +123,13 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
                     Source = userAgent,
                     Action = entry.State.ToString(),
                 };
-                context.Set<SFTPConnectionAuditLog>().Add(auditLog);
+                sftpConnectionAuditLogs.Add(auditLog);
             }
             else if (entry.Entity is AspNetRole role)
             {
                 RoleAuditLog auditLog = new RoleAuditLog
                 {
+                    Id = Guid.NewGuid(),
                     ActorId = userid,
                     NewData = SerializeNewValues(entry),
                     OldData = SerializeOldValues(entry),
@@ -115,12 +137,13 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
                     Source = userAgent,
                     Action = entry.State.ToString(),
                 };
-                context.Set<RoleAuditLog>().Add(auditLog);
+                roleAuditLogs.Add(auditLog);
             }
             else if(entry.Entity is UserOrganization userOrgannization)
             {
                 UserOrganizationAuditLog auditLog = new UserOrganizationAuditLog
                 {
+                    Id = Guid.NewGuid(),
                     ActorId = userid,
                     NewData = SerializeNewValues(entry),
                     OldData = SerializeOldValues(entry),
@@ -128,7 +151,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
                     Source = userAgent,
                     Action = entry.State.ToString(),
                 };
-                context.Set<UserOrganizationAuditLog>().Add(auditLog);
+                userOrganizationAuditLogs.Add(auditLog);
             }
 
         }

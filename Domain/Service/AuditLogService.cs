@@ -4,13 +4,9 @@ using Infrastructure.Models;
 namespace Domain.Service;
 
 
-public class AuditLogService: IAuditLogService
+public class AuditLogService(IUnitOfWork unitOfWork) : IAuditLogService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    public AuditLogService(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<AllAuditLogsServiceReturn> GetAllAuditLogsInOrganization(int id)
     {
