@@ -67,29 +67,29 @@ public class OrganizationService : IOrganizationService
         }
     }
 
-    public async Task<MutationResult<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
+    public async Task<MutationEnvelope<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
     {
         Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
 
         if (organization is null)
         {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
 
         if (!string.Equals(organization.UserOwnerId, userId, StringComparison.InvariantCultureIgnoreCase))
         {
-            return new MutationResult<Organization>(MutationStatus.Forbidden, null);
+            return new MutationEnvelope<Organization>(MutationStatus.Forbidden, null);
         }
 
         Organization? deletedOrganization =
             await _unitOfWork.OrganizationRepository.DeleteByIdAsync(organizationId, userId);
         if (deletedOrganization is null)
         {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return new MutationResult<Organization>(MutationStatus.Success, deletedOrganization);
+        return new MutationEnvelope<Organization>(MutationStatus.Success, deletedOrganization);
     }
 
     public async Task<Organization?> GetOrganizationByIdAsync(int organizationId, string userId)
@@ -97,7 +97,7 @@ public class OrganizationService : IOrganizationService
         return await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
     }
 
-    public async Task<MutationResult<Organization>> UpdateOrganizationAsync(
+    public async Task<MutationEnvelope<Organization>> UpdateOrganizationAsync(
         int organizationId,
         string organizationName,
         string userId)
@@ -105,12 +105,12 @@ public class OrganizationService : IOrganizationService
         Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
         if (organization is null)
         {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
 
         if (!string.Equals(organization.UserOwnerId, userId, StringComparison.InvariantCultureIgnoreCase))
         {
-            return new MutationResult<Organization>(MutationStatus.Forbidden, null);
+            return new MutationEnvelope<Organization>(MutationStatus.Forbidden, null);
         }
 
         Organization? updatedOrganization =
@@ -120,10 +120,10 @@ public class OrganizationService : IOrganizationService
                 userId);
         if (updatedOrganization is null)
         {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return new MutationResult<Organization>(MutationStatus.Success, updatedOrganization);
+        return new MutationEnvelope<Organization>(MutationStatus.Success, updatedOrganization);
     }
 }

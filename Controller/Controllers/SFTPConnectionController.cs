@@ -34,7 +34,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -59,7 +59,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.DeleteSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.DeleteSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -84,7 +84,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -109,7 +109,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -137,7 +137,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid, userId);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -177,7 +177,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnectionAuthCode> result = await _sFTPConnectionService.GenerateVerificationCodeAsync(organizationid, userId);
+            MutationEnvelope<SFTPConnectionAuthCode> result = await _sFTPConnectionService.GenerateVerificationCodeAsync(organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -198,7 +198,7 @@ namespace Controller.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> AddServer(int organizationid, [FromBody] SFTPConnectionCreateRequest request)
         {
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(request.AuthCode, organizationid, request.DisplayName, request.Host, request.Port);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(request.AuthCode, organizationid, request.DisplayName, request.Host, request.Port);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -223,7 +223,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationResult<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionStatusAsync(request.SFTPConnectionId, organizationid, userId, request.NewStatus);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionStatusAsync(request.SFTPConnectionId, organizationid, userId, request.NewStatus);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {

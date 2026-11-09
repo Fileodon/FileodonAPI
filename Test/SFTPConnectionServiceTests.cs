@@ -46,7 +46,7 @@ public sealed class SFTPConnectionServiceTests
             unitOfWork.Object,
             Mock.Of<ICryptoService>());
 
-        MutationResult<SFTPConnectionAuthCode> result =
+        MutationEnvelope<SFTPConnectionAuthCode> result =
             await service.GenerateVerificationCodeAsync(organizationId, userId);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -90,7 +90,7 @@ public sealed class SFTPConnectionServiceTests
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork(repository);
         SFTPConnectionService service = CreateService(unitOfWork, cryptoService.Object);
 
-        MutationResult<SFTPConnection> result =
+        MutationEnvelope<SFTPConnection> result =
             await service.UpdateSFTPConnectionStatusAsync(connection.Id, organizationId, userId, SFTPConnectionStatus.Accepted);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -129,7 +129,7 @@ public sealed class SFTPConnectionServiceTests
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork(repository);
         SFTPConnectionService service = CreateService(unitOfWork, Mock.Of<ICryptoService>());
 
-        MutationResult<SFTPConnection> result =
+        MutationEnvelope<SFTPConnection> result =
             await service.UpdateSFTPConnectionStatusAsync(connection.Id, organizationId, userId, SFTPConnectionStatus.Rejected);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -152,7 +152,7 @@ public sealed class SFTPConnectionServiceTests
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork(repository);
         SFTPConnectionService service = CreateService(unitOfWork, Mock.Of<ICryptoService>());
 
-        MutationResult<SFTPConnection> result =
+        MutationEnvelope<SFTPConnection> result =
             await service.UpdateSFTPConnectionStatusAsync(7, organizationId, userId, SFTPConnectionStatus.Accepted);
 
         Assert.Equal(MutationStatus.NotFound, result.Status);

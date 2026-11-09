@@ -67,7 +67,7 @@ public class OrganizationController : ControllerBase
             return Unauthorized();
         }
 
-        MutationResult<Organization> result = await _organizationService.DeleteOrganizationByIdAsync(organizationId, userId);
+        MutationEnvelope<Organization> result = await _organizationService.DeleteOrganizationByIdAsync(organizationId, userId);
         if (result.Status == MutationStatus.NotFound || result.Data is null)
         {
             return NotFound();

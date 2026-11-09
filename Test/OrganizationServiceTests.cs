@@ -113,7 +113,7 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -135,7 +135,7 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
 
         Assert.Equal(MutationStatus.Success, result.Status);
@@ -154,7 +154,7 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
 
         Assert.Equal(MutationStatus.Forbidden, result.Status);
@@ -178,7 +178,7 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync(organization);
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> result =
+        MutationEnvelope<Organization> result =
             await service.DeleteOrganizationByIdAsync(organization.Id, userId);
 
         Assert.Equal(MutationStatus.Forbidden, result.Status);
@@ -215,9 +215,9 @@ public sealed class OrganizationServiceTests
             .ReturnsAsync((Organization?)null);
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
-        MutationResult<Organization> updateResult =
+        MutationEnvelope<Organization> updateResult =
             await service.UpdateOrganizationAsync(42, "Updated name", userId);
-        MutationResult<Organization> deleteResult =
+        MutationEnvelope<Organization> deleteResult =
             await service.DeleteOrganizationByIdAsync(42, userId);
 
         Assert.Equal(MutationStatus.NotFound, updateResult.Status);
