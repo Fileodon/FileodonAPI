@@ -116,6 +116,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 
+builder.Services.AddTransient<IEmailSender<User>, SmtpEmailSender>();
+
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 
@@ -127,17 +129,22 @@ builder.Services.AddSingleton<ICryptoService>(services =>
 
 builder.Services.AddIdentityCore<User>(options =>
 {
+    // Password policy
     IConfigurationSection passwordPolicy = builder.Configuration.GetSection("PasswordPolicy");
     options.Password.RequireDigit = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireDigit));
     options.Password.RequiredLength = passwordPolicy.GetValue<int>(nameof(options.Password.RequiredLength));
     options.Password.RequireUppercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireUppercase));
     options.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireLowercase));
     options.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireNonAlphanumeric));
+
+    // User and SignIn policy
     options.User.RequireUniqueEmail = passwordPolicy.GetValue<bool>(nameof(options.User.RequireUniqueEmail));
+    options.SignIn.RequireConfirmedEmail = passwordPolicy.GetValue<bool>(nameof(options.SignIn.RequireConfirmedEmail));
 })
     .AddRoles<AspNetRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager();
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

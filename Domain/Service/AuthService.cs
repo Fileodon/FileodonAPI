@@ -1,7 +1,9 @@
+using System.Text;
 using Domain.DTO.Auth;
 using Domain.Interface;
 using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 
 namespace Domain.Service;
@@ -10,6 +12,7 @@ public class AuthService : IAuthService
 {
     private readonly TimeSpan RefreshTokenLifetime;
 
+    private readonly IEmailSender<User> _emailSender;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ITokenService _tokenService;
@@ -17,12 +20,14 @@ public class AuthService : IAuthService
 
     public AuthService(
         IConfiguration configuration,
+        IEmailSender<User> emailSender,
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         ITokenService tokenService,
         IUnitOfWork unitOfWork
         )
     {
+        _emailSender = emailSender;
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
@@ -93,13 +98,26 @@ public class AuthService : IAuthService
             Email = email
         };
         // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
-        return await _userManager.CreateAsync(user, password);
+        IdentityResult result = await _userManager.CreateAsync(user, password);
+
+        if (result.Succeeded)
+        {
+            await SendConfirmationEmailAsync(user);
+        }
+
+        return result;
     }
 
-    public Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
+    public async Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
     {
         // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
-        return _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+        return await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+    }
+
+    public async Task<IdentityResult> ConfirmUserEmailAsync(string userId, string token)
+    {
+        User user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException("User not found.");
+        return await _userManager.ConfirmEmailAsync(user, token);
     }
 
     private async Task<AuthTokens> IssueTokensAsync(User user)
@@ -118,5 +136,19 @@ public class AuthService : IAuthService
             await _tokenService.CreateTokenAsync(user),
             refreshToken,
             new DateTimeOffset(expiresAt, TimeSpan.Zero));
+    }
+
+    private async Task SendConfirmationEmailAsync(User user)
+    {
+        if (string.IsNullOrEmpty(user.Email))
+        {
+            throw new InvalidOperationException("User email is not set.");
+        }
+
+        string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        string encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        string link = $"https://fileodon.dev/confirm-email?userId={user.Id}&token={encodedToken}";
+
+        await _emailSender.SendConfirmationLinkAsync(user, user.Email, link);
     }
 }

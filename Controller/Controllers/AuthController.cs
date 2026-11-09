@@ -140,6 +140,25 @@ namespace Controller.Controllers
             return CreatedAtAction(nameof(Register), new { email = request.Email }, "User registered successfully.");
         }
 
+        [HttpPost("confirm-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.Token))
+            {
+                return BadRequest("UserId and Token are required.");
+            }
+
+            var result = await _authService.ConfirmUserEmailAsync(request.UserId, request.Token);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors.Select(e => e.Description));
+            }
+
+            return Ok("Email confirmed successfully.");
+        }
+
         [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(BasicUserInformationResponse), 200)]
