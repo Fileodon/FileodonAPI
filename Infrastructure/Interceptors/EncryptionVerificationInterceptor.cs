@@ -7,9 +7,14 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Infrastructure.Interceptors;
 
-public class EncryptionVerificationInterceptor(ICryptoService cryptoService) : SaveChangesInterceptor
+public class EncryptionVerificationInterceptor : SaveChangesInterceptor
 {
-    private readonly ICryptoService _cryptoService = cryptoService;
+    private readonly ICryptoService _cryptoService;
+
+    public EncryptionVerificationInterceptor(ICryptoService cryptoService)
+    {
+        _cryptoService = cryptoService;
+    }
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {

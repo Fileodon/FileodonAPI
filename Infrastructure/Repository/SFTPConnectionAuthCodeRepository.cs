@@ -6,9 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class SFTPConnectionAuthCodeRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : BaseRepository<SFTPConnectionAuthCode>(context, transactionSettings), ISFTPConnectionAuthCodeRepository
+public class SFTPConnectionAuthCodeRepository : BaseRepository<SFTPConnectionAuthCode>, ISFTPConnectionAuthCodeRepository
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly ApplicationDbContext _context;
+
+    public SFTPConnectionAuthCodeRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : base(context, transactionSettings)
+    {
+        _context = context;
+    }
 
     public async Task<SFTPConnectionAuthCode?> AddAuthCodeAsync(string authCode, int organizationId, string userId)
     {

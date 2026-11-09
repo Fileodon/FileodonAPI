@@ -13,9 +13,14 @@ namespace Controller.Controllers
     [Route("api/organization/{organizationid}/[controller]")]
     [Authorize]
     [ApiController]
-    public class SFTPConnectionController(ISFTPConnectionService sFTPConnectionService) : ControllerBase
+    public class SFTPConnectionController : ControllerBase
     {
-        private readonly ISFTPConnectionService _sFTPConnectionService = sFTPConnectionService;
+        private readonly ISFTPConnectionService _sFTPConnectionService;
+
+        public SFTPConnectionController(ISFTPConnectionService sFTPConnectionService)
+        {
+            _sFTPConnectionService = sFTPConnectionService;
+        }
 
         [HttpGet("{sftpconnectionid}")]
         [ProducesResponseType(typeof(BaseSFTPConnectionGetResponse), 200)]

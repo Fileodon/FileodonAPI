@@ -154,21 +154,29 @@ public sealed class EncryptionVerificationInterceptorTests
         return path;
     }
 
-    private sealed class TestDatabase(
-        ApplicationDbContext context,
-        SqliteConnection connection,
-        CryptoService cryptoService,
-        string keyPath) : IDisposable
+    private sealed class TestDatabase : IDisposable
     {
-        public ApplicationDbContext Context { get; } = context;
-        public CryptoService CryptoService { get; } = cryptoService;
+        public ApplicationDbContext Context { get; }
+        public CryptoService CryptoService { get; }
+
+        public SqliteConnection Connection { get; }
+
+        public string KeyPath { get; }
+
+        public TestDatabase(ApplicationDbContext context, SqliteConnection connection, CryptoService cryptoService, string keyPath)
+        {
+            Context = context;
+            Connection = connection;
+            CryptoService = cryptoService;
+            KeyPath = keyPath;
+        }
 
         public void Dispose()
         {
             Context.Dispose();
-            connection.Dispose();
+            Connection.Dispose();
             CryptoService.Dispose();
-            File.Delete(keyPath);
+            File.Delete(KeyPath);
         }
     }
 }

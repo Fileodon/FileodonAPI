@@ -6,9 +6,14 @@ using Infrastructure.Models.Enums;
 
 namespace Domain.Service;
 
-public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
+public class OrganizationService : IOrganizationService
 {
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public OrganizationService(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
 
     public async Task<Organization> CreateOrganizationAsync(
         string organizationName,
@@ -65,7 +70,7 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
     public async Task<MutationResult<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
     {
         Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
-        
+
         if (organization is null)
         {
             return new MutationResult<Organization>(MutationStatus.NotFound, null);

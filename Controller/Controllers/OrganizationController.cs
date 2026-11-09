@@ -11,9 +11,14 @@ namespace Controller.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class OrganizationController(IOrganizationService organizationService) : ControllerBase
+public class OrganizationController : ControllerBase
 {
-    private readonly IOrganizationService _organizationService = organizationService;
+    private readonly IOrganizationService _organizationService;
+
+    public OrganizationController(IOrganizationService organizationService)
+    {
+        _organizationService = organizationService;
+    }
 
     [HttpGet("{organizationId}")]
     [ProducesResponseType(typeof(GetOrganizationRequest), 200)]

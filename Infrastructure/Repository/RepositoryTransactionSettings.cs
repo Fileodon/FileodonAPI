@@ -22,9 +22,15 @@ public sealed class RepositoryTransactionSettings : IRepositoryTransactionSettin
         }
     }
 
-    private sealed class TransactionSettingsScope(RepositoryTransactionSettings settings) : IDisposable
+    private sealed class TransactionSettingsScope : IDisposable
     {
         private bool _disposed;
+        private readonly RepositoryTransactionSettings _settings;
+
+        public TransactionSettingsScope(RepositoryTransactionSettings settings)
+        {
+            _settings = settings;
+        }
 
         public void Dispose()
         {
@@ -34,7 +40,7 @@ public sealed class RepositoryTransactionSettings : IRepositoryTransactionSettin
             }
 
             _disposed = true;
-            settings.EnableAutomaticTransactions();
+            _settings.EnableAutomaticTransactions();
         }
     }
 }

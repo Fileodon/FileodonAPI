@@ -8,12 +8,16 @@ using Infrastructure.Models.Enums;
 
 namespace Domain.Service;
 
-public class SFTPConnectionService(
-    IUnitOfWork unitOfWork,
-    ICryptoService cryptoService) : ISFTPConnectionService
+public class SFTPConnectionService : ISFTPConnectionService
 {
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly ICryptoService _cryptoService = cryptoService;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ICryptoService _cryptoService;
+
+    public SFTPConnectionService(IUnitOfWork unitOfWork, ICryptoService cryptoService)
+    {
+        _unitOfWork = unitOfWork;
+        _cryptoService = cryptoService;
+    }
 
     public async Task<MutationResult<SFTPConnectionAuthCode>> GenerateVerificationCodeAsync(int organizationId, string userId)
     {

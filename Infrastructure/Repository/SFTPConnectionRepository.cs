@@ -6,9 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class SFTPConnectionRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : BaseRepository<SFTPConnection>(context, transactionSettings), ISFTPConnectionRepository
+public class SFTPConnectionRepository : BaseRepository<SFTPConnection>, ISFTPConnectionRepository
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly ApplicationDbContext _context;
+
+    public SFTPConnectionRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : base(context, transactionSettings)
+    {
+        _context = context;
+    }
+
     public async Task<SFTPConnection> AddSFTPConnectionAsync(SFTPConnection connection)
     {
         await _context.SFTPConnections.AddAsync(connection);
