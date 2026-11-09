@@ -2,14 +2,14 @@ using Infrastructure.Models.Enums;
 
 namespace Controller.DTO.SFTPConnection;
 
-public record class BaseSFTPConnectionGetResponse
+public record BaseSFTPConnectionGetResponse
 {
     public required int Id { get; init; }
     public required string DisplayName { get; init; }
     public required SFTPConnectionStatus Status { get; init; }
 }
 
-public record class DetailedSFTPConnectionGetResponse : BaseSFTPConnectionGetResponse
+public record DetailedSFTPConnectionGetResponse : BaseSFTPConnectionGetResponse
 {
     public required string Host { get; init; }
     public required int Port { get; init; }

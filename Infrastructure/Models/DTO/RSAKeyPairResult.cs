@@ -1,6 +1,6 @@
 namespace Infrastructure.Models.DTO;
 
-public record class RSAKeyPairResult(
+public record RSAKeyPairResult(
     byte[] PublicKey,
     byte[] PrivateKey
 );

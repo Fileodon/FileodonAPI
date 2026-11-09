@@ -1,6 +1,6 @@
 namespace Controller.DTO.SFTPConnection;
 
-public record class SFTPConnectionCreateRequest(
+public record SFTPConnectionCreateRequest(
     string AuthCode,
     string DisplayName,
     string Host,

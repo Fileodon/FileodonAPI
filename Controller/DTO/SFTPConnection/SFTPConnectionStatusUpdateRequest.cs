@@ -2,7 +2,7 @@ using Infrastructure.Models.Enums;
 
 namespace Controller.DTO.SFTPConnection;
 
-public record class SFTPConnectionStatusUpdateRequest(
+public record SFTPConnectionStatusUpdateRequest(
     int SFTPConnectionId,
     SFTPConnectionStatus NewStatus
 );

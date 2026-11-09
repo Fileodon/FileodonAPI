@@ -1,6 +1,6 @@
 namespace Controller.DTO.Organization;
 
-public record class CreateOrganizationRequest(
+public record CreateOrganizationRequest(
     string OrgName,
     string WorkspaceURL,
     string ContactEmail

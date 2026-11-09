@@ -1,6 +1,6 @@
 namespace Controller.DTO.SFTPConnection;
 
-public record class SFTPConnectionUpdateResponse(
+public record SFTPConnectionUpdateResponse(
     string DisplayName
 );
 
