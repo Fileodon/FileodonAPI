@@ -16,4 +16,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\fileodon-haj.png" LogicalName="Fileodon.EmailLogo.png" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using Infrastructure.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -23,8 +24,12 @@ public class SmtpEmailSender : IEmailSender<User>
     public async Task SendConfirmationLinkAsync(User user, string email, string confirmationLink)
     {
         string subject = "Confirm your email";
-        string html = $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a><br/>" +
-                      $"Or copy and paste the following link into your browser: {confirmationLink}";
+        string html = BuildEmail(
+            "Welcome to Fileodon",
+            "Thanks for signing up. Confirm your email address to activate your account.",
+            "Confirm email address",
+            confirmationLink,
+            "If you did not create a Fileodon account, you can safely ignore this email.");
 
         await SendAsync(email, subject, html);
     }
@@ -32,8 +37,12 @@ public class SmtpEmailSender : IEmailSender<User>
     public Task SendPasswordResetCodeAsync(User user, string email, string resetCode)
     {
         string subject = "Password Reset Code";
-        string html = $"Your password reset code is: <strong>{resetCode}</strong><br/>" +
-                      $"If you did not request a password reset, please ignore this email.";
+        string html = BuildEmail(
+            "Reset your password",
+            "Use the verification code below to reset your Fileodon password.",
+            null,
+            resetCode,
+            "If you did not request a password reset, you can safely ignore this email.");
 
         return SendAsync(email, subject, html);
     }
@@ -41,10 +50,63 @@ public class SmtpEmailSender : IEmailSender<User>
     public Task SendPasswordResetLinkAsync(User user, string email, string resetLink)
     {
         string subject = "Reset your password";
-        string html = $"Please reset your password by clicking this link: <a href=\"{resetLink}\">Reset Password</a><br/>" +
-                      $"Or copy and paste the following link into your browser: {resetLink}";
+        string html = BuildEmail(
+            "Reset your password",
+            "Click the button below to choose a new password for your Fileodon account.",
+            "Reset password",
+            resetLink,
+            "If you did not request a password reset, you can safely ignore this email.");
 
         return SendAsync(email, subject, html);
+    }
+
+    private static string BuildEmail(
+        string title,
+        string message,
+        string? actionLabel,
+        string actionValue,
+        string note)
+    {
+        string encodedTitle = WebUtility.HtmlEncode(title);
+        string encodedMessage = WebUtility.HtmlEncode(message);
+        string encodedValue = WebUtility.HtmlEncode(actionValue);
+        string encodedNote = WebUtility.HtmlEncode(note);
+        string action = actionLabel is null
+            ? $"""
+               <div style="margin:28px 0;padding:18px;text-align:center;background:#eef6ff;border:1px solid #cfe5ff;border-radius:8px;color:#0c2d55;font-size:28px;font-weight:700;letter-spacing:4px;">{encodedValue}</div>
+               """
+            : $"""
+               <p style="margin:28px 0;text-align:center;">
+                 <a href="{encodedValue}" style="display:inline-block;padding:14px 26px;background:#087cf5;border-radius:7px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">{WebUtility.HtmlEncode(actionLabel)}</a>
+               </p>
+               <p style="color:#667085;font-size:13px;line-height:1.6;word-break:break-all;">Or copy and paste this link into your browser:<br />{encodedValue}</p>
+               """;
+
+        return $"""
+            <!doctype html>
+            <html lang="en">
+              <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#14213d;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:32px 12px;">
+                  <tr><td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
+                      <tr><td style="padding:24px 32px;background:#071a38;text-align:center;">
+                        <img src="cid:fileodon-logo" alt="Fileodon" width="220" style="display:block;width:220px;max-width:100%;height:auto;margin:0 auto;" />
+                      </td></tr>
+                      <tr><td style="padding:36px 40px 32px;">
+                        <h1 style="margin:0 0 16px;color:#071a38;font-size:26px;line-height:1.25;">{encodedTitle}</h1>
+                        <p style="margin:0;color:#475467;font-size:16px;line-height:1.6;">{encodedMessage}</p>
+                        {action}
+                        <p style="margin:24px 0 0;color:#98a2b3;font-size:13px;line-height:1.5;">{encodedNote}</p>
+                      </td></tr>
+                      <tr><td style="padding:20px 40px;background:#f8fafc;color:#98a2b3;font-size:12px;text-align:center;">
+                        Fileodon &middot; Secure and easy SFTP management
+                      </td></tr>
+                    </table>
+                  </td></tr>
+                </table>
+              </body>
+            </html>
+            """;
     }
 
     private async Task SendAsync(string to, string subject, string html)
@@ -80,7 +142,17 @@ public class SmtpEmailSender : IEmailSender<User>
         }
 
         message.Subject = subject;
-        message.Body = new BodyBuilder { HtmlBody = html }.ToMessageBody();
+        BodyBuilder body = new() { HtmlBody = html };
+        using Stream? logoStream = typeof(SmtpEmailSender).Assembly
+            .GetManifestResourceStream("Fileodon.EmailLogo.png");
+        if (logoStream is null)
+        {
+            throw new InvalidOperationException("The embedded Fileodon email logo could not be found.");
+        }
+
+        MimeEntity logo = body.LinkedResources.Add("fileodon-logo", logoStream);
+        logo.ContentId = "fileodon-logo";
+        message.Body = body.ToMessageBody();
 
         using var client = new SmtpClient();
         try
