@@ -131,12 +131,12 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.HasOne(membership => membership.Organization)
                 .WithMany(organization => organization.UserOrganizations)
                 .HasForeignKey(membership => membership.OrganizationId)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(membership => membership.User)
                 .WithMany(user => user.UserOrganizations)
                 .HasForeignKey(membership => membership.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<SFTPConnection>(entity =>

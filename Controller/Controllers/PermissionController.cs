@@ -39,6 +39,7 @@ public class PermissionController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> CreatePermission(
+        //[FromBody] DTO.Permission.CreatePermissionRequest permission)
         [FromBody] Permission permission)
     {
         var created =

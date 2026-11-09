@@ -5,7 +5,16 @@ using System.Text;
 
 namespace Domain.Interface
 {
-    public interface IUserOrganizationService : IBaseInterface<UserOrganization>
+    public interface
+        IUserOrganizationService : IBaseInterface<UserOrganization>
     {
+        Task<UserOrganization> CreateUserOrganizationAsync(
+            string user_id,
+            int organization_id,
+            string role_id);
+
+        Task<IQueryable<UserOrganization>> WhereAsync(
+            System.Linq.Expressions.Expression<Func<UserOrganization, bool>> predicate,
+            Func<IQueryable<UserOrganization>, IQueryable<UserOrganization>>? includes = null);
     }
 }

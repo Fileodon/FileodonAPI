@@ -526,7 +526,8 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany("UserOrganizations")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Infrastructure.Models.AspNetRole", "Role")
                         .WithMany()
@@ -536,7 +537,8 @@ namespace Infrastructure.Migrations
 
                     b.HasOne("Infrastructure.Models.User", "User")
                         .WithMany("UserOrganizations")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Organization");
 
