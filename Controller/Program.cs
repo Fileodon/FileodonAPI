@@ -63,12 +63,13 @@ if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
 {
     Log.Warning("JWT key is not set in configuration. Generating a new secret.");
     string key = await TokenService.GenerateSecret();
-    DotEnv.WriteEntryAndUpdateEnvironmentVariable("JWT_KEY", key);
-    if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+    if (string.IsNullOrEmpty(key))
     {
-        Log.Error("Failed to set JWT key in configuration after generating a new secret.");
-        throw new InvalidOperationException("Failed to set JWT key in configuration after generating a new secret.");
+        Log.Error("Failed to generate JWT secret.");
+        throw new InvalidOperationException("Failed to generate JWT secret.");
     }
+    DotEnv.WriteEntry("JWT_KEY", key);
+    builder.Configuration["JWT_KEY"] = key;
 }
 
 string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS_ALLOWED_HOSTS") ?? string.Empty)
