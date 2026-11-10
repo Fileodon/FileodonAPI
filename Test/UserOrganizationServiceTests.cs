@@ -174,6 +174,33 @@ public sealed class UserOrganizationServiceTests
     }
 
     [Fact]
+    public async Task CreateUserOrganization_rolls_back_when_committing_transaction_fails()
+    {
+        Mock<IUserOrganizationRepository> repository = new();
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork(repository);
+        unitOfWork
+            .Setup(work => work.CommitAsync())
+            .ThrowsAsync(new InvalidOperationException("Commit failed"));
+        Mock<UserManager<User>> userManager = CreateUserManager();
+        userManager
+            .Setup(manager => manager.FindByEmailAsync("member@example.com"))
+            .ReturnsAsync(new User { Id = "member-id" });
+        UserOrganizationService service = CreateService(
+            unitOfWork,
+            repository,
+            new Mock<IRoleRepository>(),
+            userManager);
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.CreateUserOrganizationAsync("member@example.com", 42, "role-id"));
+
+        Assert.Equal("Commit failed", exception.Message);
+        unitOfWork.Verify(work => work.BeginTransactionAsync(), Times.Once);
+        unitOfWork.Verify(work => work.CommitAsync(), Times.Once);
+        unitOfWork.Verify(work => work.RollbackAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task GetByOrganizationId_returns_repository_results()
     {
         List<UserOrganization> memberships = [CreateMembership()];
