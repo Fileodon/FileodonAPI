@@ -1,17 +1,14 @@
-using Infrastructure.Interface;
-using Infrastructure.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.AspNetCore.Http;
-using Infrastructure.Services;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Infrastructure.Interface;
 using Infrastructure.Interface.Service;
+using Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Infrastructure.Interceptors;
 
-public sealed class AuditLogInterceptor: SaveChangesInterceptor
+public sealed class AuditLogInterceptor : SaveChangesInterceptor
 {
     private readonly IUserContextService _userContextService;
     public AuditLogInterceptor(IUserContextService userContextService)
@@ -27,7 +24,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         var context = eventData.Context;
-        if(context is null)
+        if (context is null)
         {
             return base.SavingChanges(eventData, result);
         }
@@ -42,11 +39,12 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             sftpConnectionAuditLogs.Clear();
             roleAuditLogs.Clear();
             userOrganizationAuditLogs.Clear();
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine($"Error creating audit entries: {ex.Message}");
         }
-        
+
         return base.SavingChanges(eventData, result);
     }
 
@@ -54,11 +52,11 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
     {
         var context = eventData.Context;
 
-        if(context is null)
+        if (context is null)
         {
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
         }
-        
+
         try
         {
             CreateAuditEntries(context.ChangeTracker);
@@ -70,11 +68,12 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             sftpConnectionAuditLogs.Clear();
             roleAuditLogs.Clear();
             userOrganizationAuditLogs.Clear();
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine($"Error creating audit entries: {ex.Message}");
         }
-        
+
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -86,7 +85,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
 
         foreach (var entry in changeTracker.Entries<IAuditAble>())
         {
-            if(entry.Entity is OrganizationAuditLog)
+            if (entry.Entity is OrganizationAuditLog)
             {
                 continue;
             }
@@ -98,7 +97,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             }
 
             if (entry.Entity is Organization organization)
-            {             
+            {
                 OrganizationAuditLog auditLog = new OrganizationAuditLog
                 {
                     Id = Guid.NewGuid(),
@@ -111,7 +110,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
                 };
                 organizationAuditLogs.Add(auditLog);
             }
-            else if(entry.Entity is SFTPConnection sftpConnection)
+            else if (entry.Entity is SFTPConnection sftpConnection)
             {
                 SFTPConnectionAuditLog auditLog = new SFTPConnectionAuditLog
                 {
@@ -139,7 +138,7 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
                 };
                 roleAuditLogs.Add(auditLog);
             }
-            else if(entry.Entity is UserOrganization userOrgannization)
+            else if (entry.Entity is UserOrganization userOrgannization)
             {
                 UserOrganizationAuditLog auditLog = new UserOrganizationAuditLog
                 {
@@ -171,4 +170,4 @@ public sealed class AuditLogInterceptor: SaveChangesInterceptor
             .ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
         return JsonSerializer.Serialize(vals);
     }
-} 
+}

@@ -2,8 +2,6 @@ using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
-using Domain.DTO;
-using Domain.Service;
 using Infrastructure.Models.DTO;
 using Infrastructure.Service;
 

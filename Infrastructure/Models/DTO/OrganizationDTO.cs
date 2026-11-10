@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Infrastructure.Models.DTO
+﻿namespace Infrastructure.Models.DTO
 {
     public class OrganizationDTO
     {

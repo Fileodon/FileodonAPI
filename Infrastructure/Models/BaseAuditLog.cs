@@ -1,6 +1,3 @@
-
-using Infrastructure.Interface;
-
 namespace Infrastructure.Models;
 
 public class BaseAuditLog

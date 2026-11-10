@@ -6,7 +6,7 @@ namespace Controller.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class PermissionController : ControllerBase
 {
     private readonly IPermissionService _permissionService;

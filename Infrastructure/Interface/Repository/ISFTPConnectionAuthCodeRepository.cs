@@ -1,4 +1,3 @@
-using System;
 using Infrastructure.Models;
 
 namespace Infrastructure.Interface.Repository;

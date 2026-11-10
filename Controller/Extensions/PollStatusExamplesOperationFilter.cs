@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Infrastructure.Models.Enums;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 

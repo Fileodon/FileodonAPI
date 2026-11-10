@@ -3,7 +3,7 @@ using Infrastructure.Models.Enums;
 
 namespace Infrastructure.Models;
 
-public partial class SFTPConnection: IAuditAble
+public partial class SFTPConnection : IAuditAble
 {
     public int Id { get; set; }
     public string DisplayName { get; set; } = null!;

@@ -1,13 +1,12 @@
 using Controller.DTO.AuditLog;
 using Domain.Interface;
-using Domain.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers;
 
 [Authorize]
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 public class AuditLogController : ControllerBase
 {
@@ -66,7 +65,7 @@ public class AuditLogController : ControllerBase
         );
         return Ok(dto);
     }
-    
+
     [HttpGet("userOrganization/{userOrganizationId}")]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserOrganizationAuditLogs(int userOrganizationId)
