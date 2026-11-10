@@ -201,6 +201,7 @@ builder.Services.AddScoped<AuditLogInterceptor>();
 builder.Services.AddDbContext<ApplicationDbContext>(
     (sp,options) => {
         options.UseNpgsql(connectionString);
+        options.EnableDetailedErrors();
         options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
     }
 );

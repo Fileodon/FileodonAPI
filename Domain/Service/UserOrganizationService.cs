@@ -12,11 +12,13 @@ public class UserOrganizationService : IUserOrganizationService
 {
     private readonly IUnitOfWork _unit;
     private readonly IUserOrganizationRepository _userOrgRepository;
+    private readonly IRoleRepository _roleRepository;
     private readonly UserManager<User> _userManager;
-    public UserOrganizationService(IUnitOfWork unit, IUserOrganizationRepository userOrgRepository, UserManager<User> userManager)
+    public UserOrganizationService(IUnitOfWork unit, IUserOrganizationRepository userOrgRepository, IRoleRepository roleRepository, UserManager<User> userManager)
     {
         _unit = unit;
         _userOrgRepository = userOrgRepository;
+        _roleRepository = roleRepository;
         _userManager = userManager;
     }
 
@@ -24,37 +26,16 @@ public class UserOrganizationService : IUserOrganizationService
     {
         if (id <= 0)
             return null;
-        return await _userOrgRepository.GetByIdAsync(id);
-    }
-    public async Task<IQueryable<UserOrganization>> GetAllAsync()
-    {
-        return await _userOrgRepository.GetAllAsync();
-    }
-
-    public async Task<UserOrganization> PostAsync(UserOrganization entity)
-    {
-        return await _userOrgRepository.PostAsync(entity);
-    }
-    public async Task<UserOrganization> PutAsync(UserOrganization entity)
-    {
-        return await _userOrgRepository.PutAsync(entity);
+        return await _userOrgRepository.GetByIdWithRelationshipsAsync(id);
     }
     public async Task<UserOrganization?> DeleteAsync(int id)
     {
-        return await _userOrgRepository.DeleteAsync(id);
-        
-    }
-
-    public async Task<UserOrganization> UpdateAsync(UserOrganization entity)
-    {
-        return await _userOrgRepository.UpdateAsync(entity);
-    }
-
-    public Task<IQueryable<UserOrganization>> WhereAsync(
-        Expression<Func<UserOrganization, bool>> predicate,
-        Func<IQueryable<UserOrganization>, IQueryable<UserOrganization>>? includes = null)
-    {
-        return _userOrgRepository.WhereAsync(predicate, includes);
+        var userOrganization = await _userOrgRepository.GetByIdAsync(id);
+        if (userOrganization == null)
+        {
+            throw new InvalidOperationException("UserOrganization not found");
+        }
+        return await _userOrgRepository.DeleteAsync(userOrganization.Id);
     }
 
     public async Task<UserOrganization> CreateUserOrganizationAsync(
@@ -90,5 +71,38 @@ public class UserOrganizationService : IUserOrganizationService
         }
     }
 
+    public async Task<IEnumerable<UserOrganization>> GetByOrganizationIdAsync(int organizationId)
+    {
+        var userOrganizations = await _userOrgRepository.GetUserOrganizationsByOrganizationIdAsync(organizationId);
+        return userOrganizations;
+    }
+    public async Task<IEnumerable<UserOrganization>> GetByUserIdAsync(string userId)
+    {
+        return await _userOrgRepository.GetUserOrganizationsByUseridAsync(userId);
+    }
 
+    public async Task<UserOrganization> EditUserOrganizationAsync(
+        int id,
+        string role_id
+    )
+    {
+        var userOrganization = await _userOrgRepository.GetByIdAsync(id);
+        if (userOrganization == null)
+        {
+            throw new InvalidOperationException("UserOrganization not found");
+        }
+        var role = await _roleRepository.GetByIdAsync(role_id);
+        if(role == null)
+        {
+            throw new InvalidOperationException("Role not found");
+        }
+        userOrganization.RoleId = role_id;
+        var updatedUserOrganization = await _userOrgRepository.PutAsync(userOrganization);
+        userOrganization = await _userOrgRepository.GetByIdWithRelationshipsAsync(updatedUserOrganization.Id);
+        if (userOrganization == null)
+        {
+            throw new InvalidOperationException("Could not find User organization after update");
+        }
+        return userOrganization;
+    }
 }

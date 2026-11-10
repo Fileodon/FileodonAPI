@@ -1,6 +1,7 @@
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Repository;
@@ -12,27 +13,34 @@ public class UserOrganizationRepository : BaseRepository<UserOrganization>, IUse
     {
         _context = context;
     }
-    public Task<IQueryable<UserOrganization>> WhereAsync(
-        Expression<Func<UserOrganization, bool>> predicate,
-        Func<IQueryable<UserOrganization>, IQueryable<UserOrganization>>? includes = null)
-    {
-        ArgumentNullException.ThrowIfNull(predicate);
-
-        IQueryable<UserOrganization> query = _context
-            .Set<UserOrganization>()
-            .Where(predicate);
-
-        if (includes is not null)
-        {
-            query = includes(query);
-        }
-
-        return Task.FromResult(query);
-    }
 
     public async Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogsAsync(int userOrganizationId)
     {
         return _context.UserOrganizationAuditLogs
             .Where(audit => audit.UserOrganizationId == userOrganizationId);
     }
+
+    public async Task<IEnumerable<UserOrganization>> GetUserOrganizationsByOrganizationIdAsync(int organizationId)
+    {
+        return _context.UserOrganizations
+            .Include(uo => uo.Role)
+            .Include(uo => uo.User)
+            .Where(uo => uo.OrganizationId == organizationId);
+    }
+    public async Task<IEnumerable<UserOrganization>> GetUserOrganizationsByUseridAsync(string userId)
+    {
+        return _context.UserOrganizations
+            .Include(uo => uo.Role)
+            .Include(uo => uo.User)
+            .Where(uo => uo.UserId == userId);
+    }
+
+    public async Task<UserOrganization?> GetByIdWithRelationshipsAsync(int id) 
+    {
+        return await _context.UserOrganizations
+            .Include(uo => uo.Role)
+            .Include(uo => uo.User)
+            .FirstAsync(uo => uo.Id == id);
+    }
+
 }

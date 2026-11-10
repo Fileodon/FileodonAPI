@@ -21,9 +21,10 @@ namespace Controller.DTO.UserOrganization
             return new GetUserOrganizationResponse(
               userOrganization.Id,
                 userOrganization.User.UserName,
-                new GetRoleResponse(
-                    userOrganization.Role.Id,
-                    userOrganization.Role.Name
+                new GetRoleResponse
+                (
+                    Id: userOrganization.Role.Id,
+                    Name: userOrganization.Role.Name
                 )
             );
         }

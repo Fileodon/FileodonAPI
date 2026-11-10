@@ -17,10 +17,10 @@ public class UserOrganizationController : ControllerBase
         _userOrgService = userOrgService;
     }
 
-    [HttpGet("{userId}")]
+    [HttpGet()]
     [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
     [ProducesResponseType(401)]
-    public async Task<IActionResult> GetUserOrganizations(string userId)
+    public async Task<IActionResult> GetUserOrganizations()
     {
         string? currentUserId =
             User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -28,26 +28,12 @@ public class UserOrganizationController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized();
 
-        if (userId != currentUserId)
-            return Forbid();
+        var userOrganizations = await _userOrgService.GetByUserIdAsync(currentUserId);
 
-        var userOrganizationsQuery = await _userOrgService.WhereAsync(
-            x => x.UserId == userId);
-
-        var userOrganizations = await userOrganizationsQuery.ToListAsync();
 
         return Ok(userOrganizations.Select(org => org.ToGetUserOrganizationResponse()).ToList());
     }
 
-    [HttpGet]
-    [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
-    [ProducesResponseType(401)]
-    public async Task<IActionResult> GetAllUserOrganizations()
-    {
-        var userOrganizations = await _userOrgService.GetAllAsync();
-
-        return Ok(userOrganizations.Select(org => org.ToGetUserOrganizationResponse()).ToList());
-    }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
@@ -63,23 +49,35 @@ public class UserOrganizationController : ControllerBase
         return Ok(userOrganization.ToGetUserOrganizationResponse());
     }
     [HttpPost]
-    [ProducesResponseType(201)]
+    [ProducesResponseType(202)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> CreateUserOrganization(
      [FromBody] CreateUserOrganizationRequest request)
     {
-        var createdUserOrganization =
-            await _userOrgService.CreateUserOrganizationAsync(
-                request.email,
-                request.organization_id,
-                request.role_id
-                );
-
-        return CreatedAtAction(
-            nameof(GetUserOrganizationById),
-            new { id = createdUserOrganization.Id },
-            createdUserOrganization);
+        await _userOrgService.CreateUserOrganizationAsync(
+            request.email,
+            request.organization_id,
+            request.role_id
+        );
+            
+        return Accepted();
     }
+
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> EditUserOrganization(
+     [FromBody] EditUserOrganizationRequest request)
+    {
+        var updatedUserOrganization = await _userOrgService.EditUserOrganizationAsync(
+            request.id,
+            request.role_id
+        );
+            
+        return Ok(updatedUserOrganization.ToGetUserOrganizationResponse());
+    }
+
+
 
 
     [HttpDelete("{id:int}")]
@@ -94,6 +92,20 @@ public class UserOrganizationController : ControllerBase
             return NotFound();
         }
         return Ok();
+    }
+
+    [HttpGet("organization/{organizationId:int}")]
+    [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> GetOrganizationUserOrganizations(int organizationId)
+    {
+        // TODO check permissions of user on organization
+        var userOrganizations = await _userOrgService.GetByOrganizationIdAsync(organizationId);
+        if (userOrganizations == null)
+        {
+            return NotFound();
+        }
+        return Ok(userOrganizations.Select(org => org.ToGetUserOrganizationResponse()).ToList());
     }
 
 }
