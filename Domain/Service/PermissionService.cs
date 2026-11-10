@@ -1,8 +1,8 @@
-﻿using Domain.Interface;
+﻿using System.Linq.Expressions;
+using Domain.Interface;
 using Infrastructure;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace Domain.Services;
 

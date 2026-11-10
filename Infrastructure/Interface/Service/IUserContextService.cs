@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http;
-
 namespace Infrastructure.Interface.Service;
 
 public interface IUserContextService

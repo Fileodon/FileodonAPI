@@ -1,3 +1,3 @@
 namespace Infrastructure.Interface;
 
-public interface IAuditAble {}
+public interface IAuditAble { }

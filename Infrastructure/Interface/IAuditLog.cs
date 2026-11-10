@@ -1,3 +1,3 @@
 namespace Infrastructure.Interface;
 
-public interface IAuditLog {}
+public interface IAuditLog { }

@@ -1,5 +1,4 @@
 using Infrastructure.Models;
-using Infrastructure.Models.Enums;
 
 namespace Infrastructure.Interface.Repository;
 

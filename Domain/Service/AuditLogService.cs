@@ -74,7 +74,7 @@ public class AuditLogService(IUnitOfWork unitOfWork) : IAuditLogService
         {
             await _unitOfWork.RollbackAsync();
             throw;
-        }  
+        }
     }
     public async Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogs(int id)
     {
@@ -88,6 +88,6 @@ public class AuditLogService(IUnitOfWork unitOfWork) : IAuditLogService
         {
             await _unitOfWork.RollbackAsync();
             throw;
-        } 
+        }
     }
 }

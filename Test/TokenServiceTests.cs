@@ -1,10 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using Domain.Service;
+using Infrastructure;
 using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Infrastructure;
 
 namespace Test;
 

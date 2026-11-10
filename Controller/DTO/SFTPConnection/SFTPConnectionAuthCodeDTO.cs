@@ -1,4 +1,3 @@
-using System;
 using Infrastructure.Models;
 
 namespace Controller.DTO.SFTPConnection;
