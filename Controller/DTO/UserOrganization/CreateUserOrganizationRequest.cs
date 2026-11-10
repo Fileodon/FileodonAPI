@@ -3,6 +3,7 @@
     public record class CreateUserOrganizationRequest
     (
         int organization_id,
-        string users_id,
-        string role_id);
+        string email,
+        string role_id
+        );
 }

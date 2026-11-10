@@ -9,7 +9,7 @@ namespace Domain.Interface
         IUserOrganizationService : IBaseInterface<UserOrganization>
     {
         Task<UserOrganization> CreateUserOrganizationAsync(
-            string user_id,
+            string email,
             int organization_id,
             string role_id);
 

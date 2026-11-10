@@ -18,9 +18,8 @@ public class UserOrganizationController : ControllerBase
     }
 
     [HttpGet("{userId}")]
-    [ProducesResponseType(typeof(List<GetUserOrganizationRequest>), 200)]
+    [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
     [ProducesResponseType(401)]
-    [ProducesResponseType(403)]
     public async Task<IActionResult> GetUserOrganizations(string userId)
     {
         string? currentUserId =
@@ -37,22 +36,23 @@ public class UserOrganizationController : ControllerBase
 
         var userOrganizations = await userOrganizationsQuery.ToListAsync();
 
-        return Ok(userOrganizations.Select(org =>
-      new GetUserOrganizationRequest(
-          org.Id,
-          org.OrganizationId,
-          org.UserId,
-          org.RoleId
-      )).ToList());
+        return Ok(userOrganizations.Select(org => org.ToGetUserOrganizationResponse()).ToList());
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
+    [ProducesResponseType(401)]
     public async Task<IActionResult> GetAllUserOrganizations()
     {
         var userOrganizations = await _userOrgService.GetAllAsync();
-        return Ok(userOrganizations);
+
+        return Ok(userOrganizations.Select(org => org.ToGetUserOrganizationResponse()).ToList());
     }
+
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(401)]
     public async Task<IActionResult> GetUserOrganizationById(int id)
     {
         var userOrganization = await _userOrgService.GetByIdAsync(id);
@@ -60,17 +60,20 @@ public class UserOrganizationController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(userOrganization);
+        return Ok(userOrganization.ToGetUserOrganizationResponse());
     }
     [HttpPost]
+    [ProducesResponseType(201)]
+    [ProducesResponseType(401)]
     public async Task<IActionResult> CreateUserOrganization(
      [FromBody] CreateUserOrganizationRequest request)
     {
         var createdUserOrganization =
             await _userOrgService.CreateUserOrganizationAsync(
-                request.users_id,
+                request.email,
                 request.organization_id,
-                request.role_id);
+                request.role_id
+                );
 
         return CreatedAtAction(
             nameof(GetUserOrganizationById),
@@ -80,6 +83,9 @@ public class UserOrganizationController : ControllerBase
 
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(401)]
     public async Task<IActionResult> DeleteUserOrganization(int id)
     {
         var deletedUserOrganization = await _userOrgService.DeleteAsync(id);
@@ -87,7 +93,7 @@ public class UserOrganizationController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(deletedUserOrganization);
+        return Ok();
     }
 
 }
