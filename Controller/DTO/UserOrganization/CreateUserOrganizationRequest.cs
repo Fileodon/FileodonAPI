@@ -5,5 +5,5 @@
         int organization_id,
         string email,
         string role_id
-        );
+    );
 }

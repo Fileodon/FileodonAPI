@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
 
 [Authorize]
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 public class UserOrganizationController : ControllerBase
 {
@@ -18,7 +18,7 @@ public class UserOrganizationController : ControllerBase
     }
 
     [HttpGet()]
-    [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
+    [ProducesResponseType(typeof(List<GetUsersUserOrganizationResponse>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetUserOrganizations()
     {
@@ -31,7 +31,7 @@ public class UserOrganizationController : ControllerBase
         var userOrganizations = await _userOrgService.GetByUserIdAsync(currentUserId);
 
 
-        return Ok(userOrganizations.Select(org => org.ToGetUserOrganizationResponse()).ToList());
+        return Ok(userOrganizations.Select(org => org.ToGetUsersUserOrganizationResponse()).ToList());
     }
 
 

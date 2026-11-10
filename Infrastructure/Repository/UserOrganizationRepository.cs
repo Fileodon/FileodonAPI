@@ -32,6 +32,7 @@ public class UserOrganizationRepository : BaseRepository<UserOrganization>, IUse
         return _context.UserOrganizations
             .Include(uo => uo.Role)
             .Include(uo => uo.User)
+            .Include(uo => uo.Organization)
             .Where(uo => uo.UserId == userId);
     }
 

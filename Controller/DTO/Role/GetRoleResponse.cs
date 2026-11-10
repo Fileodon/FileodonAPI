@@ -2,6 +2,16 @@
 
 public record class GetRoleResponse
 (
-    string Name,
-    string Id
+    string Id,
+    string Name
 );
+
+
+public static class GetRoleResponseExtensions
+{
+    public static GetRoleResponse ToGetRoleResponse(this Infrastructure.Models.AspNetRole role) =>
+        new(
+            Id: role.Id,
+            Name: role.Name
+        );
+}
