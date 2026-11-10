@@ -2,6 +2,6 @@ using Domain.Enum;
 
 namespace Domain.DTO;
 
-public sealed record MutationResult<T>(
+public sealed record MutationEnvelope<T>(
     MutationStatus Status,
     T? Data);

@@ -5,9 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class OrganizationRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : BaseRepository<Organization>(context, transactionSettings), IOrganizationRepository
+public class OrganizationRepository : BaseRepository<Organization>, IOrganizationRepository
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly ApplicationDbContext _context;
+
+    public OrganizationRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : base(context, transactionSettings)
+    {
+        _context = context;
+    }
 
     /// <summary>
     /// Deletes an organization by its ID and verifies that the specified user is associated with that organization.
@@ -64,4 +69,11 @@ public class OrganizationRepository(ApplicationDbContext context, IRepositoryTra
 
         return organization;
     }
+
+    public async Task<IEnumerable<OrganizationAuditLog>> GetOrganizationAuditLogsAsync(int organizationId)
+    {
+        return _context.OrganizationAuditLogs
+            .Where(audit => audit.OrganizationId == organizationId);
+    }
+
 }

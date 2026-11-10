@@ -1,10 +1,10 @@
-﻿using Domain.Interface;
+﻿using System.Linq.Expressions;
+using Domain.Interface;
 using Infrastructure;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace Domain.Service;
 

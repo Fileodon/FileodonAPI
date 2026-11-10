@@ -1,6 +1,10 @@
 ﻿using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure;
 
@@ -13,14 +17,26 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     }
 
     // Users og Roles arves fra IdentityDbContext.
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<UserOrganization> UserOrganizations => Set<UserOrganization>();
     public DbSet<SFTPConnection> SFTPConnections => Set<SFTPConnection>();
+    public DbSet<SFTPConnectionAuthCode> SFTPConnectionAuthCodes => Set<SFTPConnectionAuthCode>();
     public DbSet<AspNetRole> AspNetRoles => Set<AspNetRole>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<OrganizationAuditLog> OrganizationAuditLogs => Set<OrganizationAuditLog>();
+    public DbSet<SFTPConnectionAuditLog> SFTPConnectionAuditLogs => Set<SFTPConnectionAuditLog>();
+    public DbSet<UserOrganizationAuditLog> UserOrganizationAuditLogs => Set<UserOrganizationAuditLog>();
+    public DbSet<RoleAuditLog> RoleAuditLogs => Set<RoleAuditLog>();
+
+    // Kan bruges til at se kørte sql commands - brug kun i under development!
+    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // {
+    //     optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).EnableSensitiveDataLogging();
+    //     base.OnConfiguring(optionsBuilder);
+    // }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -56,37 +72,6 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
                 .WithMany()
                 .HasForeignKey(token => token.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AuditLog>(entity =>
-        {
-            entity.ToTable("audit_logs");
-
-            entity.HasKey(log => log.Id);
-
-            entity.Property(log => log.Id).HasColumnName("id");
-            entity.Property(log => log.Action).HasColumnName("action");
-            entity.Property(log => log.RecordId).HasColumnName("record_id");
-            entity.Property(log => log.TableName).HasColumnName("table_name");
-            entity.Property(log => log.ChangedBy).HasColumnName("changed_by");
-
-            entity.Property(log => log.ChangedAt)
-                .HasColumnName("changed_at")
-                .HasColumnType("timestamp with time zone")
-                .HasDefaultValueSql("now()");
-
-            entity.Property(log => log.NewData)
-                .HasColumnName("new_data")
-                .HasColumnType("jsonb");
-
-            entity.Property(log => log.OldData)
-                .HasColumnName("old_data")
-                .HasColumnType("jsonb");
-
-            entity.HasOne(log => log.ChangedByNavigation)
-                .WithMany(user => user.AuditLogs)
-                .HasForeignKey(log => log.ChangedBy)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Organization>(entity =>
@@ -186,5 +171,88 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.Property(permission => permission.BitValue)
                 .HasColumnName("bit_value");
         });
+
+        modelBuilder.Entity<OrganizationAuditLog>(entity =>
+        {
+            entity.ToTable("organization_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.OrganizationId)
+                .HasColumnName("organization_id");
+
+            entity.HasOne(e => e.Organization)
+                .WithMany(organization => organization.AuditLogs)
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RoleAuditLog>(entity =>
+        {
+            entity.ToTable("role_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.RoleId)
+                .HasColumnName("role_id");
+
+            entity.HasOne(e => e.Role)
+                .WithMany(role => role.AuditLogs)
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SFTPConnectionAuditLog>(entity =>
+        {
+            entity.ToTable("sftp_connection_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.SFTPConnectionID)
+                .HasColumnName("sftp_connection_id");
+
+            entity.HasOne(e => e.SFTPConnnection)
+                .WithMany(sftpConnection => sftpConnection.AuditLogs)
+                .HasForeignKey(e => e.SFTPConnectionID)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserOrganizationAuditLog>(entity =>
+        {
+            entity.ToTable("user_organization_audit_logs");
+
+            ModifyBaseAuditLogColumns(entity);
+
+            entity.Property(e => e.UserOrganizationId)
+                .HasColumnName("user_organization_id");
+
+            entity.HasOne(e => e.UserOrganization)
+                .WithMany(userOrganization => userOrganization.AuditLogs)
+                .HasForeignKey(e => e.UserOrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+    }
+
+    private void ModifyBaseAuditLogColumns<TEntity>(EntityTypeBuilder<TEntity> entity)
+        where TEntity : BaseAuditLog
+    {
+        entity.Property(e => e.Id)
+            .HasColumnName("id");
+        entity.Property(e => e.ActorId)
+            .HasColumnName("actor_id");
+        entity.Property(e => e.Action)
+            .HasColumnName("action");
+        entity.Property(e => e.Source)
+            .HasColumnName("source");
+        entity.Property(e => e.OldData)
+            .HasColumnName("old_data")
+            .HasColumnType("jsonb");
+        entity.Property(e => e.NewData)
+            .HasColumnName("new_data")
+            .HasColumnType("jsonb");
+        entity.Property(e => e.Timestamp)
+            .HasColumnName("timestamp");
     }
 }

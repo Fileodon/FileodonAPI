@@ -5,9 +5,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class RoleRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : BaseRepository<AspNetRole>(context, transactionSettings), IRoleRepository
+public class RoleRepository : BaseRepository<AspNetRole>, IRoleRepository
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly ApplicationDbContext _context;
+
+    public RoleRepository(ApplicationDbContext context, IRepositoryTransactionSettings transactionSettings) : base(context, transactionSettings)
+    {
+        _context = context;
+    }
+
     public Task<AspNetRole?> GetByIdAsync(string id) =>
         DbSet.SingleOrDefaultAsync(role => role.Id == id);
 
@@ -32,5 +38,11 @@ public class RoleRepository(ApplicationDbContext context, IRepositoryTransaction
     public async Task<AspNetRole?> GetRoleAndOrganizations(string id)
     {
         return _context.AspNetRoles.AsNoTracking().Include(role => role.Organization).FirstOrDefault(role => role.Id == id);
+    }
+
+    public async Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogsAsync(string roleId)
+    {
+        return _context.RoleAuditLogs
+            .Where(audit => audit.RoleId == roleId);
     }
 }

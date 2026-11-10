@@ -56,54 +56,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
-            modelBuilder.Entity("Infrastructure.Models.AuditLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("action");
-
-                    b.Property<DateTime?>("ChangedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("changed_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("ChangedBy")
-                        .HasColumnType("text")
-                        .HasColumnName("changed_by");
-
-                    b.Property<string>("NewData")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("new_data");
-
-                    b.Property<string>("OldData")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("old_data");
-
-                    b.Property<int>("RecordId")
-                        .HasColumnType("integer")
-                        .HasColumnName("record_id");
-
-                    b.Property<string>("TableName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("table_name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChangedBy");
-
-                    b.ToTable("audit_logs", (string)null);
-                });
-
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
                     b.Property<int>("Id")
@@ -135,6 +87,52 @@ namespace Infrastructure.Migrations
                     b.HasIndex("UserOwnerId");
 
                     b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.OrganizationAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("organization_audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("Infrastructure.Models.Permission", b =>
@@ -217,6 +215,53 @@ namespace Infrastructure.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.RoleAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("role_audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
                 {
                     b.Property<int>("Id")
@@ -240,7 +285,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("organization_id");
 
-                    b.Property<int?>("Port")
+                    b.Property<int>("Port")
                         .HasColumnType("integer")
                         .HasColumnName("port");
 
@@ -261,6 +306,85 @@ namespace Infrastructure.Migrations
                     b.HasIndex("OrganizationId");
 
                     b.ToTable("sftp_connections", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<int>("SFTPConnectionID")
+                        .HasColumnType("integer")
+                        .HasColumnName("sftp_connection_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("SFTPConnectionID");
+
+                    b.ToTable("sftp_connection_audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuthCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VerificationCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SFTPConnectionAuthCodes");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.User", b =>
@@ -360,6 +484,52 @@ namespace Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("users_organizations", (string)null);
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.UserOrganizationAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("old_data");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<int>("UserOrganizationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_organization_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("UserOrganizationId");
+
+                    b.ToTable("user_organization_audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -479,16 +649,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("Organization");
                 });
 
-            modelBuilder.Entity("Infrastructure.Models.AuditLog", b =>
-                {
-                    b.HasOne("Infrastructure.Models.User", "ChangedByNavigation")
-                        .WithMany("AuditLogs")
-                        .HasForeignKey("ChangedBy")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ChangedByNavigation");
-                });
-
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
                     b.HasOne("Infrastructure.Models.User", "UserOwner")
@@ -498,6 +658,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("UserOwner");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.OrganizationAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.Organization", "Organization")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.RefreshToken", b =>
@@ -511,6 +690,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.RoleAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.AspNetRole", "Role")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
                 {
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
@@ -520,6 +718,42 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.SFTPConnection", "SFTPConnnection")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("SFTPConnectionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("SFTPConnnection");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnectionAuthCode", b =>
+                {
+                    b.HasOne("Infrastructure.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.UserOrganization", b =>
@@ -545,6 +779,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.UserOrganizationAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Models.UserOrganization", "UserOrganization")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("UserOrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("UserOrganization");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -598,18 +851,33 @@ namespace Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.AspNetRole", b =>
+                {
+                    b.Navigation("AuditLogs");
+                });
+
             modelBuilder.Entity("Infrastructure.Models.Organization", b =>
                 {
+                    b.Navigation("AuditLogs");
+
                     b.Navigation("SFTPConnections");
 
                     b.Navigation("UserOrganizations");
                 });
 
-            modelBuilder.Entity("Infrastructure.Models.User", b =>
+            modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
                 {
                     b.Navigation("AuditLogs");
+                });
 
+            modelBuilder.Entity("Infrastructure.Models.User", b =>
+                {
                     b.Navigation("UserOrganizations");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.UserOrganization", b =>
+                {
+                    b.Navigation("AuditLogs");
                 });
 #pragma warning restore 612, 618
         }

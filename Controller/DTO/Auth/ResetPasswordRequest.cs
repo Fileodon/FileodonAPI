@@ -1,6 +1,6 @@
 namespace Controller.DTO.Auth;
 
-public record class ResetPasswordRequest(
+public record ResetPasswordRequest(
     string OldPassword,
     string NewPassword
 );

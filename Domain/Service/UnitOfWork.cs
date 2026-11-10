@@ -6,29 +6,50 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Domain.Service;
 
-public sealed class UnitOfWork(
+public sealed class UnitOfWork : IUnitOfWork
+{
+    private IDbContextTransaction? _transaction;
+
+    private readonly ApplicationDbContext _context;
+
+    public IRepositoryTransactionSettings _transactionSettings;
+    public IAuditLogRepository AuditLogRepository { get; }
+    public IOrganizationRepository OrganizationRepository { get; }
+    public IProfileRepository ProfileRepository { get; }
+    public IRefreshTokenRepository RefreshTokenRepository { get; }
+    public IRoleRepository RoleRepository { get; }
+    public ISFTPConnectionRepository SFTPConnectionRepository { get; }
+    public ISFTPConnectionAuthCodeRepository SFTPConnectionAuthCodeRepository { get; }
+    public IUserOrganizationRepository UserOrganizationRepository { get; }
+    public IUserRepository UserRepository { get; }
+    public bool AutomaticTransactionsEnabled => _transactionSettings.AutomaticTransactionsEnabled;
+
+    public UnitOfWork(
     ApplicationDbContext context,
     IRepositoryTransactionSettings transactionSettings,
-    IAuditLogRepository auditLogRepository,
     IOrganizationRepository organizationRepository,
     IProfileRepository profileRepository,
     IRefreshTokenRepository refreshTokenRepository,
     IRoleRepository roleRepository,
     ISFTPConnectionRepository sftpConnectionRepository,
+    ISFTPConnectionAuthCodeRepository sftpConnectionAuthCodeRepository,
     IUserOrganizationRepository userOrganizationRepository,
-    IUserRepository userRepository) : IUnitOfWork
-{
-    private IDbContextTransaction? _transaction;
+    IAuditLogRepository auditLogRepository,
+    IUserRepository userRepository)
+    {
+        _context = context;
+        _transactionSettings = transactionSettings;
+        AuditLogRepository = auditLogRepository;
+        OrganizationRepository = organizationRepository;
+        ProfileRepository = profileRepository;
+        RefreshTokenRepository = refreshTokenRepository;
+        RoleRepository = roleRepository;
+        SFTPConnectionRepository = sftpConnectionRepository;
+        SFTPConnectionAuthCodeRepository = sftpConnectionAuthCodeRepository;
+        UserOrganizationRepository = userOrganizationRepository;
+        UserRepository = userRepository;
 
-    public IAuditLogRepository AuditLogRepository => auditLogRepository;
-    public IOrganizationRepository OrganizationRepository => organizationRepository;
-    public IProfileRepository ProfileRepository => profileRepository;
-    public IRefreshTokenRepository RefreshTokenRepository => refreshTokenRepository;
-    public IRoleRepository RoleRepository => roleRepository;
-    public ISFTPConnectionRepository SFTPConnectionRepository => sftpConnectionRepository;
-    public IUserOrganizationRepository UserOrganizationRepository => userOrganizationRepository;
-    public IUserRepository UserRepository => userRepository;
-    public bool AutomaticTransactionsEnabled => transactionSettings.AutomaticTransactionsEnabled;
+    }
 
     public async Task BeginTransactionAsync()
     {
@@ -37,7 +58,7 @@ public sealed class UnitOfWork(
             throw new InvalidOperationException("A unit-of-work transaction is already active.");
         }
 
-        _transaction = await context.Database.BeginTransactionAsync();
+        _transaction = await _context.Database.BeginTransactionAsync();
     }
 
     public async Task CommitAsync()
@@ -64,10 +85,10 @@ public sealed class UnitOfWork(
         _transaction = null;
     }
 
-    public Task<int> SaveChangesAsync() => context.SaveChangesAsync();
+    public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
 
     public IDisposable DisableAutomaticTransactions() =>
-        transactionSettings.DisableAutomaticTransactions();
+        _transactionSettings.DisableAutomaticTransactions();
 
     public void Dispose()
     {

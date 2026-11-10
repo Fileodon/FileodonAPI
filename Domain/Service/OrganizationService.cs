@@ -2,12 +2,18 @@ using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
 using Infrastructure.Models;
+using Infrastructure.Models.Enums;
 
 namespace Domain.Service;
 
-public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
+public class OrganizationService : IOrganizationService
 {
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public OrganizationService(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
 
     public async Task<Organization> CreateOrganizationAsync(
         string organizationName,
@@ -27,8 +33,29 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
                 WorkspaceURL = workspaceURL,
                 ContactEmail = contactEmail
             };
-
             organization = await _unitOfWork.OrganizationRepository.PostAsync(organization);
+
+            AspNetRole ownerRole = new()
+            {
+                Name = "Owner",
+                OrganizationId = organization.Id,
+                PermissionMask = (long)PermissionFlags.All
+            };
+            ownerRole = await _unitOfWork.RoleRepository.PostAsync(ownerRole);
+
+            if (string.IsNullOrEmpty(ownerRole.Id))
+            {
+                throw new Exception("Failed to create owner role for organization.");
+            }
+
+            UserOrganization userOrganization = new()
+            {
+                UserId = userId,
+                RoleId = ownerRole.Id,
+                OrganizationId = organization.Id
+            };
+            await _unitOfWork.UserOrganizationRepository.PostAsync(userOrganization);
+
             await _unitOfWork.CommitAsync();
 
             return organization;
@@ -40,23 +67,29 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
         }
     }
 
-    public async Task<MutationResult<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
+    public async Task<MutationEnvelope<Organization>> DeleteOrganizationByIdAsync(int organizationId, string userId)
     {
-        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
-        if (authorization.Status != MutationStatus.Success)
+        Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
+
+        if (organization is null)
         {
-            return authorization;
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
+        }
+
+        if (!string.Equals(organization.UserOwnerId, userId, StringComparison.InvariantCultureIgnoreCase))
+        {
+            return new MutationEnvelope<Organization>(MutationStatus.Forbidden, null);
         }
 
         Organization? deletedOrganization =
             await _unitOfWork.OrganizationRepository.DeleteByIdAsync(organizationId, userId);
         if (deletedOrganization is null)
         {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return new MutationResult<Organization>(MutationStatus.Success, deletedOrganization);
+        return new MutationEnvelope<Organization>(MutationStatus.Success, deletedOrganization);
     }
 
     public async Task<Organization?> GetOrganizationByIdAsync(int organizationId, string userId)
@@ -64,15 +97,20 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
         return await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
     }
 
-    public async Task<MutationResult<Organization>> UpdateOrganizationAsync(
+    public async Task<MutationEnvelope<Organization>> UpdateOrganizationAsync(
         int organizationId,
         string organizationName,
         string userId)
     {
-        MutationResult<Organization> authorization = await AuthorizeMutationAsync(organizationId, userId);
-        if (authorization.Status != MutationStatus.Success)
+        Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
+        if (organization is null)
         {
-            return authorization;
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
+        }
+
+        if (!string.Equals(organization.UserOwnerId, userId, StringComparison.InvariantCultureIgnoreCase))
+        {
+            return new MutationEnvelope<Organization>(MutationStatus.Forbidden, null);
         }
 
         Organization? updatedOrganization =
@@ -82,34 +120,10 @@ public class OrganizationService(IUnitOfWork unitOfWork) : IOrganizationService
                 userId);
         if (updatedOrganization is null)
         {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
+            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return new MutationResult<Organization>(MutationStatus.Success, updatedOrganization);
-    }
-
-    private async Task<MutationResult<Organization>> AuthorizeMutationAsync(
-        int organizationId,
-        string userId)
-    {
-        Organization? membership = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
-
-        if (membership is null)
-        {
-            return new MutationResult<Organization>(MutationStatus.NotFound, null);
-        }
-
-        if (!string.Equals(
-                membership.UserOwnerId,
-                userId,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return new MutationResult<Organization>(MutationStatus.Forbidden, null);
-        }
-
-        return new MutationResult<Organization>(
-            MutationStatus.Success,
-            membership);
+        return new MutationEnvelope<Organization>(MutationStatus.Success, updatedOrganization);
     }
 }

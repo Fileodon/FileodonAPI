@@ -29,4 +29,10 @@ public class UserOrganizationRepository : BaseRepository<UserOrganization>, IUse
 
         return Task.FromResult(query);
     }
+
+    public async Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogsAsync(int userOrganizationId)
+    {
+        return _context.UserOrganizationAuditLogs
+            .Where(audit => audit.UserOrganizationId == userOrganizationId);
+    }
 }

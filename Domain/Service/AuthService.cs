@@ -6,19 +6,29 @@ using Microsoft.Extensions.Configuration;
 
 namespace Domain.Service;
 
-public class AuthService(
-    IConfiguration configuration,
-    UserManager<User> userManager,
-    SignInManager<User> signInManager,
-    ITokenService tokenService,
-    IUnitOfWork unitOfWork) : IAuthService
+public class AuthService : IAuthService
 {
-    private readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(Convert.ToDouble(configuration["Jwt:RefreshTokenValidityInDays"]));
+    private readonly TimeSpan RefreshTokenLifetime;
 
-    private readonly UserManager<User> _userManager = userManager;
-    private readonly SignInManager<User> _signInManager = signInManager;
-    private readonly ITokenService _tokenService = tokenService;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly UserManager<User> _userManager;
+    private readonly SignInManager<User> _signInManager;
+    private readonly ITokenService _tokenService;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public AuthService(
+        IConfiguration configuration,
+        UserManager<User> userManager,
+        SignInManager<User> signInManager,
+        ITokenService tokenService,
+        IUnitOfWork unitOfWork
+        )
+    {
+        _userManager = userManager;
+        _signInManager = signInManager;
+        _tokenService = tokenService;
+        _unitOfWork = unitOfWork;
+        RefreshTokenLifetime = TimeSpan.FromDays(Convert.ToDouble(configuration["Jwt:RefreshTokenValidityInDays"]));
+    }
 
     public async Task<User> GetMeAsync(Guid id)
     {
