@@ -33,7 +33,7 @@ namespace Controller.Controllers
 
             if (tokens == null)
             {
-                return Unauthorized("Invalid username or password.");
+                return Unauthorized("Invalid email or password.");
             }
 
             SetRefreshTokenCookie(tokens.RefreshToken, tokens.RefreshTokenExpiresAt);
