@@ -127,7 +127,39 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResetPassword_changes_the_users_password()
+    public async Task GetMe_returns_the_requested_user()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User expectedUser = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+
+        User? user = await authService.GetMeAsync(Guid.Parse(expectedUser.Id));
+
+        Assert.NotNull(user);
+        Assert.Equal(expectedUser.Id, user.Id);
+        Assert.Equal(expectedUser.Email, user.Email);
+    }
+
+    [Fact]
+    public async Task RequestPasswordReset_returns_failure_for_an_unknown_email_internally_but_does_not_leak_user_existence()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RequestPasswordResetAsync("unknown@example.com");
+
+        Assert.False(result.Succeeded);
+        Assert.Empty(result.Errors);
+        context.EmailSender.Verify(
+            sender => sender.SendPasswordResetLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestPasswordReset_sends_a_reset_link_for_an_existing_email()
     {
         using AuthenticationTestContext context = AuthenticationTestContext.Create();
         using var scope = context.CreateScope();
@@ -135,7 +167,114 @@ public sealed class AuthServiceTests
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
 
-        IdentityResult result = await authService.ResetPassword(user, ExistingPassword, NewPassword);
+        IdentityResult result = await authService.RequestPasswordResetAsync(user.Email!);
+
+        Assert.True(result.Succeeded);
+        context.EmailSender.Verify(
+            sender => sender.SendPasswordResetLinkAsync(
+                It.Is<User>(candidate => candidate.Id == user.Id),
+                user.Email!,
+                It.Is<string>(link => link.Contains($"userId={user.Id}"))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestEmailConfirmation_returns_failure_for_an_unknown_email()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RequestEmailConfirmationAsync("unknown@example.com");
+
+        Assert.False(result.Succeeded);
+        context.EmailSender.Verify(
+            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestEmailConfirmation_sends_a_confirmation_link_for_an_existing_unconfirmed_email()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager, false);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RequestEmailConfirmationAsync(user.Email!);
+
+        Assert.True(result.Succeeded);
+        context.EmailSender.Verify(
+            sender => sender.SendConfirmationLinkAsync(
+                It.Is<User>(candidate => candidate.Id == user.Id),
+                user.Email!,
+                It.Is<string>(link => link.Contains($"userId={user.Id}"))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestEmailConfirmation_returns_success_for_an_existing_confirmed_email()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager, true);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RequestEmailConfirmationAsync(user.Email!);
+
+        Assert.True(result.Succeeded);
+        context.EmailSender.Verify(
+            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ConfirmUserEmail_confirms_a_valid_token()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        string token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.ConfirmUserEmailAsync(user.Id, token);
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
+        User confirmedUser = await userManager.FindByIdAsync(user.Id)
+            ?? throw new InvalidOperationException("Confirmed user was not found.");
+        Assert.True(confirmedUser.EmailConfirmed);
+    }
+
+    [Fact]
+    public async Task ConfirmUserEmail_fails_when_user_does_not_exist()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.ConfirmUserEmailAsync(Guid.NewGuid().ToString(), "some-token");
+
+        Assert.False(result.Succeeded);
+        Assert.Empty(result.Errors);
+        context.EmailSender.Verify(
+            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ResetPassword_changes_the_users_password()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+        string resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+
+        IdentityResult result = await authService.ResetPassword(user, resetToken, NewPassword);
 
         Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
         Assert.True(await userManager.CheckPasswordAsync(user, NewPassword));
@@ -154,8 +293,9 @@ public sealed class AuthServiceTests
         UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
+        string resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
 
-        IdentityResult result = await authService.ResetPassword(user, ExistingPassword, newPassword);
+        IdentityResult result = await authService.ResetPassword(user, resetToken, newPassword);
 
         Assert.False(result.Succeeded);
         Assert.True(await userManager.CheckPasswordAsync(user, ExistingPassword));
@@ -163,7 +303,25 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResetPassword_rejects_an_incorrect_old_password()
+    public async Task ResetPassword_does_not_consume_the_token_if_the_password_does_not_meet_the_policy()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        AuthService authService = CreateAuthService(scope);
+        string resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+
+        IdentityResult result1 = await authService.ResetPassword(user, resetToken, "short1!");
+        IdentityResult result2 = await authService.ResetPassword(user, resetToken, NewPassword);
+
+        Assert.False(result1.Succeeded);
+        Assert.True(result2.Succeeded, string.Join("; ", result2.Errors.Select(error => error.Description)));
+        Assert.True(await userManager.CheckPasswordAsync(user, NewPassword));
+    }
+
+    [Fact]
+    public async Task ResetPassword_rejects_an_invalid_token()
     {
         using AuthenticationTestContext context = AuthenticationTestContext.Create();
         using var scope = context.CreateScope();
@@ -171,7 +329,8 @@ public sealed class AuthServiceTests
         User user = await CreateUserAsync(userManager);
         AuthService authService = CreateAuthService(scope);
 
-        IdentityResult result = await authService.ResetPassword(user, "IncorrectPassword1!", NewPassword);
+        string token = "invalid-token";
+        IdentityResult result = await authService.ResetPassword(user, token, NewPassword);
 
         Assert.False(result.Succeeded);
         Assert.True(await userManager.CheckPasswordAsync(user, ExistingPassword));
@@ -254,14 +413,14 @@ public sealed class AuthServiceTests
         return scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().RefreshTokens;
     }
 
-    private static async Task<User> CreateUserAsync(UserManager<User> userManager)
+    private static async Task<User> CreateUserAsync(UserManager<User> userManager, bool emailConfirmed = true)
     {
         User user = new()
         {
             Id = Guid.NewGuid().ToString(),
             UserName = "ada",
             Email = $"ada-{Guid.NewGuid():N}@example.com",
-            EmailConfirmed = true
+            EmailConfirmed = emailConfirmed
         };
         IdentityResult result = await userManager.CreateAsync(user, ExistingPassword);
         Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));

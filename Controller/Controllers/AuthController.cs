@@ -12,10 +12,12 @@ namespace Controller.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -64,6 +66,11 @@ namespace Controller.Controllers
             }
 
             var user = await _authService.GetMeAsync(id);
+            if (user is null)
+            {
+                _logger.LogWarning("Logout attempt failed: User with ID {UserId} not found.", id);
+                return Ok("Logged out successfully.");
+            }
             await _authService.LogoutAsync(refreshToken, user);
             return Ok("Logged out successfully.");
         }
@@ -94,30 +101,56 @@ namespace Controller.Controllers
                 tokens.RefreshTokenExpiresAt.ToUnixTimeSeconds()));
         }
 
-        [HttpPost("reset-password")]
-        [Authorize]
+        [HttpPost("password/reset")]
+        [AllowAnonymous]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
-            string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
-
-            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out Guid id))
+            if (string.IsNullOrEmpty(request.UserId) || !Guid.TryParse(request.UserId, out Guid id))
             {
                 return Unauthorized("Invalid user ID.");
             }
 
             var user = await _authService.GetMeAsync(id);
-            var result = await _authService.ResetPassword(user, request.OldPassword, request.NewPassword);
+            if (user is null)
+            {
+                _logger.LogWarning("Password reset attempt failed: User with ID {UserId} not found.", id);
+                return BadRequest("Failed to reset password. The token may be invalid or expired.");
+            }
+            var result = await _authService.ResetPassword(user, request.Token, request.NewPassword);
 
             if (!result.Succeeded)
             {
-                return BadRequest(result.Errors.Select(e => e.Description));
+                if (result.Errors.Any(e => e.Code == "InvalidToken"))
+                {
+                    return BadRequest("Failed to reset password. The token may be invalid or expired.");
+                }
+                else
+                {
+                    return BadRequest(result.Errors.Select(e => e.Description));
+                }
             }
 
             return Ok("Password reset successfully.");
         }
 
+        [HttpPost("password/request-reset")]
+        [AllowAnonymous]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest("Email is required.");
+            }
+
+            await _authService.RequestPasswordResetAsync(request.Email);
+
+            return Ok("If an account with that email exists, a password reset link has been sent.");
+        }
 
         [HttpPost("register")]
         [AllowAnonymous]
@@ -140,8 +173,26 @@ namespace Controller.Controllers
             return CreatedAtAction(nameof(Register), new { email = request.Email }, "User registered successfully.");
         }
 
-        [HttpPost("confirm-email")]
+        [HttpPost("email/request-confirmation")]
         [AllowAnonymous]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> RequestEmailConfirmation([FromBody] RequestEmailConfirmationRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest("Email is required.");
+            }
+
+            await _authService.RequestEmailConfirmationAsync(request.Email);
+
+            return Ok("If an account with that email exists, a confirmation link has been sent.");
+        }
+
+        [HttpPost("email/confirm")]
+        [AllowAnonymous]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.Token))
@@ -153,7 +204,7 @@ namespace Controller.Controllers
 
             if (!result.Succeeded)
             {
-                return BadRequest(result.Errors.Select(e => e.Description));
+                return BadRequest("Failed to confirm email. The token may be invalid or expired.");
             }
 
             return Ok("Email confirmed successfully.");
@@ -171,7 +222,12 @@ namespace Controller.Controllers
                 return Unauthorized("Invalid user ID.");
             }
 
-            User user = await _authService.GetMeAsync(id);
+            User? user = await _authService.GetMeAsync(id);
+            if (user is null)
+            {
+                _logger.LogWarning("GetMe attempt failed: User with ID {UserId} not found.", id);
+                return Unauthorized("User not found.");
+            }
             return Ok(await user.ToBasicUserInformationResponse());
         }
 

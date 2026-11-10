@@ -1,9 +1,7 @@
-using System.Text;
 using Domain.DTO.Auth;
 using Domain.Interface;
 using Infrastructure.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 
 namespace Domain.Service;
@@ -33,12 +31,12 @@ public class AuthService : IAuthService
         _signInManager = signInManager;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
-        RefreshTokenLifetime = TimeSpan.FromDays(Convert.ToDouble(configuration["Jwt:RefreshTokenValidityInDays"]));
+        RefreshTokenLifetime = TimeSpan.FromDays(configuration.GetValue<double>("JWT:RefreshTokenLifetimeDays", 30));
     }
 
-    public async Task<User> GetMeAsync(Guid id)
+    public async Task<User?> GetMeAsync(Guid id)
     {
-        return await _userManager.FindByIdAsync(id.ToString()) ?? throw new InvalidOperationException("User not found.");
+        return await _userManager.FindByIdAsync(id.ToString());
     }
 
     public async Task<AuthTokens?> LoginAsync(string email, string password)
@@ -109,16 +107,21 @@ public class AuthService : IAuthService
         return result;
     }
 
-    public async Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
+    public async Task<IdentityResult> ResetPassword(User user, string token, string newPassword)
     {
-        // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
-        return await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+        string decodedToken = Uri.UnescapeDataString(token);
+        return await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
     }
 
     public async Task<IdentityResult> ConfirmUserEmailAsync(string userId, string token)
     {
-        User user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException("User not found.");
-        return await _userManager.ConfirmEmailAsync(user, token);
+        User? user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return IdentityResult.Failed();
+        }
+        string decodedToken = Uri.UnescapeDataString(token);
+        return await _userManager.ConfirmEmailAsync(user, decodedToken);
     }
 
     private async Task<AuthTokens> IssueTokensAsync(User user)
@@ -139,7 +142,33 @@ public class AuthService : IAuthService
             new DateTimeOffset(expiresAt, TimeSpan.Zero));
     }
 
-    private async Task SendConfirmationEmailAsync(User user)
+    public async Task<IdentityResult> RequestPasswordResetAsync(string email)
+    {
+        User? user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return IdentityResult.Failed();
+        }
+
+        return await SendPasswordResetEmailAsync(user);
+    }
+
+    public async Task<IdentityResult> RequestEmailConfirmationAsync(string email)
+    {
+        User? user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return IdentityResult.Failed();
+        }
+        if (user.EmailConfirmed)
+        {
+            return IdentityResult.Success;
+        }
+
+        return await SendConfirmationEmailAsync(user);
+    }
+
+    private async Task<IdentityResult> SendConfirmationEmailAsync(User user)
     {
         if (string.IsNullOrEmpty(user.Email))
         {
@@ -149,8 +178,29 @@ public class AuthService : IAuthService
         string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
 
         string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        string link = $"{host}/confirm-email?userId={user.Id}&token={token}";
+        string encodedUserId = Uri.EscapeDataString(user.Id.ToString());
+        string encodedToken = Uri.EscapeDataString(token);
+        string link = $"{host}/confirm-email?userId={encodedUserId}&token={encodedToken}";
 
         await _emailSender.SendConfirmationLinkAsync(user, user.Email, link);
+        return IdentityResult.Success;
+    }
+
+    private async Task<IdentityResult> SendPasswordResetEmailAsync(User user)
+    {
+        if (string.IsNullOrEmpty(user.Email))
+        {
+            throw new InvalidOperationException("User email is not set.");
+        }
+
+        string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
+
+        string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        string encodedUserId = Uri.EscapeDataString(user.Id.ToString());
+        string encodedToken = Uri.EscapeDataString(token);
+        string link = $"{host}/reset-password?userId={encodedUserId}&token={encodedToken}";
+
+        await _emailSender.SendPasswordResetLinkAsync(user, user.Email, link);
+        return IdentityResult.Success;
     }
 }
