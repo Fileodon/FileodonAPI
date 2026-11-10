@@ -20,7 +20,7 @@ public record AuditLogDTO
 public class GetAllAuditLogsResponse
 {
     public int total { get; set; } = 0;
-    public IList<AuditLogDTO> auditLogs {get; set;}
+    public IList<AuditLogDTO> auditLogs { get; set; }
     public GetAllAuditLogsResponse(
         IEnumerable<OrganizationAuditLog>? organizationAuditLogs = null,
         IEnumerable<SFTPConnectionAuditLog>? sFTPConnectionAuditLogs = null,

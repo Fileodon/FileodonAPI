@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository;
 
-public class AuditLogRepository(ApplicationDbContext context): IAuditLogRepository
+public class AuditLogRepository(ApplicationDbContext context) : IAuditLogRepository
 {
     private readonly ApplicationDbContext _context = context;
 

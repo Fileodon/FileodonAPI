@@ -3,7 +3,7 @@ using Infrastructure.Interface;
 
 namespace Infrastructure.Models;
 
-public partial class Organization: IAuditAble
+public partial class Organization : IAuditAble
 {
     public int Id { get; set; }
 

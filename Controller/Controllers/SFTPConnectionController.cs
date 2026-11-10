@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers
 {
-    [Route("api/organization/{organizationid}/[controller]")]
+    [Route("organization/{organizationid}/[controller]")]
     [Authorize]
     [ApiController]
     public class SFTPConnectionController : ControllerBase

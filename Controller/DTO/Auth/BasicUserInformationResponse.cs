@@ -1,5 +1,4 @@
 using Infrastructure.Models;
-using Microsoft.AspNetCore.Identity;
 
 namespace Controller.DTO.Auth;
 

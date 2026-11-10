@@ -2,7 +2,7 @@
 
 namespace Infrastructure.Models;
 
-public partial class UserOrganization: IAuditAble
+public partial class UserOrganization : IAuditAble
 {
     public int Id { get; set; }
 

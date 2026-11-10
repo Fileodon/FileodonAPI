@@ -1,7 +1,5 @@
 namespace Domain.Interface;
 
-using System.Linq.Expressions;
-
 public interface IBaseInterface<T> where T : class
 {
     Task<T?> GetByIdAsync(int id);

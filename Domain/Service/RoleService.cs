@@ -1,6 +1,5 @@
 using Domain.Interface;
 using Infrastructure.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace Domain.Service
 {

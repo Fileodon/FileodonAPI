@@ -1,4 +1,3 @@
-using System;
 using Controller.DTO.SFTPConnection;
 using FluentValidation;
 
