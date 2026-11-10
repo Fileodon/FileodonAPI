@@ -8,11 +8,14 @@ using Domain.Service;
 using Domain.Services;
 using FluentValidation;
 using Infrastructure;
+using Infrastructure.Interceptors;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
+using Infrastructure.Interface.Service;
 using Infrastructure.Models;
 using Infrastructure.Repository;
 using Infrastructure.Service;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -20,9 +23,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
-using Infrastructure.Interceptors;
-using Infrastructure.Services;
-using Infrastructure.Interface.Service;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 const string PolicyName = "default";
@@ -197,7 +197,8 @@ builder.Services.Configure<RouteOptions>(options =>
 builder.Services.AddScoped<AuditLogInterceptor>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(
-    (sp,options) => {
+    (sp, options) =>
+    {
         options.UseNpgsql(connectionString);
         options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
     }
@@ -214,10 +215,37 @@ if (!Database.CanConnectToDb(app))
 Database.ApplyMigrations(app);
 
 // Configure the HTTP request pipeline.
-app.UseSwagger();
+if (app.Environment.IsDevelopment())
+{
+    // UsePathBase only adds an alternative url, not replacing
+    app.UsePathBase("/api");
+    // Enforce that /api is the base path from the request
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.PathBase != "/api")
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        await next();
+    });
+}
+
+app.UseSwagger(options =>
+{
+    options.PreSerializeFilters.Add((swagger, httpReq) =>
+    {
+        swagger.Servers = new List<OpenApiServer>
+        {
+            new() { Url = "/api" }
+        };
+    });
+});
+
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+    options.SwaggerEndpoint("swagger/v1/swagger.json", "v1");
     options.RoutePrefix = string.Empty;
 });
 
@@ -227,12 +255,10 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors(CorsPolicyName);
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
-
-app.MapControllers()
-    .RequireRateLimiting(PolicyName);
+app.UseRouting();
+app.MapControllers().RequireRateLimiting(PolicyName);
 
 app.Run();
