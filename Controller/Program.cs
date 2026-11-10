@@ -200,6 +200,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(
     (sp, options) =>
     {
         options.UseNpgsql(connectionString);
+        options.UseSnakeCaseNamingConvention();
         options.AddInterceptors(sp.GetRequiredService<AuditLogInterceptor>());
     }
 );

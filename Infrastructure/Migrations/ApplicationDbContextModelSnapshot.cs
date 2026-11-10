@@ -25,33 +25,41 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Infrastructure.Models.AspNetRole", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("id");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("concurrency_stamp");
 
                     b.Property<string>("Name")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
 
                     b.Property<string>("NormalizedName")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_name");
 
                     b.Property<int>("OrganizationId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("organization_id");
 
                     b.Property<long>("PermissionMask")
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("permission_mask");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_asp_net_roles");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_asp_net_roles_organization_id");
 
                     b.ToTable("AspNetRoles", (string)null);
                 });
@@ -67,7 +75,8 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("ContactEmail")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("contact_email");
 
                     b.Property<string>("OrgName")
                         .IsRequired()
@@ -76,15 +85,19 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("UserOwnerId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_owner_id");
 
                     b.Property<string>("WorkspaceURL")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("workspace_url");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_organizations");
 
-                    b.HasIndex("UserOwnerId");
+                    b.HasIndex("UserOwnerId")
+                        .HasDatabaseName("ix_organizations_user_owner_id");
 
                     b.ToTable("organizations", (string)null);
                 });
@@ -126,11 +139,14 @@ namespace Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_organization_audit_logs");
 
-                    b.HasIndex("ActorId");
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_organization_audit_logs_actor_id");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_organization_audit_logs_organization_id");
 
                     b.ToTable("organization_audit_logs", (string)null);
                 });
@@ -152,7 +168,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("navn");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_permissions");
 
                     b.ToTable("permissions", (string)null);
                 });
@@ -171,7 +188,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("display_name");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_profile");
 
                     b.ToTable("profile", (string)null);
                 });
@@ -180,37 +198,47 @@ namespace Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
 
                     b.Property<string>("ReplacedByTokenHash")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("replaced_by_token_hash");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("token_hash");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
 
                     b.HasIndex("TokenHash")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_token_hash");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_refresh_tokens_user_id");
 
                     b.ToTable("refresh_tokens", (string)null);
                 });
@@ -253,11 +281,14 @@ namespace Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_role_audit_logs");
 
-                    b.HasIndex("ActorId");
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_role_audit_logs_actor_id");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_role_audit_logs_role_id");
 
                     b.ToTable("role_audit_logs", (string)null);
                 });
@@ -301,9 +332,11 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_sftp_connections");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_sftp_connections_organization_id");
 
                     b.ToTable("sftp_connections", (string)null);
                 });
@@ -345,11 +378,14 @@ namespace Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_sftp_connection_audit_logs");
 
-                    b.HasIndex("ActorId");
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_sftp_connection_audit_logs_actor_id");
 
-                    b.HasIndex("SFTPConnectionID");
+                    b.HasIndex("SFTPConnectionID")
+                        .HasDatabaseName("ix_sftp_connection_audit_logs_sftp_connection_id");
 
                     b.ToTable("sftp_connection_audit_logs", (string)null);
                 });
@@ -358,91 +394,117 @@ namespace Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
 
                     b.Property<int>("OrganizationId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("organization_id");
 
                     b.Property<string>("UserId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
 
                     b.Property<string>("VerificationCode")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("verification_code");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_sftp_connection_auth_codes");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_sftp_connection_auth_codes_organization_id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_sftp_connection_auth_codes_user_id");
 
-                    b.ToTable("SFTPConnectionAuthCodes");
+                    b.ToTable("sftp_connection_auth_codes", (string)null);
                 });
 
             modelBuilder.Entity("Infrastructure.Models.User", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("id");
 
                     b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("access_failed_count");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("concurrency_stamp");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
 
                     b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("email_confirmed");
 
                     b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("lockout_enabled");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lockout_end");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_email");
 
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_user_name");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("phone_number");
 
                     b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("phone_number_confirmed");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("security_stamp");
 
                     b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("two_factor_enabled");
 
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("user_name");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_asp_net_users");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -469,19 +531,24 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("RoleId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
 
                     b.Property<string>("UserId")
                         .HasColumnType("text")
                         .HasColumnName("users_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_users_organizations");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_users_organizations_organization_id");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_users_organizations_role_id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_users_organizations_user_id");
 
                     b.ToTable("users_organizations", (string)null);
                 });
@@ -523,11 +590,14 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("user_organization_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_user_organization_audit_logs");
 
-                    b.HasIndex("ActorId");
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_user_organization_audit_logs_actor_id");
 
-                    b.HasIndex("UserOrganizationId");
+                    b.HasIndex("UserOrganizationId")
+                        .HasDatabaseName("ix_user_organization_audit_logs_user_organization_id");
 
                     b.ToTable("user_organization_audit_logs", (string)null);
                 });
@@ -536,23 +606,29 @@ namespace Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("claim_type");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("claim_value");
 
                     b.Property<string>("RoleId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_asp_net_role_claims");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_asp_net_role_claims_role_id");
 
                     b.ToTable("AspNetRoleClaims", (string)null);
                 });
@@ -561,23 +637,29 @@ namespace Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("claim_type");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("claim_value");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_asp_net_user_claims");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_asp_net_user_claims_user_id");
 
                     b.ToTable("AspNetUserClaims", (string)null);
                 });
@@ -585,21 +667,27 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("login_provider");
 
                     b.Property<string>("ProviderKey")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
 
                     b.Property<string>("ProviderDisplayName")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("provider_display_name");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("LoginProvider", "ProviderKey");
+                    b.HasKey("LoginProvider", "ProviderKey")
+                        .HasName("pk_asp_net_user_logins");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_asp_net_user_logins_user_id");
 
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
@@ -607,14 +695,18 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
 
                     b.Property<string>("RoleId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
 
-                    b.HasKey("UserId", "RoleId");
+                    b.HasKey("UserId", "RoleId")
+                        .HasName("pk_asp_net_user_roles");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_asp_net_user_roles_role_id");
 
                     b.ToTable("AspNetUserRoles", (string)null);
                 });
@@ -622,18 +714,23 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
 
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("login_provider");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.Property<string>("Value")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("value");
 
-                    b.HasKey("UserId", "LoginProvider", "Name");
+                    b.HasKey("UserId", "LoginProvider", "Name")
+                        .HasName("pk_asp_net_user_tokens");
 
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
@@ -644,7 +741,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_roles_organizations_organization_id");
 
                     b.Navigation("Organization");
                 });
@@ -655,7 +753,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserOwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_organizations_users_user_owner_id");
 
                     b.Navigation("UserOwner");
                 });
@@ -666,13 +765,15 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_audit_logs_users_actor_id");
 
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany("AuditLogs")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_audit_logs_organizations_organization_id");
 
                     b.Navigation("Actor");
 
@@ -685,7 +786,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_users_user_id");
 
                     b.Navigation("User");
                 });
@@ -696,13 +798,15 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_role_audit_logs_users_actor_id");
 
                     b.HasOne("Infrastructure.Models.AspNetRole", "Role")
                         .WithMany("AuditLogs")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_role_audit_logs_asp_net_role_role_id");
 
                     b.Navigation("Actor");
 
@@ -715,7 +819,8 @@ namespace Infrastructure.Migrations
                         .WithMany("SFTPConnections")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_connections_organizations_organization_id");
 
                     b.Navigation("Organization");
                 });
@@ -726,13 +831,15 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_connection_audit_logs_users_actor_id");
 
                     b.HasOne("Infrastructure.Models.SFTPConnection", "SFTPConnnection")
                         .WithMany("AuditLogs")
                         .HasForeignKey("SFTPConnectionID")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_connection_audit_logs_sftp_connections_sftp_connection");
 
                     b.Navigation("Actor");
 
@@ -745,11 +852,13 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_connection_auth_codes_organizations_organization_id");
 
                     b.HasOne("Infrastructure.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_sftp_connection_auth_codes_users_user_id");
 
                     b.Navigation("Organization");
 
@@ -760,17 +869,20 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany("UserOrganizations")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .HasConstraintName("fk_users_organizations_organizations_organization_id");
 
                     b.HasOne("Infrastructure.Models.AspNetRole", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_users_organizations_asp_net_roles_role_id");
 
                     b.HasOne("Infrastructure.Models.User", "User")
                         .WithMany("UserOrganizations")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_users_organizations_asp_net_users_user_id");
 
                     b.Navigation("Organization");
 
@@ -785,13 +897,15 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ActorId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_user_organization_audit_logs_users_actor_id");
 
                     b.HasOne("Infrastructure.Models.UserOrganization", "UserOrganization")
                         .WithMany("AuditLogs")
                         .HasForeignKey("UserOrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_user_organization_audit_logs_user_organizations_user_organi");
 
                     b.Navigation("Actor");
 
@@ -804,7 +918,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_role_claims_asp_net_roles_role_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -813,7 +928,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_user_claims_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
@@ -822,7 +938,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_user_logins_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
@@ -831,13 +948,15 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_user_roles_asp_net_roles_role_id");
 
                     b.HasOne("Infrastructure.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_user_roles_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -846,7 +965,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.AspNetRole", b =>
