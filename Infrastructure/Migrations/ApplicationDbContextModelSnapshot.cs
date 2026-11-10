@@ -469,7 +469,8 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("RoleId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
 
                     b.Property<string>("UserId")
                         .HasColumnType("text")

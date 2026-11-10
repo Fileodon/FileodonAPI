@@ -113,6 +113,9 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.Property(membership => membership.UserId)
                 .HasColumnName("users_id");
 
+            entity.Property(membership => membership.RoleId)
+                .HasColumnName("role_id");
+
             entity.HasOne(membership => membership.Organization)
                 .WithMany(organization => organization.UserOrganizations)
                 .HasForeignKey(membership => membership.OrganizationId)
