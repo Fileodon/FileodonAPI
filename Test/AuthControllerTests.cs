@@ -205,7 +205,7 @@ public sealed class AuthControllerTests
         authService.Setup(service => service.GetMeAsync(userId)).ReturnsAsync(user);
         authService
             .Setup(service => service.ResetPassword(user, "token", "Password1!"))
-            .ReturnsAsync(IdentityResult.Failed());
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "InvalidToken", Description = "The token is invalid or expired." }));
         AuthController controller = CreateControllerWithUser(authService, userId);
 
         IActionResult result = await controller.ResetPassword(new ResetPasswordRequest(userId.ToString(), "token", "Password1!"));
