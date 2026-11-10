@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using Domain.Worker;
 using Infrastructure.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -10,14 +11,19 @@ using MimeKit;
 
 namespace Domain.Service;
 
-public class SmtpEmailSender : IEmailSender<User>
+public class SmtpEmailSender : IEmailSender<User>, IEmailTransport
 {
     private readonly IConfiguration _configuration;
+    private readonly IEmailQueue _emailQueue;
     private readonly ILogger<SmtpEmailSender> _logger;
 
-    public SmtpEmailSender(IConfiguration configuration, ILogger<SmtpEmailSender> logger)
+    public SmtpEmailSender(
+        IConfiguration configuration,
+        IEmailQueue emailQueue,
+        ILogger<SmtpEmailSender> logger)
     {
         _configuration = configuration;
+        _emailQueue = emailQueue;
         _logger = logger;
     }
 
@@ -31,10 +37,12 @@ public class SmtpEmailSender : IEmailSender<User>
             confirmationLink,
             "If you did not create a Fileodon account, you can safely ignore this email.");
 
-        await SendAsync(email, subject, html);
+        EmailWorkItem workItem = new(email, subject, html);
+
+        await _emailQueue.EnqueueAsync(workItem);
     }
 
-    public Task SendPasswordResetCodeAsync(User user, string email, string resetCode)
+    public async Task SendPasswordResetCodeAsync(User user, string email, string resetCode)
     {
         string subject = "Password Reset Code";
         string html = BuildEmail(
@@ -44,10 +52,12 @@ public class SmtpEmailSender : IEmailSender<User>
             resetCode,
             "If you did not request a password reset, you can safely ignore this email.");
 
-        return SendAsync(email, subject, html);
+        EmailWorkItem workItem = new(email, subject, html);
+
+        await _emailQueue.EnqueueAsync(workItem);
     }
 
-    public Task SendPasswordResetLinkAsync(User user, string email, string resetLink)
+    public async Task SendPasswordResetLinkAsync(User user, string email, string resetLink)
     {
         string subject = "Reset your password";
         string html = BuildEmail(
@@ -57,7 +67,9 @@ public class SmtpEmailSender : IEmailSender<User>
             resetLink,
             "If you did not request a password reset, you can safely ignore this email.");
 
-        return SendAsync(email, subject, html);
+        EmailWorkItem workItem = new(email, subject, html);
+
+        await _emailQueue.EnqueueAsync(workItem);
     }
 
     private static string BuildEmail(
@@ -109,7 +121,7 @@ public class SmtpEmailSender : IEmailSender<User>
             """;
     }
 
-    private async Task SendAsync(string to, string subject, string html)
+    public async Task SendAsync(EmailWorkItem workItem, CancellationToken cancellationToken)
     {
         var message = new MimeMessage();
         string from = _configuration["SMTP:FROM_ADDRESS"] ?? throw new InvalidOperationException("SMTP:FROM_ADDRESS is not configured.");
@@ -132,25 +144,20 @@ public class SmtpEmailSender : IEmailSender<User>
 
         try
         {
-            MailboxAddress toAddress = MailboxAddress.Parse(to);
+            MailboxAddress toAddress = MailboxAddress.Parse(workItem.Recipient);
             message.To.Add(toAddress);
         }
         catch (ParseException)
         {
-            _logger.LogError("Invalid email format for recipient. {ToEmail}", to);
+            _logger.LogError("Invalid email format for recipient. {ToEmail}", workItem.Recipient);
             throw;
         }
 
-        message.Subject = subject;
-        BodyBuilder body = new() { HtmlBody = html };
+        message.Subject = workItem.Subject;
+        BodyBuilder body = new() { HtmlBody = workItem.HtmlBody };
         using Stream? logoStream = typeof(SmtpEmailSender).Assembly
-            .GetManifestResourceStream("Fileodon.EmailLogo.png");
-        if (logoStream is null)
-        {
-            throw new InvalidOperationException("The embedded Fileodon email logo could not be found.");
-        }
-
-        MimeEntity logo = body.LinkedResources.Add("fileodon-logo", logoStream);
+            .GetManifestResourceStream("Fileodon.EmailLogo.png") ?? throw new InvalidOperationException("The embedded Fileodon email logo could not be found.");
+        MimeEntity logo = body.LinkedResources.Add("fileodon-logo", logoStream, cancellationToken);
         logo.ContentId = "fileodon-logo";
         message.Body = body.ToMessageBody();
 
@@ -159,15 +166,15 @@ public class SmtpEmailSender : IEmailSender<User>
         {
             var socketOptions = useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.SslOnConnect;
 
-            await client.ConnectAsync(host, port, socketOptions);
-            await client.AuthenticateAsync(username, password);
+            await client.ConnectAsync(host, port, socketOptions, cancellationToken);
+            await client.AuthenticateAsync(username, password, cancellationToken);
 
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            await client.SendAsync(message, cancellationToken);
+            await client.DisconnectAsync(true, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send {Subject} email to {ToEmail}", subject, to);
+            _logger.LogError(ex, "Failed to send {Subject} email to {ToEmail}", workItem.Subject, workItem.Recipient);
             throw;
         }
     }

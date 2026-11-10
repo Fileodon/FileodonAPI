@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
 using Controller.Middleware;
@@ -6,6 +7,7 @@ using Controller.Validators.SFTPConnectionModels;
 using Domain.Interface;
 using Domain.Service;
 using Domain.Services;
+using Domain.Worker;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Interface;
@@ -121,6 +123,19 @@ builder.Services.AddTransient<IEmailSender<User>, SmtpEmailSender>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
+
+Channel<EmailWorkItem> channel =
+    Channel.CreateBounded<EmailWorkItem>(new BoundedChannelOptions(1000)
+    {
+        FullMode = BoundedChannelFullMode.DropWrite,
+        SingleReader = true,
+        SingleWriter = true,
+    });
+
+builder.Services.AddSingleton(channel);
+builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
+builder.Services.AddSingleton<IEmailTransport, SmtpEmailSender>();
+builder.Services.AddHostedService<EmailWorker>();
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
 builder.Services.AddSingleton<ICryptoService>(services =>
