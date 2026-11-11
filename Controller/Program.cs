@@ -225,7 +225,7 @@ if (app.Environment.IsDevelopment())
     // Enforce that /api is the base path from the request
     app.Use(async (context, next) =>
     {
-        if (context.Request.PathBase != "/api")
+        if (context.Request.PathBase != "/api" && context.Request.PathBase != "")
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             return;
