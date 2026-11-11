@@ -2,7 +2,7 @@ using Infrastructure.Models;
 
 namespace Controller.DTO.SFTPConnection;
 
-public class SFTPConnectionAuthCodeReponse
+public class SFTPConnectionAuthCodeResponse
 {
     public required string VerificationCode { get; set; }
     public int OrganizationId { get; set; }
@@ -13,9 +13,9 @@ public class SFTPConnectionAuthCodeReponse
 
 public static class SFTPConnectionAuthCodeResponseExtensions
 {
-    public static SFTPConnectionAuthCodeReponse ToDTO(this SFTPConnectionAuthCode authCode)
+    public static SFTPConnectionAuthCodeResponse ToDTO(this SFTPConnectionAuthCode authCode)
     {
-        return new SFTPConnectionAuthCodeReponse
+        return new SFTPConnectionAuthCodeResponse
         {
             VerificationCode = authCode.VerificationCode,
             OrganizationId = authCode.OrganizationId,
