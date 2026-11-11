@@ -256,10 +256,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors(CorsPolicyName);
+app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
-app.UseRouting();
+app.UseMiddleware<PermissionMiddleware>();
 app.MapControllers().RequireRateLimiting(PolicyName);
 
 app.Run();
