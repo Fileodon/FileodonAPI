@@ -74,6 +74,7 @@ namespace Controller.Controllers
 
         [HttpPatch("{sftpconnectionid}")]
         [ProducesResponseType(typeof(SFTPConnectionUpdateResponse), 200)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
@@ -192,6 +193,7 @@ namespace Controller.Controllers
 
         [HttpPost]
         [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
@@ -223,6 +225,7 @@ namespace Controller.Controllers
 
         [HttpPatch("status")]
         [ProducesResponseType(typeof(SFTPConnectionStatusUpdateResponse), 200)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
