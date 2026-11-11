@@ -68,12 +68,15 @@ The API first attempts to read `ConnectionStrings:DefaultConnection` from config
 Example `.env` file:
 
 ```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=fileodon
+DB__HOST=localhost
+DB__PORT=5432
+DB__USER=postgres
+DB__PASSWORD=postgres
+DB__NAME=fileodon
 ```
+
+> [!NOTE]
+> Double underscore `__` is used in the `.env` file to represent nested configuration keys in ASP.NET Core. For example, `DB__HOST` corresponds to `DB:HOST` in configuration.
 
 If you prefer to use application configuration instead, add a `ConnectionStrings` section to `Controller/appsettings.Development.json` or your secrets configuration:
 
@@ -143,11 +146,11 @@ Important notes:
 
 - The project expects either a `DefaultConnection` connection string or individual `DB_*` environment variables.
 - If those values are missing, it builds a PostgreSQL connection string using default values:
-  - DB_HOST = `localhost`
-  - DB_PORT = `5432`
-  - DB_USER = `postgres`
-  - DB_PASSWORD = `postgres`
-  - DB_NAME = `postgres`
+  - DB__HOST = `localhost`
+  - DB__PORT = `5432`
+  - DB__USER = `postgres`
+  - DB__PASSWORD = `postgres`
+  - DB__NAME = `postgres`
 
 ## Authentication and identity
 
@@ -330,7 +333,7 @@ Verify:
 
 - PostgreSQL is running
 - username/password are correct
-- the `DB_NAME` database exists
+- the `DB__NAME` database exists
 - the database server is listening on the configured port
 
 ### `dotnet ef` not recognized

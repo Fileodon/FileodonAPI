@@ -4,6 +4,6 @@ namespace Domain.Interface
 {
     public interface IPermissionService : IBaseInterface<Permission>
     {
-        Task<IEnumerable<Permission>> GetPermissionsAsync(string userId);
+        //Task PostAsync(global::Controller.DTO.Permission.CreatePermissionRequest permission);
     }
 }

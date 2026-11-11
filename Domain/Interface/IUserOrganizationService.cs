@@ -1,8 +1,21 @@
 ﻿using Infrastructure.Models;
 
-namespace Domain.Interface
+namespace Domain.Interface;
+public interface
+    IUserOrganizationService
 {
-    public interface IUserOrganizationService : IBaseInterface<UserOrganization>
-    {
-    }
+    Task<UserOrganization?> GetByIdAsync(int id);
+    Task<UserOrganization?> DeleteAsync(int id);
+    Task<UserOrganization> CreateUserOrganizationAsync(
+        string email,
+        int organization_id,
+        string role_id
+    );
+    Task<UserOrganization> EditUserOrganizationAsync(
+        int id,
+        string role_id
+    );
+    Task<IEnumerable<UserOrganization>> GetByOrganizationIdAsync(int organizationId);
+    Task<IEnumerable<UserOrganization>> GetByUserIdAsync(string userId);
 }
+

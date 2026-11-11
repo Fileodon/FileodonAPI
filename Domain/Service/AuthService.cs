@@ -9,7 +9,7 @@ namespace Domain.Service;
 public class AuthService : IAuthService
 {
     private readonly TimeSpan RefreshTokenLifetime;
-
+    private readonly ISmtpEmailSender _emailSender;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ITokenService _tokenService;
@@ -17,22 +17,24 @@ public class AuthService : IAuthService
 
     public AuthService(
         IConfiguration configuration,
+        ISmtpEmailSender emailSender,
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         ITokenService tokenService,
         IUnitOfWork unitOfWork
         )
     {
+        _emailSender = emailSender;
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
-        RefreshTokenLifetime = TimeSpan.FromDays(Convert.ToDouble(configuration["Jwt:RefreshTokenValidityInDays"]));
+        RefreshTokenLifetime = TimeSpan.FromDays(configuration.GetValue<double>("JWT:RefreshTokenLifetimeDays", 30));
     }
 
-    public async Task<User> GetMeAsync(Guid id)
+    public async Task<User?> GetMeAsync(Guid id)
     {
-        return await _userManager.FindByIdAsync(id.ToString()) ?? throw new InvalidOperationException("User not found.");
+        return await _userManager.FindByIdAsync(id.ToString());
     }
 
     public async Task<AuthTokens?> LoginAsync(string email, string password)
@@ -93,13 +95,31 @@ public class AuthService : IAuthService
             Email = email
         };
         // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
-        return await _userManager.CreateAsync(user, password);
+        IdentityResult result = await _userManager.CreateAsync(user, password);
+
+        if (result.Succeeded)
+        {
+            await _emailSender.SendConfirmationLinkAsync(user);
+        }
+
+        return result;
     }
 
-    public Task<IdentityResult> ResetPassword(User user, string oldPassword, string newPassword)
+    public async Task<IdentityResult> ResetPassword(User user, string token, string newPassword)
     {
-        // UserManager håndtere selv validering af passwords internt, som er sat i Program.cs via AddIdentityCore
-        return _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+        string decodedToken = Uri.UnescapeDataString(token);
+        return await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
+    }
+
+    public async Task<IdentityResult> ConfirmUserEmailAsync(string userId, string token)
+    {
+        User? user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return IdentityResult.Failed();
+        }
+        string decodedToken = Uri.UnescapeDataString(token);
+        return await _userManager.ConfirmEmailAsync(user, decodedToken);
     }
 
     private async Task<AuthTokens> IssueTokensAsync(User user)
@@ -118,5 +138,51 @@ public class AuthService : IAuthService
             await _tokenService.CreateTokenAsync(user),
             refreshToken,
             new DateTimeOffset(expiresAt, TimeSpan.Zero));
+    }
+
+    public async Task<IdentityResult> RequestPasswordResetAsync(string email)
+    {
+        User? user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return IdentityResult.Failed();
+        }
+
+        bool queued = await _emailSender.SendPasswordResetLinkAsync(user);
+        if (!queued)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "EmailUnavailable",
+                Description = "The reset email could not be queued."
+            });
+        }
+
+        return IdentityResult.Success;
+    }
+
+    public async Task<IdentityResult> RequestEmailConfirmationAsync(string email)
+    {
+        User? user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return IdentityResult.Failed();
+        }
+        if (user.EmailConfirmed)
+        {
+            return IdentityResult.Success;
+        }
+
+        bool queued = await _emailSender.SendConfirmationLinkAsync(user);
+        if (!queued)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "EmailUnavailable",
+                Description = "The confirmation email could not be queued."
+            });
+        }
+
+        return IdentityResult.Success;
     }
 }
