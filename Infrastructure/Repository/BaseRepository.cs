@@ -49,7 +49,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
     {
         return await ExecuteInTransactionAsync(async () =>
         {
-            await DbSet.AddAsync(entity);
+            DbSet.Update(entity);
             await _context.SaveChangesAsync();
             return entity;
         });

@@ -870,6 +870,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Infrastructure.Models.Organization", "Organization")
                         .WithMany("UserOrganizations")
                         .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_users_organizations_organizations_organization_id");
 
                     b.HasOne("Infrastructure.Models.AspNetRole", "Role")
@@ -882,6 +883,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Infrastructure.Models.User", "User")
                         .WithMany("UserOrganizations")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_users_organizations_asp_net_users_user_id");
 
                     b.Navigation("Organization");

@@ -21,7 +21,7 @@ public class OrganizationController : ControllerBase
     }
 
     [HttpGet("{organizationId}")]
-    [ProducesResponseType(typeof(GetOrganizationRequest), 200)]
+    [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetOrganizationById(int organizationId)
     {
@@ -36,7 +36,7 @@ public class OrganizationController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(organization.ToGetOrganizationRequest());
+        return Ok(organization.ToGetOrganizationResponse());
     }
 
     [HttpPost]

@@ -117,6 +117,8 @@ builder.Services.AddScoped<IUserOrganizationService, UserOrganizationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
@@ -223,7 +225,7 @@ if (app.Environment.IsDevelopment())
     // Enforce that /api is the base path from the request
     app.Use(async (context, next) =>
     {
-        if (context.Request.PathBase != "/api")
+        if (context.Request.PathBase != "/api" && context.Request.PathBase != "")
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             return;
@@ -258,8 +260,8 @@ if (!app.Environment.IsDevelopment())
 app.UseCors(CorsPolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
 app.UseRouting();
+app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting(PolicyName);
 
 app.Run();
