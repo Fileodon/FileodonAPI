@@ -35,6 +35,9 @@ public class Handler : AuthorizationHandler<Requirement>
         var permissions = await permissionService
             .GetPermissionsAsync(orgId, userId);
 
+        if (permissions == null || !permissions.Any())
+            return;
+
         var permissionMask = permissions.Aggregate(PermissionFlags.None, (current, permission) => current | (PermissionFlags)permission);
 
         if ((permissionMask & requirement.Permission)
