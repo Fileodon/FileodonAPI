@@ -21,7 +21,7 @@ public class OrganizationController : ControllerBase
         _organizationService = organizationService;
     }
 
-    [Permission(Infrastructure.Models.Enums.PermissionFlags.All)]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.Read)]
     [HttpGet("{organizationId}")]
     [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
     [ProducesResponseType(401)]
