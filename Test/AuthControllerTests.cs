@@ -276,6 +276,21 @@ public sealed class AuthControllerTests
     }
 
     [Fact]
+    public async Task RequestPasswordReset_returns_service_unavailable_when_email_cannot_be_queued()
+    {
+        Mock<IAuthService> authService = new();
+        authService
+            .Setup(service => service.RequestPasswordResetAsync("user@example.com"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "EmailUnavailable" }));
+        AuthController controller = CreateController(authService);
+
+        IActionResult result = await controller.RequestPasswordReset(new RequestPasswordResetRequest("user@example.com"));
+
+        Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, ((StatusCodeResult)result).StatusCode);
+    }
+
+    [Fact]
     public async Task Register_returns_bad_request_when_service_fails()
     {
         Mock<IAuthService> authService = new();
@@ -332,6 +347,21 @@ public sealed class AuthControllerTests
 
         OkObjectResult response = Assert.IsType<OkObjectResult>(result);
         Assert.Equal("If an account with that email exists, a confirmation link has been sent.", response.Value);
+    }
+
+    [Fact]
+    public async Task RequestEmailConfirmation_returns_service_unavailable_when_email_cannot_be_queued()
+    {
+        Mock<IAuthService> authService = new();
+        authService
+            .Setup(service => service.RequestEmailConfirmationAsync("user@example.com"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "EmailUnavailable" }));
+        AuthController controller = CreateController(authService);
+
+        IActionResult result = await controller.RequestEmailConfirmation(new RequestEmailConfirmationRequest("user@example.com"));
+
+        Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, ((StatusCodeResult)result).StatusCode);
     }
 
     [Fact]

@@ -9,8 +9,7 @@ namespace Domain.Service;
 public class AuthService : IAuthService
 {
     private readonly TimeSpan RefreshTokenLifetime;
-    private readonly IConfiguration _configuration;
-    private readonly IEmailSender<User> _emailSender;
+    private readonly ISmtpEmailSender _emailSender;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ITokenService _tokenService;
@@ -18,14 +17,13 @@ public class AuthService : IAuthService
 
     public AuthService(
         IConfiguration configuration,
-        IEmailSender<User> emailSender,
+        ISmtpEmailSender emailSender,
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         ITokenService tokenService,
         IUnitOfWork unitOfWork
         )
     {
-        _configuration = configuration;
         _emailSender = emailSender;
         _userManager = userManager;
         _signInManager = signInManager;
@@ -101,7 +99,7 @@ public class AuthService : IAuthService
 
         if (result.Succeeded)
         {
-            await SendConfirmationEmailAsync(user);
+            await _emailSender.SendConfirmationLinkAsync(user);
         }
 
         return result;
@@ -150,7 +148,17 @@ public class AuthService : IAuthService
             return IdentityResult.Failed();
         }
 
-        return await SendPasswordResetEmailAsync(user);
+        bool queued = await _emailSender.SendPasswordResetLinkAsync(user);
+        if (!queued)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "EmailUnavailable",
+                Description = "The reset email could not be queued."
+            });
+        }
+
+        return IdentityResult.Success;
     }
 
     public async Task<IdentityResult> RequestEmailConfirmationAsync(string email)
@@ -165,42 +173,16 @@ public class AuthService : IAuthService
             return IdentityResult.Success;
         }
 
-        return await SendConfirmationEmailAsync(user);
-    }
-
-    private async Task<IdentityResult> SendConfirmationEmailAsync(User user)
-    {
-        if (string.IsNullOrEmpty(user.Email))
+        bool queued = await _emailSender.SendConfirmationLinkAsync(user);
+        if (!queued)
         {
-            throw new InvalidOperationException("User email is not set.");
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "EmailUnavailable",
+                Description = "The confirmation email could not be queued."
+            });
         }
 
-        string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
-
-        string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        string encodedUserId = Uri.EscapeDataString(user.Id.ToString());
-        string encodedToken = Uri.EscapeDataString(token);
-        string link = $"{host}/confirm-email?userId={encodedUserId}&token={encodedToken}";
-
-        await _emailSender.SendConfirmationLinkAsync(user, user.Email, link);
-        return IdentityResult.Success;
-    }
-
-    private async Task<IdentityResult> SendPasswordResetEmailAsync(User user)
-    {
-        if (string.IsNullOrEmpty(user.Email))
-        {
-            throw new InvalidOperationException("User email is not set.");
-        }
-
-        string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
-
-        string token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        string encodedUserId = Uri.EscapeDataString(user.Id.ToString());
-        string encodedToken = Uri.EscapeDataString(token);
-        string link = $"{host}/reset-password?userId={encodedUserId}&token={encodedToken}";
-
-        await _emailSender.SendPasswordResetLinkAsync(user, user.Email, link);
         return IdentityResult.Success;
     }
 }

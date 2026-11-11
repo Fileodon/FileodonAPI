@@ -119,8 +119,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 
-builder.Services.AddTransient<IEmailSender<User>, SmtpEmailSender>();
-
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 
@@ -134,7 +132,8 @@ Channel<EmailWorkItem> channel =
 
 builder.Services.AddSingleton(channel);
 builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
-builder.Services.AddSingleton<IEmailTransport, SmtpEmailSender>();
+builder.Services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
+builder.Services.AddSingleton<IEmailTransport, EmailTransport>();
 builder.Services.AddHostedService<EmailWorker>();
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path

@@ -1,100 +1,105 @@
-using System;
 using System.Net;
+using Domain.Interface;
 using Domain.Worker;
 using Infrastructure.Models;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using MimeKit;
 
 namespace Domain.Service;
 
-public class SmtpEmailSender : IEmailSender<User>, IEmailTransport
+public class SmtpEmailSender : ISmtpEmailSender
 {
-    private readonly IConfiguration _configuration;
-    private readonly IEmailQueue _emailQueue;
-    private readonly ILogger<SmtpEmailSender> _logger;
+  private readonly IConfiguration _configuration;
+  private readonly IEmailQueue _emailQueue;
+  private readonly UserManager<User> _userManager;
 
-    public SmtpEmailSender(
-        IConfiguration configuration,
-        IEmailQueue emailQueue,
-        ILogger<SmtpEmailSender> logger)
+  public SmtpEmailSender(
+      IConfiguration configuration,
+      IEmailQueue emailQueue,
+      UserManager<User> userManager)
+  {
+    _configuration = configuration;
+    _emailQueue = emailQueue;
+    _userManager = userManager;
+  }
+
+  public async Task<bool> SendConfirmationLinkAsync(User user)
+  {
+    if (string.IsNullOrEmpty(user.Email))
     {
-        _configuration = configuration;
-        _emailQueue = emailQueue;
-        _logger = logger;
+      throw new InvalidOperationException("User email is not set.");
     }
 
-    public async Task SendConfirmationLinkAsync(User user, string email, string confirmationLink)
+    string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
+
+    string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+    string encodedUserId = Uri.EscapeDataString(user.Id.ToString());
+    string encodedToken = Uri.EscapeDataString(token);
+    string confirmationLink = $"{host}/confirm-email?userId={encodedUserId}&token={encodedToken}";
+
+    string subject = "Confirm your email";
+    string html = BuildEmail(
+        "Welcome to Fileodon",
+        "Thanks for signing up. Confirm your email address to activate your account.",
+        "Confirm email address",
+        confirmationLink,
+        "If you did not create a Fileodon account, you can safely ignore this email.");
+
+    EmailWorkItem workItem = new(user.Email, subject, html);
+
+    return _emailQueue.Enqueue(workItem);
+  }
+
+  public async Task<bool> SendPasswordResetLinkAsync(User user)
+  {
+    if (string.IsNullOrEmpty(user.Email))
     {
-        string subject = "Confirm your email";
-        string html = BuildEmail(
-            "Welcome to Fileodon",
-            "Thanks for signing up. Confirm your email address to activate your account.",
-            "Confirm email address",
-            confirmationLink,
-            "If you did not create a Fileodon account, you can safely ignore this email.");
-
-        EmailWorkItem workItem = new(email, subject, html);
-
-        await _emailQueue.EnqueueAsync(workItem);
+      throw new InvalidOperationException("User email is not set.");
     }
 
-    public async Task SendPasswordResetCodeAsync(User user, string email, string resetCode)
-    {
-        string subject = "Password Reset Code";
-        string html = BuildEmail(
-            "Reset your password",
-            "Use the verification code below to reset your Fileodon password.",
-            null,
-            resetCode,
-            "If you did not request a password reset, you can safely ignore this email.");
+    string host = _configuration["API:HOST"] ?? throw new InvalidOperationException("API:HOST is not set in configuration.");
 
-        EmailWorkItem workItem = new(email, subject, html);
+    string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+    string encodedUserId = Uri.EscapeDataString(user.Id.ToString());
+    string encodedToken = Uri.EscapeDataString(token);
+    string resetLink = $"{host}/reset-password?userId={encodedUserId}&token={encodedToken}";
 
-        await _emailQueue.EnqueueAsync(workItem);
-    }
+    string subject = "Reset your password";
+    string html = BuildEmail(
+        "Reset your password",
+        "Click the button below to choose a new password for your Fileodon account.",
+        "Reset password",
+        resetLink,
+        "If you did not request a password reset, you can safely ignore this email.");
 
-    public async Task SendPasswordResetLinkAsync(User user, string email, string resetLink)
-    {
-        string subject = "Reset your password";
-        string html = BuildEmail(
-            "Reset your password",
-            "Click the button below to choose a new password for your Fileodon account.",
-            "Reset password",
-            resetLink,
-            "If you did not request a password reset, you can safely ignore this email.");
+    EmailWorkItem workItem = new(user.Email, subject, html);
 
-        EmailWorkItem workItem = new(email, subject, html);
+    return _emailQueue.Enqueue(workItem);
+  }
 
-        await _emailQueue.EnqueueAsync(workItem);
-    }
-
-    private static string BuildEmail(
-        string title,
-        string message,
-        string? actionLabel,
-        string actionValue,
-        string note)
-    {
-        string encodedTitle = WebUtility.HtmlEncode(title);
-        string encodedMessage = WebUtility.HtmlEncode(message);
-        string encodedValue = WebUtility.HtmlEncode(actionValue);
-        string encodedNote = WebUtility.HtmlEncode(note);
-        string action = actionLabel is null
-            ? $"""
+  private static string BuildEmail(
+      string title,
+      string message,
+      string? actionLabel,
+      string actionValue,
+      string note)
+  {
+    string encodedTitle = WebUtility.HtmlEncode(title);
+    string encodedMessage = WebUtility.HtmlEncode(message);
+    string encodedValue = WebUtility.HtmlEncode(actionValue);
+    string encodedNote = WebUtility.HtmlEncode(note);
+    string action = actionLabel is null
+        ? $"""
                <div style="margin:28px 0;padding:18px;text-align:center;background:#eef6ff;border:1px solid #cfe5ff;border-radius:8px;color:#0c2d55;font-size:28px;font-weight:700;letter-spacing:4px;">{encodedValue}</div>
                """
-            : $"""
+        : $"""
                <p style="margin:28px 0;text-align:center;">
                  <a href="{encodedValue}" style="display:inline-block;padding:14px 26px;background:#087cf5;border-radius:7px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">{WebUtility.HtmlEncode(actionLabel)}</a>
                </p>
                <p style="color:#667085;font-size:13px;line-height:1.6;word-break:break-all;">Or copy and paste this link into your browser:<br />{encodedValue}</p>
                """;
 
-        return $"""
+    return $"""
             <!doctype html>
             <html lang="en">
               <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#14213d;">
@@ -119,63 +124,5 @@ public class SmtpEmailSender : IEmailSender<User>, IEmailTransport
               </body>
             </html>
             """;
-    }
-
-    public async Task SendAsync(EmailWorkItem workItem, CancellationToken cancellationToken)
-    {
-        var message = new MimeMessage();
-        string from = _configuration["SMTP:FROM_ADDRESS"] ?? throw new InvalidOperationException("SMTP:FROM_ADDRESS is not configured.");
-        string host = _configuration["SMTP:HOST"] ?? throw new InvalidOperationException("SMTP:HOST is not configured.");
-        int port = Convert.ToInt32(_configuration["SMTP:PORT"] ?? throw new InvalidOperationException("SMTP:PORT is not configured."));
-        string username = _configuration["SMTP:USER"] ?? throw new InvalidOperationException("SMTP:USER is not configured.");
-        string password = _configuration["SMTP:PASSWORD"] ?? throw new InvalidOperationException("SMTP:PASSWORD is not configured.");
-        bool useStartTls = Convert.ToBoolean(_configuration["SMTP:USE_STARTTLS"] ?? "false");
-
-        try
-        {
-            MailboxAddress fromAddress = MailboxAddress.Parse(from);
-            message.From.Add(new MailboxAddress("Fileodon", fromAddress.ToString()));
-        }
-        catch (ParseException)
-        {
-            _logger.LogError("Invalid email format for FromEmail in configuration. {FromEmail}", from);
-            throw;
-        }
-
-        try
-        {
-            MailboxAddress toAddress = MailboxAddress.Parse(workItem.Recipient);
-            message.To.Add(toAddress);
-        }
-        catch (ParseException)
-        {
-            _logger.LogError("Invalid email format for recipient. {ToEmail}", workItem.Recipient);
-            throw;
-        }
-
-        message.Subject = workItem.Subject;
-        BodyBuilder body = new() { HtmlBody = workItem.HtmlBody };
-        using Stream? logoStream = typeof(SmtpEmailSender).Assembly
-            .GetManifestResourceStream("Fileodon.EmailLogo.png") ?? throw new InvalidOperationException("The embedded Fileodon email logo could not be found.");
-        MimeEntity logo = body.LinkedResources.Add("fileodon-logo", logoStream, cancellationToken);
-        logo.ContentId = "fileodon-logo";
-        message.Body = body.ToMessageBody();
-
-        using var client = new SmtpClient();
-        try
-        {
-            var socketOptions = useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.SslOnConnect;
-
-            await client.ConnectAsync(host, port, socketOptions, cancellationToken);
-            await client.AuthenticateAsync(username, password, cancellationToken);
-
-            await client.SendAsync(message, cancellationToken);
-            await client.DisconnectAsync(true, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send {Subject} email to {ToEmail}", workItem.Subject, workItem.Recipient);
-            throw;
-        }
-    }
+  }
 }

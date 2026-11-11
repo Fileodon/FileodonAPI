@@ -3,6 +3,7 @@ using Domain.DTO.Auth;
 using Domain.Interface;
 using Infrastructure.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers
@@ -140,6 +141,7 @@ namespace Controller.Controllers
         [AllowAnonymous]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(503)]
         public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
@@ -147,7 +149,11 @@ namespace Controller.Controllers
                 return BadRequest("Email is required.");
             }
 
-            await _authService.RequestPasswordResetAsync(request.Email);
+            IdentityResult result = await _authService.RequestPasswordResetAsync(request.Email);
+            if (result.Errors.Any(error => error.Code == "EmailUnavailable"))
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
 
             return Ok("If an account with that email exists, a password reset link has been sent.");
         }
@@ -177,6 +183,7 @@ namespace Controller.Controllers
         [AllowAnonymous]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(503)]
         public async Task<IActionResult> RequestEmailConfirmation([FromBody] RequestEmailConfirmationRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
@@ -184,7 +191,11 @@ namespace Controller.Controllers
                 return BadRequest("Email is required.");
             }
 
-            await _authService.RequestEmailConfirmationAsync(request.Email);
+            IdentityResult result = await _authService.RequestEmailConfirmationAsync(request.Email);
+            if (result.Errors.Any(error => error.Code == "EmailUnavailable"))
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
 
             return Ok("If an account with that email exists, a confirmation link has been sent.");
         }

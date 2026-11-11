@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,17 +12,16 @@ public sealed record class EmailWorkItem(
 
 public interface IEmailQueue
 {
-    Task<ValueTask> EnqueueAsync(EmailWorkItem workItem, CancellationToken cancellationToken = default);
+    bool Enqueue(EmailWorkItem workItem);
 }
 
 public sealed class EmailQueue(Channel<EmailWorkItem> channel) : IEmailQueue
 {
-    public async Task<ValueTask> EnqueueAsync(
-        EmailWorkItem workItem,
-        CancellationToken cancellationToken
+    public bool Enqueue(
+        EmailWorkItem workItem
     )
     {
-        return channel.Writer.WriteAsync(workItem, cancellationToken);
+        return channel.Writer.TryWrite(workItem);
     }
 }
 

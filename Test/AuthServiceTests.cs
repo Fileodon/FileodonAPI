@@ -154,7 +154,7 @@ public sealed class AuthServiceTests
         Assert.False(result.Succeeded);
         Assert.Empty(result.Errors);
         context.EmailSender.Verify(
-            sender => sender.SendPasswordResetLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            sender => sender.SendPasswordResetLinkAsync(It.IsAny<User>()),
             Times.Never);
     }
 
@@ -172,10 +172,26 @@ public sealed class AuthServiceTests
         Assert.True(result.Succeeded);
         context.EmailSender.Verify(
             sender => sender.SendPasswordResetLinkAsync(
-                It.Is<User>(candidate => candidate.Id == user.Id),
-                user.Email!,
-                It.Is<string>(link => link.Contains($"userId={user.Id}"))),
+                It.Is<User>(candidate => candidate.Id == user.Id)),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestPasswordReset_returns_failure_when_reset_email_cannot_be_queued()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager);
+        context.EmailSender
+            .Setup(sender => sender.SendPasswordResetLinkAsync(It.Is<User>(candidate => candidate.Id == user.Id)))
+            .ReturnsAsync(false);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RequestPasswordResetAsync(user.Email!);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Code == "EmailUnavailable");
     }
 
     [Fact]
@@ -189,7 +205,7 @@ public sealed class AuthServiceTests
 
         Assert.False(result.Succeeded);
         context.EmailSender.Verify(
-            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>()),
             Times.Never);
     }
 
@@ -207,10 +223,26 @@ public sealed class AuthServiceTests
         Assert.True(result.Succeeded);
         context.EmailSender.Verify(
             sender => sender.SendConfirmationLinkAsync(
-                It.Is<User>(candidate => candidate.Id == user.Id),
-                user.Email!,
-                It.Is<string>(link => link.Contains($"userId={user.Id}"))),
+                It.Is<User>(candidate => candidate.Id == user.Id)),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestEmailConfirmation_returns_failure_when_confirmation_email_cannot_be_queued()
+    {
+        using AuthenticationTestContext context = AuthenticationTestContext.Create();
+        using var scope = context.CreateScope();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        User user = await CreateUserAsync(userManager, false);
+        context.EmailSender
+            .Setup(sender => sender.SendConfirmationLinkAsync(It.Is<User>(candidate => candidate.Id == user.Id)))
+            .ReturnsAsync(false);
+        AuthService authService = CreateAuthService(scope);
+
+        IdentityResult result = await authService.RequestEmailConfirmationAsync(user.Email!);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Code == "EmailUnavailable");
     }
 
     [Fact]
@@ -226,7 +258,7 @@ public sealed class AuthServiceTests
 
         Assert.True(result.Succeeded);
         context.EmailSender.Verify(
-            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>()),
             Times.Never);
     }
 
@@ -260,7 +292,7 @@ public sealed class AuthServiceTests
         Assert.False(result.Succeeded);
         Assert.Empty(result.Errors);
         context.EmailSender.Verify(
-            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()),
+            sender => sender.SendConfirmationLinkAsync(It.IsAny<User>()),
             Times.Never);
     }
 
@@ -355,9 +387,7 @@ public sealed class AuthServiceTests
             ?? throw new InvalidOperationException("Registered user was not found.");
         Assert.True(await userManager.CheckPasswordAsync(user, NewPassword));
         context.EmailSender.Verify(sender => sender.SendConfirmationLinkAsync(
-            It.Is<User>(candidate => candidate.Id == user.Id),
-            "grace@example.com",
-            It.Is<string>(link => link.Contains($"userId={user.Id}"))), Times.Once);
+            It.Is<User>(candidate => candidate.Id == user.Id)), Times.Once);
     }
 
     [Theory]
@@ -401,7 +431,7 @@ public sealed class AuthServiceTests
     {
         return new AuthService(
             scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>(),
-            scope.ServiceProvider.GetRequiredService<IEmailSender<User>>(),
+            scope.ServiceProvider.GetRequiredService<ISmtpEmailSender>(),
             scope.ServiceProvider.GetRequiredService<UserManager<User>>(),
             scope.ServiceProvider.GetRequiredService<SignInManager<User>>(),
             scope.ServiceProvider.GetRequiredService<ITokenService>(),
