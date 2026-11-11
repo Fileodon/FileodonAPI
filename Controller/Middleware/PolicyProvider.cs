@@ -1,0 +1,44 @@
+﻿using Infrastructure.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
+
+namespace Controller.Middleware;
+
+public class PermissionPolicyProvider
+    : DefaultAuthorizationPolicyProvider
+{
+    public PermissionPolicyProvider(
+        IOptions<AuthorizationOptions> options)
+        : base(options)
+    {
+    }
+
+    public override Task<AuthorizationPolicy?> GetPolicyAsync(
+        string policyName)
+    {
+        const string prefix = "Permission:";
+
+        if (!policyName.StartsWith(
+            prefix,
+            StringComparison.Ordinal))
+        {
+            return base.GetPolicyAsync(policyName);
+        }
+
+        var value = policyName[prefix.Length..];
+
+        if (!int.TryParse(value, out var permissionValue))
+        {
+            return Task.FromResult<AuthorizationPolicy?>(null);
+        }
+
+        var permission = (PermissionFlags)permissionValue;
+
+        var policy = new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .AddRequirements(new Requirement(permission))
+            .Build();
+
+        return Task.FromResult<AuthorizationPolicy?>(policy);
+    }
+}

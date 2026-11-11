@@ -45,4 +45,21 @@ public class RoleRepository : BaseRepository<AspNetRole>, IRoleRepository
         return _context.RoleAuditLogs
             .Where(audit => audit.RoleId == roleId);
     }
+
+    public async Task<IEnumerable<long>?> GetPermissionsAsync(int orgId, string userId)
+    {
+        var roles = await _context.AspNetRoles
+            .Where(role => role.OrganizationId == orgId)
+            .ToListAsync();
+
+        var userRoles = await _context.UserRoles
+            .Where(userRole => userRole.UserId == userId && roles.Select(role => role.Id).Contains(userRole.RoleId))
+            .ToListAsync();
+
+        return roles
+            .Where(role => userRoles.Select(userRole => userRole.RoleId).Contains(role.Id))
+            .Select(role => role.PermissionMask)
+            .Distinct();
+
+    }
 }

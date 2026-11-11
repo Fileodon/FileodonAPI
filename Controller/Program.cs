@@ -161,6 +161,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddSingleton<
+    IAuthorizationPolicyProvider,
+    PermissionPolicyProvider>();
+
+builder.Services.AddScoped<
+    IAuthorizationHandler,
+    Handler>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy<string, RateLimit>(PolicyName);
@@ -260,7 +268,6 @@ app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<PermissionMiddleware>();
 app.MapControllers().RequireRateLimiting(PolicyName);
 
 app.Run();
