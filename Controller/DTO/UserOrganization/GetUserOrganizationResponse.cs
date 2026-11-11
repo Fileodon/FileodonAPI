@@ -4,15 +4,15 @@ using Controller.DTO.Role;
 namespace Controller.DTO.UserOrganization
 {
     public record class GetUserOrganizationResponse(
-        int id,
-        string userName,
-        GetRoleResponse role
+        int Id,
+        string UserName,
+        GetRoleResponse Role
     );
 
     public record GetUsersUserOrganizationResponse(
-        int id,
-        GetRoleResponse role,
-        GetOrganizationResponse organization
+        int Id,
+        GetRoleResponse Role,
+        GetOrganizationResponse Organization
     );
 
 
@@ -26,9 +26,9 @@ namespace Controller.DTO.UserOrganization
             ArgumentNullException.ThrowIfNull(userOrganization.Role);
             ArgumentException.ThrowIfNullOrEmpty(userOrganization.Role.Name);
             return new GetUserOrganizationResponse(
-                id: userOrganization.Id,
-                userName: userOrganization.User.UserName,
-                role: userOrganization.Role.ToGetRoleResponse()
+                Id: userOrganization.Id,
+                UserName: userOrganization.User.UserName,
+                Role: userOrganization.Role.ToGetRoleResponse()
             );
         }
         public static GetUsersUserOrganizationResponse ToGetUsersUserOrganizationResponse(this Infrastructure.Models.UserOrganization userOrganization)
@@ -38,9 +38,9 @@ namespace Controller.DTO.UserOrganization
             ArgumentException.ThrowIfNullOrEmpty(userOrganization.Role.Name);
             ArgumentNullException.ThrowIfNull(userOrganization.Organization);
             return new GetUsersUserOrganizationResponse(
-                id: userOrganization.Id,
-                role: userOrganization.Role.ToGetRoleResponse(),
-                organization:userOrganization.Organization.ToGetOrganizationResponse()
+                Id: userOrganization.Id,
+                Role: userOrganization.Role.ToGetRoleResponse(),
+                Organization:userOrganization.Organization.ToGetOrganizationResponse()
             );
         }
     }
