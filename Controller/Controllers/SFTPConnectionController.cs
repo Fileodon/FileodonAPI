@@ -166,7 +166,7 @@ namespace Controller.Controllers
         }
 
         [HttpPost("requestCode")]
-        [ProducesResponseType(typeof(SFTPConnectionAuthCodeDTO), 200)]
+        [ProducesResponseType(typeof(SFTPConnectionAuthCodeReponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]

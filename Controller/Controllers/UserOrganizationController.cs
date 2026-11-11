@@ -1,6 +1,5 @@
 ﻿using Controller.DTO.UserOrganization;
 using Domain.Interface;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
@@ -55,11 +54,11 @@ public class UserOrganizationController : ControllerBase
      [FromBody] CreateUserOrganizationRequest request)
     {
         await _userOrgService.CreateUserOrganizationAsync(
-            request.email,
-            request.organization_id,
-            request.role_id
+            request.Email,
+            request.OrganizationId,
+            request.RoleId
         );
-            
+
         return Accepted();
     }
 
@@ -70,10 +69,10 @@ public class UserOrganizationController : ControllerBase
      [FromBody] EditUserOrganizationRequest request)
     {
         var updatedUserOrganization = await _userOrgService.EditUserOrganizationAsync(
-            request.id,
-            request.role_id
+            request.Id,
+            request.RoleId
         );
-            
+
         return Ok(updatedUserOrganization.ToGetUserOrganizationResponse());
     }
 

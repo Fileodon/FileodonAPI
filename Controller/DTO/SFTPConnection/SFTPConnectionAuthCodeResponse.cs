@@ -2,7 +2,7 @@ using Infrastructure.Models;
 
 namespace Controller.DTO.SFTPConnection;
 
-public class SFTPConnectionAuthCodeDTO
+public class SFTPConnectionAuthCodeReponse
 {
     public required string VerificationCode { get; set; }
     public int OrganizationId { get; set; }
@@ -11,11 +11,11 @@ public class SFTPConnectionAuthCodeDTO
     public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddMinutes(10);
 }
 
-public static class SFTPConnectionAuthCodeDTOExtensions
+public static class SFTPConnectionAuthCodeResponseExtensions
 {
-    public static SFTPConnectionAuthCodeDTO ToDTO(this SFTPConnectionAuthCode authCode)
+    public static SFTPConnectionAuthCodeReponse ToDTO(this SFTPConnectionAuthCode authCode)
     {
-        return new SFTPConnectionAuthCodeDTO
+        return new SFTPConnectionAuthCodeReponse
         {
             VerificationCode = authCode.VerificationCode,
             OrganizationId = authCode.OrganizationId,
