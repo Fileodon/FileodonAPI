@@ -1,4 +1,5 @@
 using Controller.DTO.Organization;
+using Controller.Middleware.Attribute;
 using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
@@ -20,6 +21,7 @@ public class OrganizationController : ControllerBase
         _organizationService = organizationService;
     }
 
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.All)]
     [HttpGet("{organizationId}")]
     [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
     [ProducesResponseType(401)]

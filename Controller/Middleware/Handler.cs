@@ -14,7 +14,14 @@ public class Handler : AuthorizationHandler<Requirement>
     }
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, Requirement requirement)
     {
-        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (context.User.Identity?.IsAuthenticated == false)
+        {
+            return;
+        }
+
+        string? userId = context.User.FindFirstValue("id")
+            ?? context.User.FindFirstValue("sub")
+            ?? context.User.FindFirstValue("unique_name");
 
         if (string.IsNullOrEmpty(userId))
         {

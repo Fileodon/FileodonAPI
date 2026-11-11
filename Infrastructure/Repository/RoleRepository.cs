@@ -52,7 +52,7 @@ public class RoleRepository : BaseRepository<AspNetRole>, IRoleRepository
             .Where(role => role.OrganizationId == orgId)
             .ToListAsync();
 
-        var userRoles = await _context.UserRoles
+        var userRoles = await _context.UserOrganizations
             .Where(userRole => userRole.UserId == userId && roles.Select(role => role.Id).Contains(userRole.RoleId))
             .ToListAsync();
 
