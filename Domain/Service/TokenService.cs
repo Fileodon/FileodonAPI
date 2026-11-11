@@ -35,7 +35,7 @@ public class TokenService : ITokenService
             claims.Add(new Claim("role", role));
         }
 
-        SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(_configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration.")));
+        SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(_configuration["JWT:KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration.")));
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],

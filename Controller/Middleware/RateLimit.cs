@@ -74,7 +74,7 @@ public sealed class RateLimit : IRateLimiterPolicy<string>
     {
         if (httpContext.User.Identity?.IsAuthenticated == true)
         {
-            string? userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            string? userId = httpContext.User.FindFirstValue("id")
                 ?? httpContext.User.FindFirstValue("sub")
                 ?? httpContext.User.FindFirstValue("unique_name");
 

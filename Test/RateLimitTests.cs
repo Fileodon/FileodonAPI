@@ -123,7 +123,7 @@ public sealed class RateLimitTests
         if (userId is not null)
         {
             context.User = new ClaimsPrincipal(new ClaimsIdentity(
-                [new Claim(ClaimTypes.NameIdentifier, userId)],
+                [new Claim("id", userId)],
                 authenticationType: "test"));
         }
 

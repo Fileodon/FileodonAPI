@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
 using Controller.Middleware;
@@ -6,6 +7,7 @@ using Controller.Validators.SFTPConnectionModels;
 using Domain.Interface;
 using Domain.Service;
 using Domain.Services;
+using Domain.Worker;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Interceptors;
@@ -62,19 +64,20 @@ if (!File.Exists(keyPath))
 
 string connectionString = Database.InitializeConnectionString(builder);
 
-if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+if (string.IsNullOrEmpty(builder.Configuration["JWT:KEY"]))
 {
     Log.Warning("JWT key is not set in configuration. Generating a new secret.");
     string key = await TokenService.GenerateSecret();
-    DotEnv.WriteEntryAndUpdateEnvironmentVariable("JWT_KEY", key);
-    if (string.IsNullOrEmpty(builder.Configuration["JWT_KEY"]))
+    if (string.IsNullOrEmpty(key))
     {
-        Log.Error("Failed to set JWT key in configuration after generating a new secret.");
-        throw new InvalidOperationException("Failed to set JWT key in configuration after generating a new secret.");
+        Log.Error("Failed to generate JWT secret.");
+        throw new InvalidOperationException("Failed to generate JWT secret.");
     }
+    DotEnv.WriteEntry("JWT:KEY", key);
+    builder.Configuration["JWT:KEY"] = key;
 }
 
-string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS_ALLOWED_HOSTS") ?? string.Empty)
+string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS:ALLOWED_HOSTS") ?? string.Empty)
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
     .Select(origin => origin.Trim('"', '\''))
     .Where(origin => origin.Length > 0)];
@@ -126,6 +129,20 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 
+Channel<EmailWorkItem> channel =
+    Channel.CreateBounded<EmailWorkItem>(new BoundedChannelOptions(1000)
+    {
+        FullMode = BoundedChannelFullMode.DropWrite,
+        SingleReader = true,
+        SingleWriter = true,
+    });
+
+builder.Services.AddSingleton(channel);
+builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
+builder.Services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
+builder.Services.AddSingleton<IEmailTransport, EmailTransport>();
+builder.Services.AddHostedService<EmailWorker>();
+
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
 builder.Services.AddSingleton<ICryptoService>(services =>
 {
@@ -134,17 +151,22 @@ builder.Services.AddSingleton<ICryptoService>(services =>
 
 builder.Services.AddIdentityCore<User>(options =>
 {
+    // Password policy
     IConfigurationSection passwordPolicy = builder.Configuration.GetSection("PasswordPolicy");
     options.Password.RequireDigit = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireDigit));
     options.Password.RequiredLength = passwordPolicy.GetValue<int>(nameof(options.Password.RequiredLength));
     options.Password.RequireUppercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireUppercase));
     options.Password.RequireLowercase = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireLowercase));
     options.Password.RequireNonAlphanumeric = passwordPolicy.GetValue<bool>(nameof(options.Password.RequireNonAlphanumeric));
+
+    // User and SignIn policy
     options.User.RequireUniqueEmail = passwordPolicy.GetValue<bool>(nameof(options.User.RequireUniqueEmail));
+    options.SignIn.RequireConfirmedEmail = passwordPolicy.GetValue<bool>(nameof(options.SignIn.RequireConfirmedEmail));
 })
     .AddRoles<AspNetRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager();
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -157,7 +179,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration."))),
+            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:KEY"] ?? throw new InvalidOperationException("JWT key is not set in configuration."))),
             ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
