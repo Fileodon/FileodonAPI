@@ -13,7 +13,7 @@ public class PermissionPolicyProvider
     {
     }
 
-    public override Task<AuthorizationPolicy?> GetPolicyAsync(
+    public override async Task<AuthorizationPolicy?> GetPolicyAsync(
         string policyName)
     {
         const string prefix = "Permission:";
@@ -22,14 +22,14 @@ public class PermissionPolicyProvider
             prefix,
             StringComparison.Ordinal))
         {
-            return base.GetPolicyAsync(policyName);
+            return await base.GetPolicyAsync(policyName);
         }
 
         var value = policyName[prefix.Length..];
 
         if (!int.TryParse(value, out var permissionValue))
         {
-            return Task.FromResult<AuthorizationPolicy?>(null);
+            return null;
         }
 
         var permission = (PermissionFlags)permissionValue;
@@ -39,6 +39,6 @@ public class PermissionPolicyProvider
             .AddRequirements(new Requirement(permission))
             .Build();
 
-        return Task.FromResult<AuthorizationPolicy?>(policy);
+        return policy;
     }
 }
