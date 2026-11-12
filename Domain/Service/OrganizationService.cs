@@ -98,8 +98,10 @@ public class OrganizationService : IOrganizationService
     }
 
     public async Task<MutationEnvelope<Organization>> UpdateOrganizationAsync(
-        int organizationId,
-        string organizationName,
+        int organizationId, 
+        string orgName, 
+        string workspaceURL, 
+        string contactEmail, 
         string userId)
     {
         Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
@@ -107,23 +109,27 @@ public class OrganizationService : IOrganizationService
         {
             return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
         }
+        organization.OrgName = orgName;
+        organization.WorkspaceURL = workspaceURL;
+        organization.ContactEmail = contactEmail;
 
-        if (!string.Equals(organization.UserOwnerId, userId, StringComparison.InvariantCultureIgnoreCase))
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
+        try
         {
-            return new MutationEnvelope<Organization>(MutationStatus.Forbidden, null);
+            organization = await _unitOfWork.OrganizationRepository.PutAsync(organization);
+            if (organization is null)
+            {
+                return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
+            }
+            await _unitOfWork.CommitAsync();
+            }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
         }
 
-        Organization? updatedOrganization =
-            await _unitOfWork.OrganizationRepository.UpdateOrganizationAsync(
-                organizationId,
-                organizationName,
-                userId);
-        if (updatedOrganization is null)
-        {
-            return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
-        }
-
-        await _unitOfWork.SaveChangesAsync();
-        return new MutationEnvelope<Organization>(MutationStatus.Success, updatedOrganization);
+        return new MutationEnvelope<Organization>(MutationStatus.Success, organization);
     }
 }

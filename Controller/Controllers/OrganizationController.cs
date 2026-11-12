@@ -42,7 +42,8 @@ public class OrganizationController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(string), 201)]
+    [ProducesResponseType(typeof(GetOrganizationResponse), 201)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest request)
     {
@@ -53,7 +54,7 @@ public class OrganizationController : ControllerBase
         }
 
         var createdOrganization = await _organizationService.CreateOrganizationAsync(request.OrgName, request.WorkspaceURL, request.ContactEmail, userId);
-        return Created($"/api/organization/{createdOrganization.Id}", createdOrganization.OrgName);
+        return Created($"/api/organization/{createdOrganization.Id}", createdOrganization.ToGetOrganizationResponse());
     }
 
     [HttpDelete("{organizationId}")]
@@ -82,11 +83,13 @@ public class OrganizationController : ControllerBase
     }
 
     [HttpPut("{organizationId}")]
-    [ProducesResponseType(typeof(string), 200)]
+    [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     [ProducesResponseType(403)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> UpdateOrganization(int organizationId, [FromBody] string newOrganizationName)
+    public async Task<IActionResult> UpdateOrganization(int organizationId, 
+        [FromBody] EditOrganizationRequest validatedRequest)
     {
         string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (string.IsNullOrEmpty(userId))
@@ -94,7 +97,7 @@ public class OrganizationController : ControllerBase
             return Unauthorized();
         }
 
-        var result = await _organizationService.UpdateOrganizationAsync(organizationId, newOrganizationName, userId);
+        var result = await _organizationService.UpdateOrganizationAsync(organizationId, validatedRequest.OrgName, validatedRequest.WorkspaceURL, validatedRequest.ContactEmail, userId);
         if (result.Status == MutationStatus.NotFound || result.Data is null)
         {
             return NotFound();
@@ -103,6 +106,6 @@ public class OrganizationController : ControllerBase
         {
             return Forbid();
         }
-        return Ok(result.Data.OrgName);
+        return Ok(result.Data.ToGetOrganizationResponse());
     }
 }
