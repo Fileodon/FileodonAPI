@@ -1,4 +1,5 @@
 using Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Controller.DTO.AuditLog;
 
@@ -6,7 +7,7 @@ public record AuditLogDTO
 (
     Guid Id,
     DateTime Timestamp,
-    string ActorId,
+    string ActorName,
     string? Action,
     string Source,
     string? OldData,
@@ -80,7 +81,7 @@ public class GetAllAuditLogsResponse
         return new AuditLogDTO(
             Id: auditLog.Id,
             Timestamp: auditLog.Timestamp,
-            ActorId: auditLog.ActorId,
+            ActorName: auditLog.Actor.UserName ?? "unknown",
             Action: auditLog.Action,
             Source: auditLog.Source,
             OldData: auditLog.OldData,
