@@ -34,7 +34,7 @@ public class UserOrganizationController : ControllerBase
     }
 
 
-    [HttpGet("{id:int}")]
+    [HttpGet("/organization/{organizationId}/[controller]/{id:int}")]
     [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(401)]
@@ -47,11 +47,12 @@ public class UserOrganizationController : ControllerBase
         }
         return Ok(userOrganization.ToGetUserOrganizationResponse());
     }
-    [HttpPost]
+    [HttpPost("/organization/{organizationId:int}/[controller]")]
     [ProducesResponseType(202)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> CreateUserOrganization(
-     [FromBody] CreateUserOrganizationRequest request)
+        int organizationId,
+        [FromBody] CreateUserOrganizationRequest request)
     {
         await _userOrgService.CreateUserOrganizationAsync(
             request.Email,
@@ -62,7 +63,7 @@ public class UserOrganizationController : ControllerBase
         return Accepted();
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("/organization/{organizationId:int}/[controller]/{id:int}")]
     [ProducesResponseType(200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> EditUserOrganization(
@@ -79,7 +80,7 @@ public class UserOrganizationController : ControllerBase
 
 
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("/organization/{organizationId:int}/[controller]/{id:int}")]
     [ProducesResponseType(200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(401)]
@@ -93,8 +94,8 @@ public class UserOrganizationController : ControllerBase
         return Ok();
     }
 
-    [HttpGet("organization/{organizationId:int}")]
-    [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
+    [HttpGet("/organization/{organizationId:int}/[controller]")]
+    [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
     [ProducesResponseType(403)]
     public async Task<IActionResult> GetOrganizationUserOrganizations(int organizationId)
     {
