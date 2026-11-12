@@ -2,8 +2,8 @@
 {
     public record class CreateUserOrganizationRequest
     (
-        int organization_id,
-        string email,
-        string role_id
+        int OrganizationId,
+        string Email,
+        string RoleId
     );
 }

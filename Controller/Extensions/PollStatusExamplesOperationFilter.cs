@@ -1,15 +1,25 @@
+using System.Reflection;
 using System.Text.Json.Nodes;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Controller.Extensions;
 
-public sealed class PollStatusExamplesOperationFilter : IOperationFilter
+public sealed class PollStatusExamplesOperationTransformer : IOpenApiOperationTransformer
 {
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    public Task TransformAsync(
+        OpenApiOperation operation,
+        OpenApiOperationTransformerContext context,
+        CancellationToken cancellationToken)
     {
-        if (context.MethodInfo.Name != "PollStatus" || operation.Responses == null)
-            return;
+        var methodName =
+            (context.Description.ActionDescriptor as ControllerActionDescriptor)?.MethodInfo.Name
+            ?? context.Description.ActionDescriptor.EndpointMetadata
+                .OfType<MethodInfo>().FirstOrDefault()?.Name;
+
+        if (methodName != "PollStatus" || operation.Responses is null)
+            return Task.CompletedTask;
 
         foreach (var response in operation.Responses.Values)
         {
@@ -20,5 +30,7 @@ public sealed class PollStatusExamplesOperationFilter : IOperationFilter
                 mediaType.Example = JsonValue.Create(response.Description);
             }
         }
+
+        return Task.CompletedTask;
     }
 }

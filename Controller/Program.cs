@@ -18,9 +18,12 @@ using Infrastructure.Models;
 using Infrastructure.Repository;
 using Infrastructure.Service;
 using Infrastructure.Services;
+using MicroElements.AspNetCore.OpenApi.FluentValidation;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -128,6 +131,31 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationRulesToOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddFluentValidationRules();
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            document.Servers = [new OpenApiServer { Url = "/api" }];
+        }
+
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer<PollStatusExamplesOperationTransformer>();
+    options.AddSchemaTransformer((schema, context, ct) =>
+    {
+        if (context.JsonTypeInfo.Type == typeof(int))
+        {
+            schema.Type = JsonSchemaType.Integer;
+            schema.Pattern = null;
+        }
+        return Task.CompletedTask;
+    });
+});
 
 Channel<EmailWorkItem> channel =
     Channel.CreateBounded<EmailWorkItem>(new BoundedChannelOptions(1000)
@@ -203,22 +231,6 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
-// Enables authentication via SwaggerUI
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
-    {
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Description = "JWT Authorization header using the Bearer scheme."
-    });
-    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("bearer", document)] = []
-    });
-    options.OperationFilter<PollStatusExamplesOperationFilter>();
-});
 
 builder.Services.Configure<RouteOptions>(options =>
 {
@@ -265,20 +277,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseSwagger(options =>
-{
-    options.PreSerializeFilters.Add((swagger, httpReq) =>
-    {
-        swagger.Servers = new List<OpenApiServer>
-        {
-            new() { Url = "/api" }
-        };
-    });
-});
-
+app.MapOpenApi();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("swagger/v1/swagger.json", "v1");
+    options.SwaggerEndpoint("/openapi/v1.json", "v1");
     options.RoutePrefix = string.Empty;
 });
 
@@ -297,3 +299,37 @@ app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting(PolicyName);
 
 app.Run();
+
+internal sealed class BearerSecuritySchemeTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider) : IOpenApiDocumentTransformer
+{
+    public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        var authenticationSchemes = await authenticationSchemeProvider.GetAllSchemesAsync();
+        if (authenticationSchemes.Any(authScheme => authScheme.Name == "Bearer"))
+        {
+            // Add the security scheme at the document level
+            var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+            {
+                ["Bearer"] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer", // "bearer" refers to the header name here
+                    In = ParameterLocation.Header,
+                    BearerFormat = "Json Web Token"
+                }
+            };
+            document.Components ??= new OpenApiComponents();
+            document.Components.SecuritySchemes = securitySchemes;
+
+            // Apply it as a requirement for all operations
+            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations ?? []))
+            {
+                operation.Value.Security ??= [];
+                operation.Value.Security.Add(new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                });
+            }
+        }
+    }
+}
