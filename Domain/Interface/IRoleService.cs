@@ -9,4 +9,5 @@ public interface IRoleService
     Task<AspNetRole> CreateAsync(AspNetRole role);
     Task<AspNetRole?> UpdateAsync(string id, AspNetRole role);
     Task<bool> DeleteAsync(string id);
+    Task<IEnumerable<long>?> GetPermissionsAsync(int orgId, string userId);
 }

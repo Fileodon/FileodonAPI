@@ -48,5 +48,10 @@ namespace Domain.Service
 
             return true;
         }
+
+        public async Task<IEnumerable<long>?> GetPermissionsAsync(int orgId, string userId)
+        {
+            return await _unitOfWork.RoleRepository.GetPermissionsAsync(orgId, userId);
+        }
     }
 }
