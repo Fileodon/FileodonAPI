@@ -122,14 +122,14 @@ public class OrganizationService : IOrganizationService
             {
                 return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
             }
-        }
+            await _unitOfWork.CommitAsync();
+            }
         catch
         {
             await _unitOfWork.RollbackAsync();
             throw;
         }
 
-        await _unitOfWork.SaveChangesAsync();
         return new MutationEnvelope<Organization>(MutationStatus.Success, organization);
     }
 }
