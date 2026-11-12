@@ -8,10 +8,18 @@ public class SFTPActionUploadRequestValidator : AbstractValidator<SFTPActionUplo
 {
     public SFTPActionUploadRequestValidator()
     {
-        RuleFor(x => x.RemoteFilePath).NotEmpty().WithMessage("Remote file path is required.")
-            .Must(HaveAFileName).WithMessage("Remote file path must have a valid file name.");
-        RuleFor(x => x.File).NotNull().WithMessage("File is required.")
-            .Must(file => file.Length > 0).WithMessage("File cannot be empty.");
+        RuleFor(x => x.Files).NotEmpty().WithMessage("At least one file is required.")
+            .Must(files => files is not null && files.All(file => file is not null && file.Length > 0))
+            .WithMessage("Files cannot be empty.");
+        RuleFor(x => x.RemoteFilePaths).NotEmpty().WithMessage("At least one remote file path is required.")
+            .Must(paths => (paths ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .All(HaveAFileName))
+            .WithMessage("Remote file paths must have valid file names.");
+        RuleFor(x => x)
+            .Must(request => request.Files is not null &&
+                request.Files.Count == request.GetRemoteFilePaths().Length)
+            .WithMessage("Each file must have a corresponding remote file path.");
     }
     private static bool HaveAFileName(string filename)
     {

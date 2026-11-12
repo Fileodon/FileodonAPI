@@ -2,6 +2,7 @@ using Controller.DTO.SFTPAction;
 using Controller.Extensions;
 using Domain.Enum;
 using Domain.Interface;
+using Domain.Worker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,8 @@ namespace Controller.Controllers
     [Authorize]
     public class SFTPActionController : ControllerBase
     {
+        // 10GB limit
+        const long uploadLimit = 10_737_418_240;
         private readonly ISFTPConnectionService _sftpConnectionService;
         private readonly ISFTPActionService _sftpActionService;
 
@@ -24,8 +27,9 @@ namespace Controller.Controllers
 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
-        [RequestFormLimits(MultipartBodyLengthLimit = 1073741824, ValueCountLimit = 1073741824)] // 1 GB limit, adjust as needed
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [RequestFormLimits(MultipartBodyLengthLimit = uploadLimit)]
+        [RequestSizeLimit(uploadLimit)]
+        [ProducesResponseType(typeof(SFTPActionUploadResponse), StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,23 +51,61 @@ namespace Controller.Controllers
                 return Forbid("You do not have permission to access this SFTP connection.");
             }
 
-            if (!uploadRequest.OverrideExisting &&
-                await _sftpActionService.FileExistsAsync(connection.Data, uploadRequest.RemoteFilePath))
+            string[] remoteFilePaths = uploadRequest.GetRemoteFilePaths();
+            if (!uploadRequest.OverrideExisting)
             {
-                return Conflict("File already exists on the SFTP server and override is disabled.");
+                foreach (string remoteFilePath in remoteFilePaths)
+                {
+                    if (await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath))
+                    {
+                        return Conflict("A file already exists on the SFTP server and override is disabled.");
+                    }
+                }
             }
 
-            using var fileStream = uploadRequest.File.OpenReadStream();
-            bool uploadSuccess = await _sftpActionService.UploadFileAsync(connection.Data, fileStream, uploadRequest.RemoteFilePath);
+            List<SFTPUploadInput> files = uploadRequest.Files
+                .Select((file, index) => new SFTPUploadInput(
+                    file.OpenReadStream(),
+                    remoteFilePaths[index],
+                    file.Length))
+                .ToList();
+            try
+            {
+                Guid jobId = await _sftpActionService.EnqueueUploadAsync(connection.Data, files, HttpContext.RequestAborted);
+                return Accepted(new SFTPActionUploadResponse(jobId));
+            }
+            finally
+            {
+                foreach (SFTPUploadInput file in files)
+                {
+                    await file.Content.DisposeAsync();
+                }
+            }
+        }
 
-            if (uploadSuccess)
+        [HttpGet("upload/{jobId:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PollUpload(Guid jobId, [FromRoute] int organizationid, [FromRoute] int sftpconnectionid)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
-                return Ok("File uploaded successfully.");
+                return Unauthorized("User ID claim is missing.");
             }
-            else
+
+            var connection = await _sftpConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            if (connection.Status == MutationStatus.NotFound || connection.Data is null)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to upload the file.");
+                return NotFound("SFTP connection not found.");
             }
+            if (connection.Status == MutationStatus.Forbidden)
+            {
+                return Forbid("You do not have permission to access this SFTP connection.");
+            }
+
+            SFTPUploadJobSnapshot? status = _sftpActionService.GetUploadStatus(jobId, connection.Data);
+            return status is null ? NotFound("SFTP upload job not found.") : Ok(status);
         }
 
         [HttpGet("exists")]

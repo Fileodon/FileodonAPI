@@ -1,5 +1,6 @@
 using System.Text;
 using Domain.Interface;
+using Domain.Worker;
 using Infrastructure.Interface;
 using Infrastructure.Models;
 using Microsoft.Extensions.Logging;
@@ -11,11 +12,16 @@ public class SFTPActionService : ISFTPActionService
 {
     private readonly ILogger<SFTPActionService> _logger;
     private readonly ICryptoService _cryptoService;
+    private readonly ISFTPUploadSender _uploadSender;
 
-    public SFTPActionService(ILogger<SFTPActionService> logger, ICryptoService cryptoService)
+    public SFTPActionService(
+        ILogger<SFTPActionService> logger,
+        ICryptoService cryptoService,
+        ISFTPUploadSender uploadSender)
     {
         _logger = logger;
         _cryptoService = cryptoService;
+        _uploadSender = uploadSender;
     }
 
     public async Task<bool> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
@@ -43,31 +49,49 @@ public class SFTPActionService : ISFTPActionService
         }
     }
 
-    public async Task<bool> UploadFileAsync(SFTPConnection connection, Stream fileStream, string remoteFilePath)
+    public async Task<Guid> EnqueueUploadAsync(
+        SFTPConnection connection,
+        IReadOnlyList<SFTPUploadInput> files,
+        CancellationToken cancellationToken)
     {
-        SftpClient client = CreateSftpClient(connection);
+        if (files.Count == 0)
+        {
+            throw new ArgumentException("At least one file is required.", nameof(files));
+        }
+
+        string directory = Path.Combine(Path.GetTempPath(), "fileodon-sftp");
+        Directory.CreateDirectory(directory);
+        List<SFTPUploadFile> stagedFiles = [];
 
         try
         {
-            await client.ConnectAsync(CancellationToken.None);
-            // Always override. File clashing produces unhandleable exceptions, so we check before attempting the upload
-            await client.UploadFileAsync(fileStream, remoteFilePath, canOverride: true);
-            return true;
+            foreach (SFTPUploadInput file in files)
+            {
+                string localPath = Path.Combine(directory, $"{Guid.NewGuid():N}.upload");
+                await using (FileStream output = File.Create(localPath))
+                {
+                    await file.Content.CopyToAsync(output, cancellationToken);
+                }
+
+                stagedFiles.Add(new SFTPUploadFile(localPath, file.RemoteFilePath, file.Length));
+            }
+
+            return _uploadSender.Enqueue(new SFTPUploadJobRequest(connection, stagedFiles));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while uploading the file to the SFTP server.");
-            throw new InvalidOperationException("An error occurred while uploading the file to the SFTP server.", ex);
-        }
-        finally
-        {
-            if (client.IsConnected)
+            foreach (SFTPUploadFile file in stagedFiles)
             {
-                client.Disconnect();
+                File.Delete(file.LocalPath);
             }
-            client.Dispose();
+
+            _logger.LogError(ex, "An error occurred while queueing SFTP upload files.");
+            throw;
         }
     }
+
+    public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection) =>
+        _uploadSender.GetStatus(jobId, connection);
 
     private SftpClient CreateSftpClient(SFTPConnection connection)
     {
