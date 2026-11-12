@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
@@ -146,6 +147,7 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
     options.AddOperationTransformer<PollStatusExamplesOperationTransformer>();
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
 });
 
 Channel<EmailWorkItem> channel =
@@ -261,12 +263,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapOpenApi();
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/openapi/v1.json", "v1");
-    options.RoutePrefix = string.Empty;
-});
-
+app.MapScalarApiReference("/");
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
