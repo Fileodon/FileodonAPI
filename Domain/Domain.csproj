@@ -14,6 +14,7 @@
     <PackageReference Include="MailKit" Version="4.18.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
   </ItemGroup>
 
   <ItemGroup>

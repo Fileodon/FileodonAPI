@@ -79,7 +79,7 @@ if (string.IsNullOrEmpty(builder.Configuration["JWT:KEY"]))
     DotEnv.WriteEntry("JWT:KEY", key);
     builder.Configuration["JWT:KEY"] = key;
 }
-
+#region CORS
 string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS:ALLOWED_HOSTS") ?? string.Empty)
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
     .Select(origin => origin.Trim('"', '\''))
@@ -97,9 +97,10 @@ builder.Services.AddCors(options =>
                      }
     );
 });
-
+#endregion
 builder.Services.AddHttpContextAccessor();
 
+#region Standard Services
 builder.Services.AddScoped<RepositoryTransactionSettings>();
 builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
     services.GetRequiredService<RepositoryTransactionSettings>());
@@ -127,11 +128,14 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
-
-
+builder.Services.AddScoped<ISFTPActionService, SFTPActionService>();
+#endregion
+#region FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationRulesToOpenApi();
+#endregion
+#region OpenAPI
 builder.Services.AddOpenApi(options =>
 {
     options.AddFluentValidationRules();
@@ -156,7 +160,8 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 });
-
+#endregion
+#region Email Services and Worker
 Channel<EmailWorkItem> channel =
     Channel.CreateBounded<EmailWorkItem>(new BoundedChannelOptions(1000)
     {
@@ -170,6 +175,23 @@ builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
 builder.Services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<IEmailTransport, EmailTransport>();
 builder.Services.AddHostedService<EmailWorker>();
+#endregion
+#region SFTP Upload Services and Worker
+Channel<SFTPUploadWorkItem> sftpUploadChannel =
+    Channel.CreateBounded<SFTPUploadWorkItem>(new BoundedChannelOptions(1000)
+    {
+        FullMode = BoundedChannelFullMode.Wait,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+builder.Services.AddSingleton(sftpUploadChannel);
+builder.Services.AddSingleton<ISFTPUploadJobStore, SFTPUploadJobStore>();
+builder.Services.AddSingleton<ISFTPUploadQueue, SFTPUploadQueue>();
+builder.Services.AddScoped<ISFTPUploadSender, SFTPUploadSender>();
+builder.Services.AddSingleton<ISFTPUploadTransport, SFTPUploadTransport>();
+builder.Services.AddHostedService<SFTPUploadWorker>();
+#endregion
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
 builder.Services.AddSingleton<ICryptoService>(services =>
@@ -177,6 +199,7 @@ builder.Services.AddSingleton<ICryptoService>(services =>
     return new CryptoService(keyPath);
 });
 
+#region Identity and Authentication
 builder.Services.AddIdentityCore<User>(options =>
 {
     // Password policy
@@ -212,6 +235,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+#endregion
 
 builder.Services.AddSingleton<
     IAuthorizationPolicyProvider,
