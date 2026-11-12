@@ -81,6 +81,7 @@ public class UserOrganizationService : IUserOrganizationService
 
     public async Task<UserOrganization> EditUserOrganizationAsync(
         int id,
+        int organization_id,
         string role_id
     )
     {
@@ -89,7 +90,7 @@ public class UserOrganizationService : IUserOrganizationService
         {
             throw new InvalidOperationException("UserOrganization not found");
         }
-        var role = await _roleRepository.GetByIdAsync(role_id);
+        var role = await _roleRepository.GetByIdAsync(organization_id, role_id);
         if(role == null)
         {
             throw new InvalidOperationException("Role not found");

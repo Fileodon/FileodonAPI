@@ -29,7 +29,6 @@ public class UserOrganizationController : ControllerBase
 
         var userOrganizations = await _userOrgService.GetByUserIdAsync(currentUserId);
 
-
         return Ok(userOrganizations.Select(org => org.ToGetUsersUserOrganizationResponse()).ToList());
     }
 
@@ -67,10 +66,12 @@ public class UserOrganizationController : ControllerBase
     [ProducesResponseType(200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> EditUserOrganization(
+        int organizationId,
      [FromBody] EditUserOrganizationRequest request)
     {
         var updatedUserOrganization = await _userOrgService.EditUserOrganizationAsync(
             request.Id,
+            organizationId,
             request.RoleId
         );
 

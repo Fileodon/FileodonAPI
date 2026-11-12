@@ -33,6 +33,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("concurrency_stamp");
 
+                    b.Property<bool>("IsSystemRole")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system_role");
+
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")

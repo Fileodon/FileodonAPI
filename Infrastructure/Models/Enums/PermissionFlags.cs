@@ -5,11 +5,29 @@ namespace Infrastructure.Models.Enums;
 public enum PermissionFlags : long
 {
     None = 0,
-    Read = 1L << 0,
-    Update = 1L << 1,
-    Create = 1L << 2,
-    Delete = 1L << 3,
-    Execute = 1L << 4,
+    OrganizationRead = 1L << 0,
+    OrganizationUpdate = 1L << 1,
+    OrganizationCreate = 1L << 2,
+    OrganizationDelete = 1L << 3,
+    OrganizationExecute = 1L << 4,
+    SftpConnectionRead = 1L << 5,
+    SftpConnectionUpdate = 1L << 6,
+    SftpConnectionCreate = 1L << 7,
+    SftpConnectionDelete = 1L << 8,
+    SftpConnectionExecute = 1L << 9,
+    UserOrganizationRead = 1L << 10,
+    UserOrganizationUpdate = 1L << 11,
+    UserOrganizationCreate = 1L << 12,
+    UserOrganizationDelete = 1L << 13,
+    UserOrganizationExecute = 1L << 14,
+    RoleRead = 1L << 15,
+    RoleUpdate = 1L << 16,
+    RoleCreate = 1L << 17,
+    RoleDelete = 1L << 18,
+    RoleExecute = 1L << 19,
 
-    All = Read | Update | Create | Delete | Execute
+    All = OrganizationRead | OrganizationUpdate | OrganizationCreate | OrganizationDelete | OrganizationExecute |
+          SftpConnectionRead | SftpConnectionUpdate | SftpConnectionCreate | SftpConnectionDelete | SftpConnectionExecute |
+          UserOrganizationRead | UserOrganizationUpdate | UserOrganizationCreate | UserOrganizationDelete | UserOrganizationExecute |
+          RoleRead | RoleUpdate | RoleCreate | RoleDelete | RoleExecute
 }
