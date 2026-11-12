@@ -5,6 +5,7 @@ using Infrastructure.Interface;
 using Infrastructure.Models;
 using Microsoft.Extensions.Logging;
 using Renci.SshNet;
+using Renci.SshNet.Sftp;
 
 namespace Domain.Service;
 
@@ -105,5 +106,30 @@ public class SFTPActionService : ISFTPActionService
         PrivateKeyFile privateKey = new(keyStream);
 
         return new SftpClient(host, port, username, privateKey);
+    }
+
+    public async Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            var files = client.ListDirectoryAsync(remoteDirectoryPath, cancellationToken);
+            return await files.ToListAsync(cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while listing files on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while listing files on the SFTP server.", ex);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
+        }
     }
 }

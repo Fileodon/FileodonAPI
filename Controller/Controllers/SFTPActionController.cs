@@ -6,6 +6,7 @@ using Domain.Worker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Renci.SshNet.Sftp;
 
 namespace Controller.Controllers
 {
@@ -83,8 +84,41 @@ namespace Controller.Controllers
             }
         }
 
+        [HttpGet("list")]
+        [ProducesResponseType(typeof(IEnumerable<SFTPActionListFilesResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ListFilesAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromBody] SFTPActionListFilesRequest listRequest)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            var connection = await _sftpConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            if (connection.Status == MutationStatus.NotFound || connection.Data is null)
+            {
+                return NotFound("SFTP connection not found.");
+            }
+            if (connection.Status == MutationStatus.Forbidden)
+            {
+                return Forbid("You do not have permission to access this SFTP connection.");
+            }
+
+            IEnumerable<ISftpFile> response = await _sftpActionService.ListFilesAsync(connection.Data, listRequest.RemoteDirectoryPath, HttpContext.RequestAborted);
+
+            // Skip "."
+            var files = response
+                .Where(file => file.Name != ".")
+                .Select(SFTPActionListFilesResponseExtensions.FromSftpFile)
+                .ToList();
+
+            return Ok(files);
+        }
+
         [HttpGet("upload/{jobId:guid}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(SFTPUploadJobSnapshot), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> PollUpload(Guid jobId, [FromRoute] int organizationid, [FromRoute] int sftpconnectionid)
