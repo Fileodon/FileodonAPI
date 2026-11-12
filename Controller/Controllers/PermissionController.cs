@@ -1,5 +1,4 @@
 ﻿using Domain.Interface;
-using Infrastructure.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;

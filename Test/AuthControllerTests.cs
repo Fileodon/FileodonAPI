@@ -69,7 +69,8 @@ public sealed class AuthControllerTests
         IActionResult result = await controller.Register(new RegisterRequest(
             string.Empty,
             "user@example.com",
-            "Password1!"));
+            "Password1!",
+            "Password1"));
 
         BadRequestObjectResult response = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Username, email, and password are required.", response.Value);
@@ -299,7 +300,7 @@ public sealed class AuthControllerTests
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Duplicate email." }));
         AuthController controller = CreateController(authService);
 
-        IActionResult result = await controller.Register(new RegisterRequest("ada", "ada@example.com", "Password1!"));
+        IActionResult result = await controller.Register(new RegisterRequest("ada", "ada@example.com", "Password1!", "Password1"));
 
         BadRequestObjectResult response = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Contains("Duplicate email.", (IEnumerable<string>)response.Value!);
@@ -314,7 +315,7 @@ public sealed class AuthControllerTests
             .ReturnsAsync(IdentityResult.Success);
         AuthController controller = CreateController(authService);
 
-        IActionResult result = await controller.Register(new RegisterRequest("ada", "ada@example.com", "Password1!"));
+        IActionResult result = await controller.Register(new RegisterRequest("ada", "ada@example.com", "Password1!", "Password1"));
 
         CreatedAtActionResult response = Assert.IsType<CreatedAtActionResult>(result);
         Assert.Equal(nameof(AuthController.Register), response.ActionName);

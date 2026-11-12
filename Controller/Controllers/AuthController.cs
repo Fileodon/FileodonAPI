@@ -24,6 +24,7 @@ namespace Controller.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ProducesResponseType(typeof(AuthResponse), 200)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -105,7 +106,7 @@ namespace Controller.Controllers
         [HttpPost("password/reset")]
         [AllowAnonymous]
         [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
@@ -140,7 +141,7 @@ namespace Controller.Controllers
         [HttpPost("password/request-reset")]
         [AllowAnonymous]
         [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(503)]
         public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetRequest request)
         {
@@ -161,7 +162,7 @@ namespace Controller.Controllers
         [HttpPost("register")]
         [AllowAnonymous]
         [ProducesResponseType(201)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
@@ -182,7 +183,7 @@ namespace Controller.Controllers
         [HttpPost("email/request-confirmation")]
         [AllowAnonymous]
         [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(503)]
         public async Task<IActionResult> RequestEmailConfirmation([FromBody] RequestEmailConfirmationRequest request)
         {
@@ -203,7 +204,7 @@ namespace Controller.Controllers
         [HttpPost("email/confirm")]
         [AllowAnonymous]
         [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.Token))
