@@ -143,6 +143,13 @@ public class SFTPConnectionService : ISFTPConnectionService
             return new MutationEnvelope<SFTPConnection>(MutationStatus.NotFound, null);
         }
 
+        if (sFTPConnection.PublicKey is not null)
+        {
+            byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(sFTPConnection.PublicKey));
+            string authorizedKey = _cryptoService.ConvertPublicKeyToOpenSsh(decryptedKey);
+            sFTPConnection.PublicKey = authorizedKey;
+        }
+
         return new MutationEnvelope<SFTPConnection>(MutationStatus.Success, sFTPConnection);
     }
 
