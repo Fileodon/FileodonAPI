@@ -146,6 +146,15 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
     options.AddOperationTransformer<PollStatusExamplesOperationTransformer>();
+    options.AddSchemaTransformer((schema, context, ct) =>
+    {
+        if (context.JsonTypeInfo.Type == typeof(int))
+        {
+            schema.Type = JsonSchemaType.Integer;
+            schema.Pattern = null;
+        }
+        return Task.CompletedTask;
+    });
 });
 
 Channel<EmailWorkItem> channel =
