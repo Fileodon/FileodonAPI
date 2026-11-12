@@ -40,7 +40,7 @@ public class OrganizationController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(string), 201)]
+    [ProducesResponseType(typeof(GetOrganizationResponse), 201)]
     [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest request)
@@ -52,7 +52,7 @@ public class OrganizationController : ControllerBase
         }
 
         var createdOrganization = await _organizationService.CreateOrganizationAsync(request.OrgName, request.WorkspaceURL, request.ContactEmail, userId);
-        return Created($"/api/organization/{createdOrganization.Id}", createdOrganization.OrgName);
+        return Created($"/api/organization/{createdOrganization.Id}", createdOrganization.ToGetOrganizationResponse());
     }
 
     [HttpDelete("{organizationId}")]
