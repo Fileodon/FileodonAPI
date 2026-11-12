@@ -1,10 +1,13 @@
+using Controller.DTO.Permission;
+
 namespace Controller.DTO.Organization;
 
 public record GetOrganizationResponse(
     int Id,
     string OrgName,
     string WorkspaceURL,
-    string ContactEmail
+    string ContactEmail,
+    List<GetPermissionResponse> permissions
 );
 
 public static class GetOrganizationRequestExtensions
@@ -14,6 +17,7 @@ public static class GetOrganizationRequestExtensions
             organization.Id,
             organization.OrgName,
             organization.WorkspaceURL,
-            organization.ContactEmail
+            organization.ContactEmail,
+            PermissionUtils.GetPermissionsFromTotal(organization.UserOrganizations.First().Role.PermissionMask)
         );
 }

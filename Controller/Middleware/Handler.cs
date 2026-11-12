@@ -41,6 +41,10 @@ public class Handler : AuthorizationHandler<Requirement>
 
         var permissions = await permissionService
             .GetPermissionsAsync(orgId, userId);
+        foreach (var permission in permissions ?? Enumerable.Empty<long>())
+        {
+            Console.WriteLine(permission);
+        }    
 
         if (permissions == null || !permissions.Any())
             return;

@@ -48,8 +48,10 @@ public class OrganizationRepository : BaseRepository<Organization>, IOrganizatio
     public async Task<Organization?> GetByIdAsync(int organizationId, string userId)
     {
         return await _context.Organizations
-            .Include(o => o.UserOrganizations)
+            .Include(o => o.UserOrganizations.Where(uo => uo.UserId == userId))
             .ThenInclude(uo => uo.User)
+            .Include(o => o.UserOrganizations.Where(uo => uo.UserId == userId))
+            .ThenInclude(uo => uo.Role)
             .FirstOrDefaultAsync(o => o.Id == organizationId && o.UserOrganizations.Any(uo => uo.UserId == userId));
     }
 

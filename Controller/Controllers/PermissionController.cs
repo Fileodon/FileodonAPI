@@ -22,13 +22,8 @@ public class PermissionController : ControllerBase
     [ProducesResponseType(typeof(List<GetPermissionResponse>), 200)]
     public async Task<IActionResult> GetPermissions()
     {
-        List<GetPermissionResponse> permissions = Enum.GetValues<PermissionFlags>()
-            .Select(flag => new GetPermissionResponse(flag.ToString(), (int)flag))
-            .ToList();
-        // var permissions =
-        //     await _permissionService.GetAllAsync();
 
-        return Ok(permissions);
+        return Ok(PermissionUtils.GetAllPermissions());
     }
 
     [HttpGet("{id:int}")]
