@@ -89,7 +89,7 @@ namespace Controller.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ListFilesAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromBody] SFTPActionListFilesRequest listRequest)
+        public async Task<IActionResult> ListFilesAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromQuery] SFTPActionListFilesRequest listRequest)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
