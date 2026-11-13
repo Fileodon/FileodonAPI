@@ -18,7 +18,6 @@ public class UserOrganizationController : ControllerBase
     }
 
     [HttpGet()]
-    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
     [ProducesResponseType(typeof(List<GetUsersUserOrganizationResponse>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetUserOrganizations()
