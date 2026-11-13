@@ -125,22 +125,18 @@ namespace Controller.Controllers
             return Ok(result.Data.ToDetailedGetResponseDTO());
         }
 
+        [AllowAnonymous]
         [HttpGet("{sftpconnectionid}/poll")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 200, Description = "Rejected")]
+        [ProducesResponseType(typeof(SFTPConnectionPollResponse), 200, Description = "Accepted and returns publicKey")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 202, Description = "Pending")]
-        [ProducesResponseType(typeof(SFTPConnectionStatus), 303, Description = "Accepted")]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
         public async Task<IActionResult> PollStatus(int organizationid, int sftpconnectionid)
         {
-            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
-            {
-                return Unauthorized("User ID claim is missing.");
-            }
-
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid, userId);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -151,18 +147,18 @@ namespace Controller.Controllers
                 return Forbid();
             }
 
+            // TODO: hvis pending
+
             var status = result.Data.Status;
             switch (status)
             {
                 case SFTPConnectionStatus.Rejected:
-                    return Ok(status);
+                    return Ok(result.Data.toPollResponse());
                 case SFTPConnectionStatus.Pending:
                     Response.Headers.RetryAfter = "5"; // Suggests the client to retry after 5 seconds
-                    return Accepted(status);
+                    return Accepted(result.Data.toPollResponse());
                 case SFTPConnectionStatus.Accepted:
-                    return this.SeeOther(
-                        $"/api/organization/{result.Data.OrganizationId}/sftpconnection/{result.Data.Id}/detailed",
-                        status.ToString());
+                    return Ok(result.Data.toPollResponse());
                 default:
                     return StatusCode(500, "Unknown status.");
             }

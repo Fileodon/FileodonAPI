@@ -8,7 +8,7 @@ public interface ISFTPConnectionRepository : IBaseRepository<SFTPConnection>
     SFTPConnection AcceptSFTPConnection(SFTPConnection connection);
     SFTPConnection RejectSFTPConnection(SFTPConnection connection);
     Task<SFTPConnection?> GetSFTPConnectionByIdAsync(int sFTPConnectionId, int organizationId, string userId, bool noTracking = false);
-    Task<SFTPConnection?> GetSFTPConnectionStatusByIdAsync(int sFTPConnectionId, int organizationId, string userId);
+    Task<SFTPConnection?> GetSFTPConnectionStatusByIdAsync(int sFTPConnectionId, int organizationId);
     Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId);
     Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogsAsync(int sftpConnectionId);
 }

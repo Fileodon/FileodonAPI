@@ -122,13 +122,20 @@ public class SFTPConnectionService : ISFTPConnectionService
         }
     }
 
-    public async Task<MutationEnvelope<SFTPConnection>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId, string userId)
+    public async Task<MutationEnvelope<SFTPConnection>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId)
     {
-        SFTPConnection? sftpConnectionStatus = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionStatusByIdAsync(sFTPConnectionId, organizationId, userId);
+        SFTPConnection? sftpConnectionStatus = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionStatusByIdAsync(sFTPConnectionId, organizationId);
 
         if (sftpConnectionStatus == null)
         {
             return new MutationEnvelope<SFTPConnection>(MutationStatus.NotFound, default);
+        }
+        
+        if (sftpConnectionStatus.PublicKey is not null)
+        {
+            byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(sftpConnectionStatus.PublicKey));
+            string authorizedKey = _cryptoService.ConvertPublicKeyToOpenSsh(decryptedKey);
+            sftpConnectionStatus.PublicKey = authorizedKey;
         }
 
         return new MutationEnvelope<SFTPConnection>(MutationStatus.Success, sftpConnectionStatus);

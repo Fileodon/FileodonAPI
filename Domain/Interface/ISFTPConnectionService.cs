@@ -10,7 +10,7 @@ public interface ISFTPConnectionService
     public Task<MutationEnvelope<SFTPConnection>> AddSFTPConnectionAsync(string authCode, int organizationId, string displayName, string host, int port);
     public Task<MutationEnvelope<SFTPConnectionAuthCode>> GetSFTPConnectionAuthCodeAsync(string authCode, int organizationId);
     public Task<MutationEnvelope<SFTPConnection>> UpdateSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId, string userId, SFTPConnectionStatus newStatus);
-    public Task<MutationEnvelope<SFTPConnection>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId, string userId);
+    public Task<MutationEnvelope<SFTPConnection>> PollSFTPConnectionStatusAsync(int sFTPConnectionId, int organizationId);
     public Task<MutationEnvelope<SFTPConnection>> GetSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId);
     public Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId);
     public Task<MutationEnvelope<SFTPConnection>> DeleteSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId);
