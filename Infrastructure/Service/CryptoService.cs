@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -124,7 +125,6 @@ public class CryptoService : ICryptoService, IDisposable
         using var rsa = RSA.Create(keySize);
         var privateKey = rsa.ExportRSAPrivateKey();
         var publicKey = rsa.ExportRSAPublicKey();
-
         return new RSAKeyPairResult(
             publicKey,
             privateKey
@@ -215,5 +215,95 @@ public class CryptoService : ICryptoService, IDisposable
     {
         _aes.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    public string ConvertPublicKeyToPem(byte[] publicKey)
+    {
+        ArgumentNullException.ThrowIfNull(publicKey, nameof(publicKey));
+        if (publicKey.Length == 0)
+        {
+            throw new ArgumentException("Public key bytes cannot be empty.", nameof(publicKey));
+        }
+        using RSA rsa = RSA.Create();
+        rsa.ImportRSAPublicKey(publicKey, out _);
+
+        string pem = rsa.ExportRSAPublicKeyPem();
+
+        return pem;
+    }
+
+    public string ConvertPrivateKeyToPem(byte[] privateKey)
+    {
+        ArgumentNullException.ThrowIfNull(privateKey, nameof(privateKey));
+        if (privateKey.Length == 0)
+        {
+            throw new ArgumentException("Private key bytes cannot be empty.", nameof(privateKey));
+        }
+        using RSA rsa = RSA.Create();
+        rsa.ImportRSAPrivateKey(privateKey, out _);
+
+        string pem = rsa.ExportRSAPrivateKeyPem();
+
+        return pem;
+    }
+
+    public string ConvertPublicKeyToOpenSsh(byte[] publicKey, string? comment = null)
+    {
+        using RSA rsa = RSA.Create();
+        rsa.ImportRSAPublicKey(publicKey, out _);
+
+        RSAParameters parameters = rsa.ExportParameters(includePrivateParameters: false);
+
+        byte[] keyBlob = Combine(
+            EncodeSshString("ssh-rsa"u8.ToArray()),
+            EncodeSshMpint(parameters.Exponent!),
+            EncodeSshMpint(parameters.Modulus!));
+
+        string result = $"ssh-rsa {Convert.ToBase64String(keyBlob)}";
+
+        return string.IsNullOrWhiteSpace(comment)
+            ? result
+            : $"{result} {comment}";
+    }
+
+    private static byte[] EncodeSshString(byte[] value)
+    {
+        byte[] result = new byte[sizeof(int) + value.Length];
+        BinaryPrimitives.WriteUInt32BigEndian(result, (uint)value.Length);
+        value.CopyTo(result, sizeof(int));
+        return result;
+    }
+
+    private static byte[] EncodeSshMpint(byte[] value)
+    {
+        int firstNonZero = 0;
+
+        while (firstNonZero < value.Length - 1 && value[firstNonZero] == 0)
+        {
+            firstNonZero++;
+        }
+
+        byte[] unsignedValue = value[firstNonZero..];
+
+        if ((unsignedValue[0] & 0x80) != 0)
+        {
+            unsignedValue = [0, .. unsignedValue];
+        }
+
+        return EncodeSshString(unsignedValue);
+    }
+
+    private static byte[] Combine(params byte[][] arrays)
+    {
+        byte[] result = new byte[arrays.Sum(array => array.Length)];
+        int offset = 0;
+
+        foreach (byte[] array in arrays)
+        {
+            array.CopyTo(result, offset);
+            offset += array.Length;
+        }
+
+        return result;
     }
 }

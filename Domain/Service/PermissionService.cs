@@ -1,10 +1,7 @@
 using System.Linq.Expressions;
 using Domain.Interface;
-using Domain.Service;
-using Infrastructure;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace Domain.Services;
 
