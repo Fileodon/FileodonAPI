@@ -16,10 +16,12 @@ namespace Controller.Controllers
     public class SFTPConnectionController : ControllerBase
     {
         private readonly ISFTPConnectionService _sFTPConnectionService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SFTPConnectionController(ISFTPConnectionService sFTPConnectionService)
+        public SFTPConnectionController(ISFTPConnectionService sFTPConnectionService, IHttpContextAccessor httpContextAccessor)
         {
             _sFTPConnectionService = sFTPConnectionService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpGet("{sftpconnectionid}")]
@@ -209,6 +211,9 @@ namespace Controller.Controllers
             {
                 return Forbid("Auth code has expired.");
             }
+            
+            HttpContext.User.AddIdentity(new System.Security.Claims.ClaimsIdentity(
+                new[] { new System.Security.Claims.Claim("id", AuthCode.Data.UserId.ToString()) }));
 
             MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(AuthCode.Data.VerificationCode, organizationid, request.DisplayName, request.Host, request.Port);
 
