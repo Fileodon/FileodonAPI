@@ -1,9 +1,11 @@
-﻿namespace Controller.DTO.Permission;
+﻿using Infrastructure.Models.Enums;
+
+namespace Controller.DTO.Permission;
 
 public record class GetPermissionResponse
 (
-    string navn,
-    long bit_value
+    PermissionFlags Name,
+    long BitValue
 );
 
 // public static class GetPermissionsExtension

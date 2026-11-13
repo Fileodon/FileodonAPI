@@ -1,7 +1,9 @@
-﻿
+﻿using System.Text.Json.Serialization;
+
 namespace Infrastructure.Models.Enums;
 
 [Flags]
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PermissionFlags : long
 {
     None = 0,
