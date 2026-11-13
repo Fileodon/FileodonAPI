@@ -1,3 +1,5 @@
+#region Using Directives
+
 using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
@@ -13,11 +15,14 @@ using Infrastructure;
 using Infrastructure.Interceptors;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
+using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Interface.Service;
 using Infrastructure.Models;
 using Infrastructure.Repository;
+using Infrastructure.Repository.SFTP;
 using Infrastructure.Service;
 using Infrastructure.Services;
+using Infrastructure.Worker;
 using MicroElements.AspNetCore.OpenApi.FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,6 +35,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
+#endregion
 const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
 
@@ -189,7 +195,7 @@ builder.Services.AddSingleton(sftpUploadChannel);
 builder.Services.AddSingleton<ISFTPUploadJobStore, SFTPUploadJobStore>();
 builder.Services.AddSingleton<ISFTPUploadQueue, SFTPUploadQueue>();
 builder.Services.AddScoped<ISFTPUploadSender, SFTPUploadSender>();
-builder.Services.AddSingleton<ISFTPUploadTransport, SFTPUploadTransport>();
+builder.Services.AddSingleton<ISFTPRepository, SFTPRepository>();
 builder.Services.AddHostedService<SFTPUploadWorker>();
 #endregion
 

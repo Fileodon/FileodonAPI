@@ -2,9 +2,8 @@ using Controller.DTO.SFTPAction;
 using Controller.Extensions;
 using Domain.Enum;
 using Domain.Interface;
-using Domain.Worker;
+using Infrastructure.Worker;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Renci.SshNet.Sftp;
 

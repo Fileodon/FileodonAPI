@@ -1,5 +1,3 @@
-using Domain.Worker;
-
 namespace Test;
 
 public sealed class SFTPUploadJobStoreTests

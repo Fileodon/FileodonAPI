@@ -1,11 +1,7 @@
 ﻿using Infrastructure.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace Infrastructure.Repository;
 

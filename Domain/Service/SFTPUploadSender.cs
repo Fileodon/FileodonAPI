@@ -1,5 +1,5 @@
-using Domain.Worker;
 using Infrastructure.Models;
+using Infrastructure.Worker;
 
 namespace Domain.Service;
 

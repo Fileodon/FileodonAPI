@@ -1,6 +1,5 @@
-using Domain.DTO;
-using Domain.Worker;
 using Infrastructure.Models;
+using Infrastructure.Worker;
 using Renci.SshNet.Sftp;
 
 namespace Domain.Interface;
