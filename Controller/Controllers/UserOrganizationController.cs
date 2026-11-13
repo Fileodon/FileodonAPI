@@ -1,4 +1,5 @@
 ﻿using Controller.DTO.UserOrganization;
+using Controller.Middleware.Attribute;
 using Domain.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,7 @@ public class UserOrganizationController : ControllerBase
     }
 
     [HttpGet()]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
     [ProducesResponseType(typeof(List<GetUsersUserOrganizationResponse>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetUserOrganizations()
@@ -32,8 +34,8 @@ public class UserOrganizationController : ControllerBase
         return Ok(userOrganizations.Select(org => org.ToGetUsersUserOrganizationResponse()).ToList());
     }
 
-
     [HttpGet("/organization/{organizationId}/[controller]/{id:int}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
     [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -47,6 +49,7 @@ public class UserOrganizationController : ControllerBase
         return Ok(userOrganization.ToGetUserOrganizationResponse());
     }
     [HttpPost("/organization/{organizationId:int}/[controller]")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationCreate)]
     [ProducesResponseType(202)]
     [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
@@ -64,6 +67,7 @@ public class UserOrganizationController : ControllerBase
     }
 
     [HttpPut("/organization/{organizationId:int}/[controller]/{id:int}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationUpdate)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
@@ -82,8 +86,8 @@ public class UserOrganizationController : ControllerBase
 
 
 
-
     [HttpDelete("/organization/{organizationId:int}/[controller]/{id:int}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationDelete)]
     [ProducesResponseType(200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(401)]
@@ -98,6 +102,7 @@ public class UserOrganizationController : ControllerBase
     }
 
     [HttpGet("/organization/{organizationId:int}/[controller]")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
     [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
     [ProducesResponseType(403)]
     public async Task<IActionResult> GetOrganizationUserOrganizations(int organizationId)

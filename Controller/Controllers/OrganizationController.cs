@@ -21,8 +21,8 @@ public class OrganizationController : ControllerBase
         _organizationService = organizationService;
     }
 
-    [Permission(Infrastructure.Models.Enums.PermissionFlags.OrganizationRead)]
     [HttpGet("{organizationId}")]
+    // PErmissions her. skal måske rettere afkorte responsen? Ellers skal vi bare ikke permissions på dette
     [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetOrganizationById(int organizationId)
@@ -58,6 +58,7 @@ public class OrganizationController : ControllerBase
     }
 
     [HttpDelete("{organizationId}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationDelete)]
     [ProducesResponseType(typeof(string), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(403)]
@@ -82,7 +83,9 @@ public class OrganizationController : ControllerBase
         return Ok(result.Data.OrgName);
     }
 
+
     [HttpPut("{organizationId}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.OrganizationUpdate)]
     [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
     [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
