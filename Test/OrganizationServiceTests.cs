@@ -100,25 +100,25 @@ public sealed class OrganizationServiceTests
     public async Task Owner_can_update_an_organization()
     {
         const string userId = "owner-id";
+        const string workspaceURL = "acme.example.com";
+        const string contactEmail = "example@example.com";
         Organization organization = CreateOrganization(userId);
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
             .ReturnsAsync(organization);
         unitOfWork
-            .Setup(work => work.OrganizationRepository.UpdateOrganizationAsync(
-                organization.Id,
-                "Updated name",
-                userId))
+            .Setup(work => work.OrganizationRepository.PutAsync(
+                organization))
             .ReturnsAsync(organization);
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationEnvelope<Organization> result =
-            await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
+            await service.UpdateOrganizationAsync(organization.Id, "Updated name", workspaceURL, contactEmail, userId);
 
         Assert.Equal(MutationStatus.Success, result.Status);
         Assert.Same(organization, result.Data);
-        unitOfWork.Verify(work => work.SaveChangesAsync(), Times.Once);
+        unitOfWork.Verify(work => work.CommitAsync(), Times.Once);
     }
 
     [Fact]
@@ -147,6 +147,8 @@ public sealed class OrganizationServiceTests
     public async Task Non_owner_cannot_update_an_organization()
     {
         const string userId = "member-id";
+        const string workspaceURL = "acme.example.com";
+        const string contactEmail = "example@example.com";
         Organization organization = CreateOrganization("owner-id");
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
         unitOfWork
@@ -155,7 +157,7 @@ public sealed class OrganizationServiceTests
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationEnvelope<Organization> result =
-            await service.UpdateOrganizationAsync(organization.Id, "Updated name", userId);
+            await service.UpdateOrganizationAsync(organization.Id, "Updated name", workspaceURL, contactEmail, userId);
 
         Assert.Equal(MutationStatus.Forbidden, result.Status);
         Assert.Null(result.Data);
@@ -209,6 +211,8 @@ public sealed class OrganizationServiceTests
     public async Task Non_member_cannot_update_or_delete_an_organization()
     {
         const string userId = "non-member-id";
+        const string workspaceURL = "acme.example.com";
+        const string contactEmail = "example@example.com";
         Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
         unitOfWork
             .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
@@ -216,7 +220,7 @@ public sealed class OrganizationServiceTests
         OrganizationService service = CreateOrganizationService(unitOfWork);
 
         MutationEnvelope<Organization> updateResult =
-            await service.UpdateOrganizationAsync(42, "Updated name", userId);
+            await service.UpdateOrganizationAsync(42, "Updated name", workspaceURL, contactEmail, userId);
         MutationEnvelope<Organization> deleteResult =
             await service.DeleteOrganizationByIdAsync(42, userId);
 
