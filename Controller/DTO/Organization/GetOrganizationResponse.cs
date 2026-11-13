@@ -7,7 +7,7 @@ public record GetOrganizationResponse(
     string OrgName,
     string WorkspaceURL,
     string ContactEmail,
-    List<GetPermissionResponse> permissions
+    List<GetPermissionResponse> Permissions
 );
 
 public static class GetOrganizationRequestExtensions

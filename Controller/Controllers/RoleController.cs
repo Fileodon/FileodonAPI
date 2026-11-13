@@ -85,7 +85,7 @@ public class RoleController : ControllerBase
         if (updatedRole is null)
             return NotFound();
 
-        return Ok(updatedRole);
+        return Ok(updatedRole.ToGetRoleResponse());
     }
     [HttpDelete("{id}")]
     [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleDelete)]

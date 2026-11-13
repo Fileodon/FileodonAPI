@@ -1,10 +1,14 @@
-﻿namespace Controller.DTO.Role;
+﻿using Controller.DTO.Permission;
+
+namespace Controller.DTO.Role;
 
 public record class GetRoleResponse
 (
     string Id,
     string Name,
-    bool IsSystemRole
+    bool IsSystemRole,
+    long PermissionMask,
+    List<GetPermissionResponse> Permissions
 );
 
 
@@ -14,6 +18,8 @@ public static class GetRoleResponseExtensions
         new(
             Id: role.Id,
             Name: role.Name,
-            IsSystemRole: role.IsSystemRole
+            IsSystemRole: role.IsSystemRole,
+            PermissionMask: role.PermissionMask,
+            Permissions: PermissionUtils.GetPermissionsFromTotal(role.PermissionMask)
         );
 }
