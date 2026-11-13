@@ -1,5 +1,4 @@
 using Infrastructure.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace Controller.DTO.AuditLog;
 

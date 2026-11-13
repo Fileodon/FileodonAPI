@@ -1,4 +1,3 @@
-using System;
 using Controller.DTO.SFTPAction;
 using FluentValidation;
 

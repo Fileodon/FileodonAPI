@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Renci.SshNet;
 
-namespace Domain.Worker;
+namespace Infrastructure.Worker;
 
 public sealed record SFTPUploadFile(
     string LocalPath,
@@ -185,26 +185,21 @@ public sealed class SFTPUploadQueue(Channel<SFTPUploadWorkItem> channel) : ISFTP
     public bool Enqueue(SFTPUploadWorkItem workItem) => channel.Writer.TryWrite(workItem);
 }
 
-public interface ISFTPUploadTransport
-{
-    Task UploadAsync(SFTPUploadWorkItem workItem, CancellationToken cancellationToken);
-}
-
 public sealed class SFTPUploadWorker : BackgroundService
 {
     private readonly ChannelReader<SFTPUploadWorkItem> _channelReader;
-    private readonly ISFTPUploadTransport _transport;
+    private readonly ISFTPRepository _repository;
     private readonly ISFTPUploadJobStore _jobStore;
     private readonly ILogger<SFTPUploadWorker> _logger;
 
     public SFTPUploadWorker(
         Channel<SFTPUploadWorkItem> channel,
-        ISFTPUploadTransport transport,
+        ISFTPRepository transport,
         ISFTPUploadJobStore jobStore,
         ILogger<SFTPUploadWorker> logger)
     {
         _channelReader = channel.Reader;
-        _transport = transport;
+        _repository = transport;
         _jobStore = jobStore;
         _logger = logger;
     }
@@ -215,7 +210,7 @@ public sealed class SFTPUploadWorker : BackgroundService
         {
             try
             {
-                await _transport.UploadAsync(workItem, stoppingToken);
+                await _repository.UploadAsync(workItem, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

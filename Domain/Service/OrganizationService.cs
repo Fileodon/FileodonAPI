@@ -98,16 +98,20 @@ public class OrganizationService : IOrganizationService
     }
 
     public async Task<MutationEnvelope<Organization>> UpdateOrganizationAsync(
-        int organizationId, 
-        string orgName, 
-        string workspaceURL, 
-        string contactEmail, 
+        int organizationId,
+        string orgName,
+        string workspaceURL,
+        string contactEmail,
         string userId)
     {
         Organization? organization = await _unitOfWork.OrganizationRepository.GetByIdAsync(organizationId, userId);
         if (organization is null)
         {
             return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
+        }
+        if (organization.UserOwnerId != userId)
+        {
+            return new MutationEnvelope<Organization>(MutationStatus.Forbidden, null);
         }
         organization.OrgName = orgName;
         organization.WorkspaceURL = workspaceURL;
@@ -123,7 +127,7 @@ public class OrganizationService : IOrganizationService
                 return new MutationEnvelope<Organization>(MutationStatus.NotFound, null);
             }
             await _unitOfWork.CommitAsync();
-            }
+        }
         catch
         {
             await _unitOfWork.RollbackAsync();

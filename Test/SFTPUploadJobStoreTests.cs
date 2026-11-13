@@ -1,4 +1,4 @@
-using Domain.Worker;
+using Infrastructure.Worker;
 
 namespace Test;
 

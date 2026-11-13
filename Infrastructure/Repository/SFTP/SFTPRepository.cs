@@ -1,25 +1,53 @@
 using System.Text;
-using Domain.Worker;
 using Infrastructure.Interface;
+using Infrastructure.Interface.Repository.SFTP;
+using Infrastructure.Models;
+using Infrastructure.Worker;
 using Microsoft.Extensions.Logging;
 using Renci.SshNet;
+using Renci.SshNet.Sftp;
 
-namespace Domain.Service;
+namespace Infrastructure.Repository.SFTP;
 
-public sealed class SFTPUploadTransport : ISFTPUploadTransport
+public sealed class SFTPRepository : ISFTPRepository
 {
     private readonly ICryptoService _cryptoService;
     private readonly ISFTPUploadJobStore _jobStore;
-    private readonly ILogger<SFTPUploadTransport> _logger;
+    private readonly ILogger<SFTPRepository> _logger;
 
-    public SFTPUploadTransport(
+    public SFTPRepository(
         ICryptoService cryptoService,
         ISFTPUploadJobStore jobStore,
-        ILogger<SFTPUploadTransport> logger)
+        ILogger<SFTPRepository> logger)
     {
         _cryptoService = cryptoService;
         _jobStore = jobStore;
         _logger = logger;
+    }
+
+    public async Task<bool> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(CancellationToken.None);
+            bool fileExists = await client.ExistsAsync(remoteFilePath);
+            return fileExists;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while checking if the file exists on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while checking if the file exists on the SFTP server.", ex);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
+        }
     }
 
     public async Task UploadAsync(SFTPUploadWorkItem workItem, CancellationToken cancellationToken)
@@ -68,6 +96,31 @@ public sealed class SFTPUploadTransport : ISFTPUploadTransport
             {
                 File.Delete(file.LocalPath);
             }
+        }
+    }
+
+    public async Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            var files = client.ListDirectoryAsync(remoteDirectoryPath, cancellationToken);
+            return await files.ToListAsync(cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while listing files on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while listing files on the SFTP server.", ex);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
         }
     }
 
