@@ -35,8 +35,8 @@ public class UserOrganizationController : ControllerBase
 
     [HttpGet("/organization/{organizationId}/[controller]/{id:int}")]
     [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
-    [ProducesResponseType(404)]
     [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     public async Task<IActionResult> GetUserOrganizationById(int id)
     {
         var userOrganization = await _userOrgService.GetByIdAsync(id);
@@ -48,6 +48,7 @@ public class UserOrganizationController : ControllerBase
     }
     [HttpPost("/organization/{organizationId:int}/[controller]")]
     [ProducesResponseType(202)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> CreateUserOrganization(
         int organizationId,
@@ -64,6 +65,7 @@ public class UserOrganizationController : ControllerBase
 
     [HttpPut("/organization/{organizationId:int}/[controller]/{id:int}")]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> EditUserOrganization(
         int organizationId,
