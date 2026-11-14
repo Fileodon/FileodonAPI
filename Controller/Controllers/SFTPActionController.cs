@@ -92,6 +92,34 @@ namespace Controller.Controllers
             }
         }
 
+        [HttpPost("create-directory")]
+        [ProducesResponseType(typeof(List<SFTPActionCreateDirectoryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Permission(PermissionFlags.SftpActionCreate)]
+        public async Task<IActionResult> CreateDirectoryAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromBody] SFTPActionCreateDirectoryRequest createRequest)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            var connection = await _sftpConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            if (connection.Status == MutationStatus.NotFound || connection.Data is null)
+            {
+                return NotFound("SFTP connection not found.");
+            }
+            if (connection.Status == MutationStatus.Forbidden)
+            {
+                return Forbid("You do not have permission to access this SFTP connection.");
+            }
+
+            List<SFTPActionCreateDirectoryResult> createDirectoryResults = await _sftpActionService.CreateDirectoryAsync(connection.Data, createRequest.RemoteDirectoryPath, HttpContext.RequestAborted);
+
+            return Ok(createDirectoryResults.Select(result => result.ToResponse()));
+        }
+
         [HttpGet("list")]
         [ProducesResponseType(typeof(IEnumerable<SFTPActionListFilesResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -198,6 +198,74 @@ public sealed class SFTPRepository : ISFTPRepository
         }
     }
 
+    public async Task<List<SFTPActionCreateDirectoryResult>> CreateDirectoryAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        string[] directoriesToCreate = remoteDirectoryPath.Split(['/'], StringSplitOptions.RemoveEmptyEntries);
+        string currentPath = "";
+        List<SFTPActionCreateDirectoryResult> createDirectoryResults = [];
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while connecting to the SFTP server.");
+            throw new InvalidOperationException("An error occurred while connecting to the SFTP server.", ex);
+        }
+
+        foreach (string directory in directoriesToCreate)
+        {
+            currentPath = Path.Combine(currentPath, directory).Replace("\\", "/");
+            SFTPActionExistsResult existsResult = await FileExistsAsync(connection, currentPath, cancellationToken);
+            if (existsResult.StatusCode == StatusCode.NoSuchFile)
+            {
+                try
+                {
+                    await client.CreateDirectoryAsync(currentPath, cancellationToken);
+                    createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Ok, currentPath));
+                }
+                catch (SftpException ex)
+                {
+                    switch (ex.StatusCode)
+                    {
+                        case StatusCode.PermissionDenied:
+                            createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.PermissionDenied, currentPath, $"Permission denied when creating directory: {currentPath}"));
+                            break;
+                        default:
+                            _logger.LogError(ex, "An unexpected SFTP error occurred while creating directory on the SFTP server.");
+                            createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Failure, currentPath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (client.IsConnected)
+                    {
+                        client.Disconnect();
+                    }
+                    client.Dispose();
+                    _logger.LogError(ex, "An error occurred while creating directory on the SFTP server.");
+                    throw new InvalidOperationException("An error occurred while creating directory on the SFTP server.", ex);
+                }
+            }
+            else
+            {
+                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Ok, currentPath));
+            }
+        }
+
+        if (client.IsConnected)
+        {
+            client.Disconnect();
+        }
+        client.Dispose();
+
+        return createDirectoryResults;
+    }
+
     private SftpClient CreateSftpClient(SFTPConnection connection)
     {
         ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
