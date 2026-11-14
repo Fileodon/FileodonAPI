@@ -4,11 +4,16 @@ using Renci.SshNet.Sftp;
 
 namespace Controller.DTO.SFTPAction;
 
+public record class SFTPFileExistsInfo(
+    bool IsDirectory
+);
+
 public record class SFTPActionExistsResponse
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public required StatusCode StatusCode { get; init; }
     public string? ErrorMessage { get; init; } = null;
+    public SFTPFileExistsInfo? FileInfo { get; init; } = null;
 }
 
 public static class SFTPActionExistsResponseExtensions
@@ -18,7 +23,10 @@ public static class SFTPActionExistsResponseExtensions
         return new SFTPActionExistsResponse
         {
             StatusCode = result.StatusCode,
-            ErrorMessage = result.ErrorMessage
+            ErrorMessage = result.ErrorMessage,
+            FileInfo = result.FileAttributes is not null ? new SFTPFileExistsInfo(
+                IsDirectory: result.FileAttributes.IsDirectory
+            ) : null
         };
     }
 }

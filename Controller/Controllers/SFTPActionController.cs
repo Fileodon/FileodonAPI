@@ -58,7 +58,7 @@ namespace Controller.Controllers
             {
                 foreach (string remoteFilePath in remoteFilePaths)
                 {
-                    SFTPActionExistsResult existsResult = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath);
+                    SFTPActionExistsResult existsResult = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath, HttpContext.RequestAborted);
                     if (existsResult.StatusCode == Renci.SshNet.Sftp.StatusCode.Ok)
                     {
                         return Conflict($"File '{remoteFilePath}' already exists on the SFTP server.");
@@ -164,7 +164,7 @@ namespace Controller.Controllers
                 return Forbid("You do not have permission to access this SFTP connection.");
             }
 
-            SFTPActionExistsResult fileExists = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath);
+            SFTPActionExistsResult fileExists = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath, HttpContext.RequestAborted);
 
             return Ok(fileExists.ToResponse());
         }

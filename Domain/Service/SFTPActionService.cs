@@ -64,9 +64,9 @@ public class SFTPActionService : ISFTPActionService
         }
     }
 
-    public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
+    public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
     {
-        return await _sFTPRepository.FileExistsAsync(connection, remoteFilePath);
+        return await _sFTPRepository.FileExistsAsync(connection, remoteFilePath, cancellationToken);
     }
 
     public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection) =>

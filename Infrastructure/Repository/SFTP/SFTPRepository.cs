@@ -27,15 +27,23 @@ public sealed class SFTPRepository : ISFTPRepository
         _logger = logger;
     }
 
-    public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
+    public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
     {
         SftpClient client = CreateSftpClient(connection);
 
         try
         {
             await client.ConnectAsync(CancellationToken.None);
-            bool fileExists = await client.ExistsAsync(remoteFilePath);
-            return new SFTPActionExistsResult(fileExists ? StatusCode.Ok : StatusCode.NoSuchFile);
+            bool fileExists = await client.ExistsAsync(remoteFilePath, cancellationToken);
+            if (fileExists)
+            {
+                SftpFileAttributes fileAttributes = await client.GetAttributesAsync(remoteFilePath, cancellationToken);
+                return new SFTPActionExistsResult(StatusCode.Ok, FileAttributes: fileAttributes);
+            }
+            else
+            {
+                return new SFTPActionExistsResult(StatusCode.NoSuchFile);
+            }
         }
         catch (SftpException ex)
         {
