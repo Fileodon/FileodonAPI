@@ -1,12 +1,13 @@
 using Controller.DTO.SFTPAction;
 using Controller.Extensions;
+using Controller.Middleware.Attribute;
 using Domain.Enum;
 using Domain.Interface;
 using Infrastructure.Models.DTO.SFTPAction;
+using Infrastructure.Models.Enums;
 using Infrastructure.Worker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Renci.SshNet.Sftp;
 
 namespace Controller.Controllers
 {
@@ -36,6 +37,7 @@ namespace Controller.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Permission(PermissionFlags.SftpActionCreate)]
         public async Task<IActionResult> UploadFileAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromForm] SFTPActionUploadRequest uploadRequest)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
@@ -95,6 +97,7 @@ namespace Controller.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Permission(PermissionFlags.SftpActionRead)]
         public async Task<IActionResult> ListFilesAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromQuery] SFTPActionListFilesRequest listRequest)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
@@ -147,6 +150,7 @@ namespace Controller.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Permission(PermissionFlags.SftpActionRead)]
         public async Task<IActionResult> CheckFileExistsAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromQuery] string remoteFilePath)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
@@ -174,6 +178,7 @@ namespace Controller.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Permission(PermissionFlags.SftpActionUpdate)]
         public async Task<IActionResult> RenameFileAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromBody] SFTPActionRenameRequest renameRequest)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
