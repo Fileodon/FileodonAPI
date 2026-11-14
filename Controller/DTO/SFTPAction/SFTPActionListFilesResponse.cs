@@ -27,7 +27,7 @@ public static class SFTPActionListFilesResponseExtensions
     {
         return new SFTPActionListFilesResponse
         {
-            Files = [.. result.SftpFiles.Select(file => new SFTPFileInfo(
+            Files = [.. result.SftpFiles.Where(file => file.Name != ".").Select(file => new SFTPFileInfo(
                 AbsoluteName: file.FullName,
                 RelativeName: file.Name,
                 LastAccessTime: file.LastAccessTime,
