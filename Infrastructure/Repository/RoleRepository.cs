@@ -14,25 +14,30 @@ public class RoleRepository : BaseRepository<AspNetRole>, IRoleRepository
         _context = context;
     }
 
-    public Task<AspNetRole?> GetByIdAsync(string id) =>
-        DbSet.SingleOrDefaultAsync(role => role.Id == id);
-
-    public async Task<AspNetRole?> DeleteAsync(string id)
+    public Task<AspNetRole?> GetByIdAsync(int organizationId, string id)
     {
-        AspNetRole? role = await GetByIdAsync(id);
+        return _context.Roles
+            .Where(role => role.Id == id && role.OrganizationId == organizationId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<AspNetRole?> DeleteAsync(int organizationId, string id)
+    {
+        AspNetRole? role = await GetByIdAsync(organizationId, id);
         if (role is null)
         {
             return null;
         }
 
-        DbSet.Remove(role);
-        await _context.SaveChangesAsync();
+        _context.Roles.Remove(role);
+
         return role;
     }
 
-    public async Task<IEnumerable<AspNetRole>> GetAllRolesAndOrganizations()
+    public async Task<IEnumerable<AspNetRole>> GetAllRolesInOrganization(int organizationId)
     {
-        return _context.AspNetRoles.AsNoTracking().Include(role => role.Organization);
+        return _context.AspNetRoles.AsNoTracking()
+            .Where(role => role.OrganizationId == organizationId);
     }
 
     public async Task<AspNetRole?> GetRoleAndOrganizations(string id)

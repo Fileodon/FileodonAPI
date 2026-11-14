@@ -1,4 +1,6 @@
-﻿using Domain.Interface;
+﻿using Controller.DTO.Permission;
+using Domain.Interface;
+using Infrastructure.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
@@ -17,12 +19,11 @@ public class PermissionController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(List<GetPermissionResponse>), 200)]
     public async Task<IActionResult> GetPermissions()
     {
-        var permissions =
-            await _permissionService.GetAllAsync();
 
-        return Ok(permissions);
+        return Ok(PermissionUtils.GetAllPermissions());
     }
 
     [HttpGet("{id:int}")]
