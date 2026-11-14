@@ -9,7 +9,8 @@ public record class SFTPActionListFilesResponse
     DateTime LastAccessTime,
     DateTime LastWriteTime,
     long Size,
-    bool IsDirectory
+    bool IsDirectory,
+    bool hasAccess
 );
 
 public static class SFTPActionListFilesResponseExtensions
@@ -22,7 +23,8 @@ public static class SFTPActionListFilesResponseExtensions
             LastAccessTime: sftpFile.LastAccessTime,
             LastWriteTime: sftpFile.LastWriteTime,
             Size: sftpFile.Length,
-            IsDirectory: sftpFile.IsDirectory
+            IsDirectory: sftpFile.IsDirectory,
+            hasAccess: true // Tror vi kan bruge sftp klienten til at validere om vi har adgang. Der er ikke en "currentUser" eller lign Read værdi på !SftpFile fra hvad jeg kan se
         );
     }
 }
