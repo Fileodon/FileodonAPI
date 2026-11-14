@@ -1,8 +1,8 @@
 using System.Text;
-using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
+using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
 using Microsoft.Extensions.Logging;
 using Renci.SshNet;
@@ -27,7 +27,7 @@ public sealed class SFTPRepository : ISFTPRepository
         _logger = logger;
     }
 
-    public async Task<bool> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
+    public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
     {
         SftpClient client = CreateSftpClient(connection);
 
@@ -35,7 +35,20 @@ public sealed class SFTPRepository : ISFTPRepository
         {
             await client.ConnectAsync(CancellationToken.None);
             bool fileExists = await client.ExistsAsync(remoteFilePath);
-            return fileExists;
+            return new SFTPActionExistsResult(fileExists ? StatusCode.Ok : StatusCode.NoSuchFile);
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    return new SFTPActionExistsResult(StatusCode.NoSuchFile, "The specified file does not exist on the SFTP server.");
+                case StatusCode.PermissionDenied:
+                    return new SFTPActionExistsResult(StatusCode.PermissionDenied, "Permission denied when checking if the file exists on the SFTP server.");
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while checking if the file exists on the SFTP server.");
+                    return new SFTPActionExistsResult(StatusCode.Failure, $"An unexpected SFTP error occurred: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {
@@ -101,7 +114,7 @@ public sealed class SFTPRepository : ISFTPRepository
         }
     }
 
-    public async Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
+    public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
         SftpClient client = CreateSftpClient(connection);
 
@@ -109,7 +122,20 @@ public sealed class SFTPRepository : ISFTPRepository
         {
             await client.ConnectAsync(cancellationToken);
             var files = client.ListDirectoryAsync(remoteDirectoryPath, cancellationToken);
-            return await files.ToListAsync(cancellationToken: cancellationToken);
+            return new SFTPActionListResult(await files.ToListAsync(cancellationToken: cancellationToken), StatusCode.Ok);
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    return new SFTPActionListResult([], StatusCode.NoSuchFile, "The specified directory does not exist on the SFTP server.");
+                case StatusCode.PermissionDenied:
+                    return new SFTPActionListResult([], StatusCode.PermissionDenied, "Permission denied when listing files in the specified directory on the SFTP server.");
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while listing files on the SFTP server.");
+                    return new SFTPActionListResult([], StatusCode.Failure, $"An unexpected SFTP error occurred: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {

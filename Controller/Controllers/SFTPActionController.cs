@@ -35,6 +35,7 @@ namespace Controller.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UploadFileAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromForm] SFTPActionUploadRequest uploadRequest)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
@@ -57,9 +58,14 @@ namespace Controller.Controllers
             {
                 foreach (string remoteFilePath in remoteFilePaths)
                 {
-                    if (await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath))
+                    SFTPActionExistsResult existsResult = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath);
+                    if (existsResult.StatusCode == Renci.SshNet.Sftp.StatusCode.Ok)
                     {
-                        return Conflict("A file already exists on the SFTP server and override is disabled.");
+                        return Conflict($"File '{remoteFilePath}' already exists on the SFTP server.");
+                    }
+                    else if (existsResult.StatusCode != Renci.SshNet.Sftp.StatusCode.NoSuchFile)
+                    {
+                        return StatusCode(StatusCodes.Status500InternalServerError, $"Error checking file existence: {existsResult.ErrorMessage}");
                     }
                 }
             }
@@ -106,15 +112,9 @@ namespace Controller.Controllers
                 return Forbid("You do not have permission to access this SFTP connection.");
             }
 
-            IEnumerable<ISftpFile> response = await _sftpActionService.ListFilesAsync(connection.Data, listRequest.RemoteDirectoryPath, HttpContext.RequestAborted);
+            SFTPActionListResult listResult = await _sftpActionService.ListFilesAsync(connection.Data, listRequest.RemoteDirectoryPath, HttpContext.RequestAborted);
 
-            // Skip "."
-            var files = response
-                .Where(file => file.Name != ".")
-                .Select(file => file.FromSftpFile())
-                .AsEnumerable();
-
-            return Ok(files);
+            return Ok(listResult.FromSftpFile());
         }
 
         [HttpGet("upload/{jobId:guid}")]
@@ -143,7 +143,7 @@ namespace Controller.Controllers
         }
 
         [HttpGet("exists")]
-        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(SFTPActionExistsResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -164,8 +164,9 @@ namespace Controller.Controllers
                 return Forbid("You do not have permission to access this SFTP connection.");
             }
 
-            bool fileExists = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath);
-            return Ok(new { FileExists = fileExists });
+            SFTPActionExistsResult fileExists = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath);
+
+            return Ok(fileExists.ToResponse());
         }
 
         [HttpPut("rename")]
@@ -192,7 +193,7 @@ namespace Controller.Controllers
 
             SFTPActionRenameResult renameResult = await _sftpActionService.RenameFileAsync(connection.Data, renameRequest.OldRemoteFilePath, renameRequest.NewRemoteFilePath, HttpContext.RequestAborted);
 
-            return Ok(renameResult.FromRenameResult());
+            return Ok(renameResult.ToResponse());
         }
     }
 }

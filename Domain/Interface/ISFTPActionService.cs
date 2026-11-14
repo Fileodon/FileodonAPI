@@ -7,9 +7,9 @@ namespace Domain.Interface;
 
 public interface ISFTPActionService
 {
-    public Task<bool> FileExistsAsync(SFTPConnection connection, string remoteFilePath);
+    public Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath);
     public Task<Guid> EnqueueUploadAsync(SFTPConnection connection, IReadOnlyList<SFTPUploadInput> files, CancellationToken cancellationToken);
-    public Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken);
+    public Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken);
     public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection);
     public Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken);
 }

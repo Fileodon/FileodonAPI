@@ -13,7 +13,7 @@ public record class SFTPActionRenameResponse
 
 public static class SFTPActionRenameResponseExtensions
 {
-    public static SFTPActionRenameResponse FromRenameResult(this SFTPActionRenameResult renameResult)
+    public static SFTPActionRenameResponse ToResponse(this SFTPActionRenameResult renameResult)
     {
         return new SFTPActionRenameResponse()
         {

@@ -4,7 +4,6 @@ using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
 using Microsoft.Extensions.Logging;
-using Renci.SshNet.Sftp;
 
 namespace Domain.Service;
 
@@ -65,7 +64,7 @@ public class SFTPActionService : ISFTPActionService
         }
     }
 
-    public async Task<bool> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
+    public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath)
     {
         return await _sFTPRepository.FileExistsAsync(connection, remoteFilePath);
     }
@@ -73,7 +72,7 @@ public class SFTPActionService : ISFTPActionService
     public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection) =>
         _uploadSender.GetStatus(jobId, connection);
 
-    public async Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
+    public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
         return await _sFTPRepository.ListFilesAsync(connection, remoteDirectoryPath, cancellationToken);
     }
