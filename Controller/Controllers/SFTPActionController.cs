@@ -173,6 +173,39 @@ namespace Controller.Controllers
             return Ok(fileExists.ToResponse());
         }
 
+        [HttpGet("download")]
+        [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Permission(PermissionFlags.SftpActionRead)]
+        public async Task<IActionResult> DownloadFileAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromQuery] string remoteFilePath)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            var connection = await _sftpConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            if (connection.Status == MutationStatus.NotFound || connection.Data is null)
+            {
+                return NotFound("SFTP connection not found.");
+            }
+            if (connection.Status == MutationStatus.Forbidden)
+            {
+                return Forbid("You do not have permission to access this SFTP connection.");
+            }
+
+            SFTPActionDownloadResult downloadResult = await _sftpActionService.DownloadFileAsync(connection.Data, remoteFilePath, HttpContext.RequestAborted);
+
+            if (downloadResult.Stream is null)
+            {
+                return NotFound($"File '{remoteFilePath}' not found on the SFTP server.");
+            }
+
+            return File(downloadResult.Stream, "application/octet-stream", downloadResult.FileName ?? string.Empty);
+        }
+
         [HttpPut("rename")]
         [ProducesResponseType(typeof(SFTPActionRenameResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

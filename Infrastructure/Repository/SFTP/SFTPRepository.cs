@@ -16,6 +16,7 @@ public sealed class SFTPRepository : ISFTPRepository
     private readonly ICryptoService _cryptoService;
     private readonly ISFTPUploadJobStore _jobStore;
     private readonly ILogger<SFTPRepository> _logger;
+    private readonly SftpClient _sftpClient;
 
     public SFTPRepository(
         ICryptoService cryptoService,
@@ -195,6 +196,42 @@ public sealed class SFTPRepository : ISFTPRepository
                 client.Disconnect();
             }
             client.Dispose();
+        }
+    }
+
+    public async Task<SFTPActionDownloadResult> DownloadFileAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            SftpFileStream fileStream = await client.OpenAsync(remoteFilePath, FileMode.Open, FileAccess.Read, cancellationToken);
+            ISftpFile fileRef = await client.GetAsync(remoteFilePath, cancellationToken);
+            return new SFTPActionDownloadResult(StatusCode.Ok, Stream: new SftpClientOwnedStream(fileStream, client), FileName: fileRef.Name);
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    return new SFTPActionDownloadResult(StatusCode.NoSuchFile, "The specified file does not exist on the SFTP server.");
+                case StatusCode.PermissionDenied:
+                    return new SFTPActionDownloadResult(StatusCode.PermissionDenied, "Permission denied when downloading the file from the SFTP server.");
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while downloading the file from the SFTP server.");
+                    return new SFTPActionDownloadResult(StatusCode.Failure, $"An unexpected SFTP error occurred: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
+            _logger.LogError(ex, "An error occurred while downloading the file from the SFTP server.");
+            throw new InvalidOperationException("An error occurred while downloading the file from the SFTP server.", ex);
         }
     }
 

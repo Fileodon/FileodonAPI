@@ -23,6 +23,11 @@ public class SFTPActionService : ISFTPActionService
         _uploadSender = uploadSender;
     }
 
+    public Task<SFTPActionDownloadResult> DownloadFileAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    {
+        return _sFTPRepository.DownloadFileAsync(connection, remoteFilePath, cancellationToken);
+    }
+
     public async Task<Guid> EnqueueUploadAsync(
         SFTPConnection connection,
         IReadOnlyList<SFTPUploadInput> files,
