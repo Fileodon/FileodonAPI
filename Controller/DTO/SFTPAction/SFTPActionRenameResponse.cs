@@ -1,0 +1,24 @@
+using System.Text.Json.Serialization;
+using Infrastructure.DTO.SFTPAction;
+using Renci.SshNet.Sftp;
+
+namespace Controller.DTO.SFTPAction;
+
+public record class SFTPActionRenameResponse
+{
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public required StatusCode StatusCode { get; init; }
+    public string? ErrorMessage { get; init; } = null;
+}
+
+public static class SFTPActionRenameResponseExtensions
+{
+    public static SFTPActionRenameResponse FromRenameResult(this SFTPActionRenameResult renameResult)
+    {
+        return new SFTPActionRenameResponse()
+        {
+            StatusCode = renameResult.StatusCode,
+            ErrorMessage = renameResult.ErrorMessage
+        };
+    }
+}

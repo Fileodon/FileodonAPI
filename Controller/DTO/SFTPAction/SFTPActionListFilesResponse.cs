@@ -14,7 +14,7 @@ public record class SFTPActionListFilesResponse
 
 public static class SFTPActionListFilesResponseExtensions
 {
-    public static SFTPActionListFilesResponse FromSftpFile(ISftpFile sftpFile)
+    public static SFTPActionListFilesResponse FromSftpFile(this ISftpFile sftpFile)
     {
         return new SFTPActionListFilesResponse(
             AbsoluteName: sftpFile.FullName,

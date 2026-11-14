@@ -1,3 +1,4 @@
+using Infrastructure.DTO.SFTPAction;
 using Infrastructure.Models;
 using Infrastructure.Worker;
 using Renci.SshNet.Sftp;
@@ -10,4 +11,5 @@ public interface ISFTPActionService
     public Task<Guid> EnqueueUploadAsync(SFTPConnection connection, IReadOnlyList<SFTPUploadInput> files, CancellationToken cancellationToken);
     public Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken);
     public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection);
+    public Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken);
 }

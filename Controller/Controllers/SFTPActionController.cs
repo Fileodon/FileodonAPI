@@ -1,7 +1,10 @@
 using Controller.DTO.SFTPAction;
 using Controller.Extensions;
+using Controller.Middleware.Attribute;
 using Domain.Enum;
 using Domain.Interface;
+using Infrastructure.DTO.SFTPAction;
+using Infrastructure.Models.Enums;
 using Infrastructure.Worker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -110,8 +113,8 @@ namespace Controller.Controllers
             // Skip "."
             var files = response
                 .Where(file => file.Name != ".")
-                .Select(SFTPActionListFilesResponseExtensions.FromSftpFile)
-                .ToList();
+                .Select(file => file.FromSftpFile())
+                .AsEnumerable();
 
             return Ok(files);
         }
@@ -165,6 +168,33 @@ namespace Controller.Controllers
 
             bool fileExists = await _sftpActionService.FileExistsAsync(connection.Data, remoteFilePath);
             return Ok(new { FileExists = fileExists });
+        }
+
+        [HttpPut("rename")]
+        [ProducesResponseType(typeof(SFTPActionRenameResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RenameFileAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromBody] SFTPActionRenameRequest renameRequest)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            var connection = await _sftpConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            if (connection.Status == MutationStatus.NotFound || connection.Data is null)
+            {
+                return NotFound("SFTP connection not found.");
+            }
+            if (connection.Status == MutationStatus.Forbidden)
+            {
+                return Forbid("You do not have permission to access this SFTP connection.");
+            }
+
+            SFTPActionRenameResult renameResult = await _sftpActionService.RenameFileAsync(connection.Data, renameRequest.OldRemoteFilePath, renameRequest.NewRemoteFilePath, HttpContext.RequestAborted);
+
+            return Ok(renameResult.FromRenameResult());
         }
     }
 }

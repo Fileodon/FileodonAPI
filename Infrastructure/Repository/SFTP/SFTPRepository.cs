@@ -1,10 +1,12 @@
 using System.Text;
+using Infrastructure.DTO.SFTPAction;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
 using Infrastructure.Worker;
 using Microsoft.Extensions.Logging;
 using Renci.SshNet;
+using Renci.SshNet.Common;
 using Renci.SshNet.Sftp;
 
 namespace Infrastructure.Repository.SFTP;
@@ -124,7 +126,45 @@ public sealed class SFTPRepository : ISFTPRepository
         }
     }
 
-    private SftpClient CreateSftpClient(Infrastructure.Models.SFTPConnection connection)
+    public async Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            await client.RenameFileAsync(sourceFilePath, destinationFilePath, cancellationToken);
+            return new SFTPActionRenameResult(StatusCode.Ok);
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    return new SFTPActionRenameResult(StatusCode.NoSuchFile, "Source file or destination directory does not exist.");
+                case StatusCode.PermissionDenied:
+                    return new SFTPActionRenameResult(StatusCode.PermissionDenied, "Permission denied.");
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while renaming or moving the file on the SFTP server.");
+                    return new SFTPActionRenameResult(StatusCode.Failure, $"An unexpected SFTP error occurred: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while renaming or moving the file on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while renaming or moving the file on the SFTP server.", ex);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
+        }
+    }
+
+    private SftpClient CreateSftpClient(SFTPConnection connection)
     {
         ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
         byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));

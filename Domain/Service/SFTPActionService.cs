@@ -1,4 +1,5 @@
 using Domain.Interface;
+using Infrastructure.DTO.SFTPAction;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
 using Infrastructure.Worker;
@@ -75,5 +76,10 @@ public class SFTPActionService : ISFTPActionService
     public async Task<IEnumerable<ISftpFile>> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
         return await _sFTPRepository.ListFilesAsync(connection, remoteDirectoryPath, cancellationToken);
+    }
+
+    public async Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
+    {
+        return await _sFTPRepository.RenameFileAsync(connection, sourceFilePath, destinationFilePath, cancellationToken);
     }
 }
