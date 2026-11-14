@@ -310,7 +310,14 @@ if (app.Environment.IsDevelopment())
 app.MapOpenApi();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/openapi/v1.json", "v1");
+    if (app.Environment.IsDevelopment())
+    {
+        options.SwaggerEndpoint("/api/openapi/v1.json", "v1");
+    }
+    else
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "v1");
+    }
     options.RoutePrefix = string.Empty;
 });
 
