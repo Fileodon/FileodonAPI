@@ -1,5 +1,5 @@
-using Infrastructure.DTO.SFTPAction;
 using Infrastructure.Models;
+using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
 using Renci.SshNet.Sftp;
 

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Infrastructure.DTO.SFTPAction;
+using Infrastructure.Models.DTO.SFTPAction;
 using Renci.SshNet.Sftp;
 
 namespace Controller.DTO.SFTPAction;

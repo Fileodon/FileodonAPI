@@ -1,6 +1,6 @@
 using Renci.SshNet.Sftp;
 
-namespace Infrastructure.DTO.SFTPAction;
+namespace Infrastructure.Models.DTO.SFTPAction;
 
 public record class SFTPActionRenameResult(
     StatusCode StatusCode,

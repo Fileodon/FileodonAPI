@@ -1,5 +1,5 @@
 using System.Text;
-using Infrastructure.DTO.SFTPAction;
+using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;

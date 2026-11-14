@@ -1,7 +1,7 @@
 using Domain.Interface;
-using Infrastructure.DTO.SFTPAction;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
+using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
 using Microsoft.Extensions.Logging;
 using Renci.SshNet.Sftp;

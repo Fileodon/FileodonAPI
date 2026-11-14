@@ -1,10 +1,8 @@
 using Controller.DTO.SFTPAction;
 using Controller.Extensions;
-using Controller.Middleware.Attribute;
 using Domain.Enum;
 using Domain.Interface;
-using Infrastructure.DTO.SFTPAction;
-using Infrastructure.Models.Enums;
+using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
