@@ -302,6 +302,58 @@ public sealed class SFTPRepository : ISFTPRepository
         return createDirectoryResults;
     }
 
+    public async Task<SFTPActionDeleteResult> DeleteAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+
+            ISftpFile fileRef = await client.GetAsync(remoteFilePath, cancellationToken);
+            if (fileRef.IsRegularFile)
+            {
+                await client.DeleteFileAsync(remoteFilePath, cancellationToken);
+                return new SFTPActionDeleteResult(StatusCode.Ok);
+            }
+            else if (fileRef.IsDirectory)
+            {
+                await client.DeleteDirectoryAsync(remoteFilePath, cancellationToken);
+                return new SFTPActionDeleteResult(StatusCode.Ok);
+            }
+            else
+            {
+                return new SFTPActionDeleteResult(StatusCode.Failure, "The specified path is neither a regular file nor a directory.");
+            }
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    return new SFTPActionDeleteResult(StatusCode.NoSuchFile, "The specified file does not exist on the SFTP server.");
+                case StatusCode.PermissionDenied:
+                    return new SFTPActionDeleteResult(StatusCode.PermissionDenied, "Permission denied when deleting the file from the SFTP server.");
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while deleting the file from the SFTP server.");
+                    return new SFTPActionDeleteResult(StatusCode.Failure, $"An unexpected SFTP error occurred: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting the file from the SFTP server.");
+            throw new InvalidOperationException("An error occurred while deleting the file from the SFTP server.", ex);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
+        }
+    }
+
     private SftpClient CreateSftpClient(SFTPConnection connection)
     {
         ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);

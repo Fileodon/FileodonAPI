@@ -261,5 +261,33 @@ namespace Controller.Controllers
 
             return Ok(renameResult.ToResponse());
         }
+
+        [HttpDelete("delete")]
+        [ProducesResponseType(typeof(SFTPActionDeleteResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Permission(PermissionFlags.SftpActionDelete)]
+        public async Task<IActionResult> DeleteFileAsync([FromRoute] int organizationid, [FromRoute] int sftpconnectionid, [FromQuery] string remoteFilePath)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            var connection = await _sftpConnectionService.GetSFTPConnectionAsync(sftpconnectionid, organizationid, userId);
+            if (connection.Status == MutationStatus.NotFound || connection.Data is null)
+            {
+                return NotFound("SFTP connection not found.");
+            }
+            if (connection.Status == MutationStatus.Forbidden)
+            {
+                return Forbid("You do not have permission to access this SFTP connection.");
+            }
+
+            SFTPActionDeleteResult deleteResult = await _sftpActionService.DeleteAsync(connection.Data, remoteFilePath, HttpContext.RequestAborted);
+
+            return Ok(deleteResult.ToResponse());
+        }
     }
 }
