@@ -10,22 +10,22 @@ namespace Domain.Service
         {
             _unitOfWork = unitOfWork;
         }
-        public async Task<IEnumerable<AspNetRole>> GetAllAsync()
+        public async Task<IEnumerable<AspNetRole>> GetAllAsync(int organizationId)
         {
-            return await _unitOfWork.RoleRepository.GetAllRolesAndOrganizations();
+            return await _unitOfWork.RoleRepository.GetAllRolesInOrganization(organizationId);
         }
-        public async Task<AspNetRole?> GetByIdAsync(string id)
+        public async Task<AspNetRole?> GetByIdAsync(int organizationId, string id)
         {
-            return await _unitOfWork.RoleRepository.GetRoleAndOrganizations(id);
+            return await _unitOfWork.RoleRepository.GetByIdAsync(organizationId, id);
         }
         public async Task<AspNetRole> CreateAsync(AspNetRole role)
         {
             return await _unitOfWork.RoleRepository.PostAsync(role);
         }
 
-        public async Task<AspNetRole?> UpdateAsync(string id, AspNetRole role)
+        public async Task<AspNetRole?> UpdateAsync(int organizationId, string id, AspNetRole role)
         {
-            AspNetRole? existingRole = await _unitOfWork.RoleRepository.GetByIdAsync(id);
+            AspNetRole? existingRole = await _unitOfWork.RoleRepository.GetByIdAsync(organizationId, id);
 
             if (existingRole is null)
                 return null;
@@ -37,14 +37,14 @@ namespace Domain.Service
 
             return existingRole;
         }
-        public async Task<bool> DeleteAsync(string id)
+        public async Task<bool> DeleteAsync(int organizationId, string id)
         {
-            AspNetRole? role = await _unitOfWork.RoleRepository.GetByIdAsync(id);
+            AspNetRole? role = await _unitOfWork.RoleRepository.GetByIdAsync(organizationId, id);
 
             if (role is null)
                 return false;
 
-            await _unitOfWork.RoleRepository.DeleteAsync(id);
+            await _unitOfWork.RoleRepository.DeleteAsync(organizationId, id);
 
             return true;
         }

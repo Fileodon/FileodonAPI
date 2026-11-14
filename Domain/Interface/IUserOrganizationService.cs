@@ -13,6 +13,7 @@ public interface
     );
     Task<UserOrganization> EditUserOrganizationAsync(
         int id,
+        int organization_id,
         string role_id
     );
     Task<IEnumerable<UserOrganization>> GetByOrganizationIdAsync(int organizationId);

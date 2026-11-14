@@ -1,4 +1,6 @@
-﻿using Domain.Interface;
+﻿using Controller.DTO.Role;
+using Controller.Middleware.Attribute;
+using Domain.Interface;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +9,7 @@ namespace Controller.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("roles")]
+[Route("/organization/{organizationId}/[controller]")]
 public class RoleController : ControllerBase
 {
     private readonly IRoleService _roleService;
@@ -16,15 +18,19 @@ public class RoleController : ControllerBase
         _roleService = roleService;
     }
     [HttpGet]
-    public async Task<IActionResult> GetAllRolesAsync()
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleRead)]
+    [ProducesResponseType(typeof(List<GetRoleResponse>), 200)]
+    public async Task<IActionResult> GetAllRolesAsync(int organizationId)
     {
-        var roles = await _roleService.GetAllAsync();
-        return Ok(roles);
+        var roles = await _roleService.GetAllAsync(organizationId);
+        return Ok(roles.Select(role => role.ToGetRoleResponse()));
     }
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetRoleByIdAsync(string id)
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleRead)]
+    [ProducesResponseType(typeof(GetRoleResponse), 200)]
+    public async Task<IActionResult> GetRoleByIdAsync(int organizationId, string id)
     {
-        var role = await _roleService.GetByIdAsync(id);
+        var role = await _roleService.GetByIdAsync(organizationId, id);
 
         if (role is null)
             return NotFound();
@@ -33,13 +39,18 @@ public class RoleController : ControllerBase
     }
 
     [HttpPost]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleCreate)]
+    [ProducesResponseType(typeof(GetRoleResponse), 200)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     public async Task<IActionResult> CreateRoleAsync(
-     [FromBody] RoleDTO request)
+        int organizationId,
+     [FromBody] CreateRoleRequest request)
     {
         var role = new AspNetRole
         {
             Name = request.Name,
-            OrganizationId = request.OrganizationId,
+            OrganizationId = organizationId,
+            IsSystemRole = false,
             PermissionMask = request.PermissionMask,
             NormalizedName = request.Name.ToUpper()
         };
@@ -56,27 +67,31 @@ public class RoleController : ControllerBase
         });
     }
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateRoleAsync(string id, [FromBody] RoleDTO request)
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleUpdate)]
+    [ProducesResponseType(typeof(GetRoleResponse), 200)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
+    public async Task<IActionResult> UpdateRoleAsync(string id, int organizationId, [FromBody] EditRoleRequest request)
     {
         var role = new AspNetRole
         {
             Name = request.Name,
-            OrganizationId = request.OrganizationId,
+            OrganizationId = organizationId,
             PermissionMask = request.PermissionMask,
             NormalizedName = request.Name.ToUpper()
         };
 
-        var updatedRole = await _roleService.UpdateAsync(id, role);
+        var updatedRole = await _roleService.UpdateAsync(organizationId, id, role);
 
         if (updatedRole is null)
             return NotFound();
 
-        return Ok(updatedRole);
+        return Ok(updatedRole.ToGetRoleResponse());
     }
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteRoleAsync(string id)
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleDelete)]
+    public async Task<IActionResult> DeleteRoleAsync(int organizationId, string id)
     {
-        var deleted = await _roleService.DeleteAsync(id);
+        var deleted = await _roleService.DeleteAsync(organizationId, id);
 
         if (!deleted)
             return NotFound();

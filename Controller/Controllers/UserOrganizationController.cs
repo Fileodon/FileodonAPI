@@ -1,4 +1,5 @@
 ﻿using Controller.DTO.UserOrganization;
+using Controller.Middleware.Attribute;
 using Domain.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,15 +30,14 @@ public class UserOrganizationController : ControllerBase
 
         var userOrganizations = await _userOrgService.GetByUserIdAsync(currentUserId);
 
-
         return Ok(userOrganizations.Select(org => org.ToGetUsersUserOrganizationResponse()).ToList());
     }
 
-
-    [HttpGet("{id:int}")]
+    [HttpGet("/organization/{organizationId}/[controller]/{id:int}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
     [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
-    [ProducesResponseType(404)]
     [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     public async Task<IActionResult> GetUserOrganizationById(int id)
     {
         var userOrganization = await _userOrgService.GetByIdAsync(id);
@@ -47,11 +47,14 @@ public class UserOrganizationController : ControllerBase
         }
         return Ok(userOrganization.ToGetUserOrganizationResponse());
     }
-    [HttpPost]
+    [HttpPost("/organization/{organizationId:int}/[controller]")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationCreate)]
     [ProducesResponseType(202)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> CreateUserOrganization(
-     [FromBody] CreateUserOrganizationRequest request)
+        int organizationId,
+        [FromBody] CreateUserOrganizationRequest request)
     {
         await _userOrgService.CreateUserOrganizationAsync(
             request.Email,
@@ -62,14 +65,18 @@ public class UserOrganizationController : ControllerBase
         return Accepted();
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("/organization/{organizationId:int}/[controller]/{id:int}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationUpdate)]
     [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> EditUserOrganization(
+        int organizationId,
      [FromBody] EditUserOrganizationRequest request)
     {
         var updatedUserOrganization = await _userOrgService.EditUserOrganizationAsync(
             request.Id,
+            organizationId,
             request.RoleId
         );
 
@@ -78,8 +85,8 @@ public class UserOrganizationController : ControllerBase
 
 
 
-
-    [HttpDelete("{id:int}")]
+    [HttpDelete("/organization/{organizationId:int}/[controller]/{id:int}")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationDelete)]
     [ProducesResponseType(200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(401)]
@@ -93,8 +100,9 @@ public class UserOrganizationController : ControllerBase
         return Ok();
     }
 
-    [HttpGet("organization/{organizationId:int}")]
-    [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
+    [HttpGet("/organization/{organizationId:int}/[controller]")]
+    [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
+    [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
     [ProducesResponseType(403)]
     public async Task<IActionResult> GetOrganizationUserOrganizations(int organizationId)
     {
