@@ -23,6 +23,11 @@ public class SFTPActionService : ISFTPActionService
         _uploadSender = uploadSender;
     }
 
+    public Task<SFTPActionDownloadResult> DownloadFileAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    {
+        return _sFTPRepository.DownloadFileAsync(connection, remoteFilePath, cancellationToken);
+    }
+
     public Task<List<SFTPActionCreateDirectoryResult>> CreateDirectoryAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
         return _sFTPRepository.CreateDirectoryAsync(connection, remoteDirectoryPath, cancellationToken);
@@ -85,5 +90,10 @@ public class SFTPActionService : ISFTPActionService
     public async Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
     {
         return await _sFTPRepository.RenameFileAsync(connection, sourceFilePath, destinationFilePath, cancellationToken);
+    }
+
+    public async Task<SFTPActionDeleteResult> DeleteAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    {
+        return await _sFTPRepository.DeleteAsync(connection, remoteFilePath, cancellationToken);
     }
 }
