@@ -2,9 +2,10 @@ namespace Controller.DTO.SFTPConnection;
 
 public record SFTPConnectionCreateResponse(
     int Id,
-    string DisplayName,
+    int OrganizationId,
+    string? DisplayName,
     string Host,
-    int Port,
+    int? Port,
     string Status,
     string PublicKey
 );
@@ -15,6 +16,7 @@ public static class SFTPConnectionCreateResponseExtensions
     {
         return new SFTPConnectionCreateResponse(
             sftpConnection.Id,
+            sftpConnection.OrganizationId,
             sftpConnection.DisplayName,
             sftpConnection.Host,
             sftpConnection.Port,

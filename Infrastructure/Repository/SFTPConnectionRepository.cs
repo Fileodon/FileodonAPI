@@ -65,12 +65,11 @@ public class SFTPConnectionRepository : BaseRepository<SFTPConnection>, ISFTPCon
     /// <param name="organizationId"></param>
     /// <param name="userId"></param>
     /// <returns></returns>
-    public async Task<SFTPConnection?> GetSFTPConnectionStatusByIdAsync(int sFTPConnectionId, int organizationId, string userId)
+    public async Task<SFTPConnection?> GetSFTPConnectionStatusByIdAsync(int sFTPConnectionId, int organizationId)
     {
         return await _context.SFTPConnections
             .Where(c => c.Id == sFTPConnectionId &&
-                c.Organization.Id == organizationId &&
-                c.Organization.UserOrganizations.Any(uo => uo.UserId == userId))
+                c.Organization.Id == organizationId)
             .FirstOrDefaultAsync();
     }
 

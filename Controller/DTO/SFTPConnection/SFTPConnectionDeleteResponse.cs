@@ -3,9 +3,9 @@ namespace Controller.DTO.SFTPConnection;
 public record SFTPConnectionDeleteResponse
 {
     public int Id { get; init; }
-    public required string DisplayName { get; init; }
+    public string? DisplayName { get; init; }
     public required string Host { get; init; }
-    public required int Port { get; init; }
+    public int? Port { get; init; }
 }
 
 public static class SFTPConnectionDeleteResponseExtensions

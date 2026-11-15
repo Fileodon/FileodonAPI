@@ -274,6 +274,6 @@ public sealed class SFTPRepository : ISFTPRepository
         using var keyStream = new MemoryStream(Encoding.UTF8.GetBytes(pem));
         PrivateKeyFile privateKey = new(keyStream);
 
-        return new SftpClient(connection.Host, connection.Port, "fileodon", privateKey);
+        return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
     }
 }

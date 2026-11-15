@@ -16,10 +16,12 @@ namespace Controller.Controllers
     public class SFTPConnectionController : ControllerBase
     {
         private readonly ISFTPConnectionService _sFTPConnectionService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SFTPConnectionController(ISFTPConnectionService sFTPConnectionService)
+        public SFTPConnectionController(ISFTPConnectionService sFTPConnectionService, IHttpContextAccessor httpContextAccessor)
         {
             _sFTPConnectionService = sFTPConnectionService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpGet("{sftpconnectionid}")]
@@ -85,7 +87,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName, request.Port);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -123,22 +125,18 @@ namespace Controller.Controllers
             return Ok(result.Data.ToDetailedGetResponseDTO());
         }
 
+        [AllowAnonymous]
         [HttpGet("{sftpconnectionid}/poll")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 200, Description = "Rejected")]
+        [ProducesResponseType(typeof(SFTPConnectionPollResponse), 200, Description = "Accepted and returns publicKey")]
         [ProducesResponseType(typeof(SFTPConnectionStatus), 202, Description = "Pending")]
-        [ProducesResponseType(typeof(SFTPConnectionStatus), 303, Description = "Accepted")]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
         public async Task<IActionResult> PollStatus(int organizationid, int sftpconnectionid)
         {
-            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
-            {
-                return Unauthorized("User ID claim is missing.");
-            }
-
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid, userId);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.PollSFTPConnectionStatusAsync(sftpconnectionid, organizationid);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -149,18 +147,18 @@ namespace Controller.Controllers
                 return Forbid();
             }
 
+            // TODO: hvis pending
+
             var status = result.Data.Status;
             switch (status)
             {
                 case SFTPConnectionStatus.Rejected:
-                    return Ok(status);
+                    return Ok(result.Data.toPollResponse());
                 case SFTPConnectionStatus.Pending:
                     Response.Headers.RetryAfter = "5"; // Suggests the client to retry after 5 seconds
-                    return Accepted(status);
+                    return Accepted(result.Data.toPollResponse());
                 case SFTPConnectionStatus.Accepted:
-                    return this.SeeOther(
-                        $"/api/organization/{result.Data.OrganizationId}/sftpconnection/{result.Data.Id}/detailed",
-                        status.ToString());
+                    return Ok(result.Data.toPollResponse());
                 default:
                     return StatusCode(500, "Unknown status.");
             }
@@ -191,16 +189,17 @@ namespace Controller.Controllers
             return Ok(result.Data.ToDTO());
         }
 
-        [HttpPost]
+        // Fjerner {orgid} fra url
+        [HttpPost("~/organization/[controller]")]
         [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
         [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         [AllowAnonymous]
-        public async Task<IActionResult> AddServer(int organizationid, [FromBody] SFTPConnectionCreateRequest request)
+        public async Task<IActionResult> AddServer([FromBody] SFTPConnectionCreateRequest request)
         {
-            MutationEnvelope<SFTPConnectionAuthCode> AuthCode = await _sFTPConnectionService.GetSFTPConnectionAuthCodeAsync(request.AuthCode, organizationid);
+            MutationEnvelope<SFTPConnectionAuthCode> AuthCode = await _sFTPConnectionService.GetSFTPConnectionAuthCodeAsync(request.AuthCode);
             if (AuthCode.Status == MutationStatus.NotFound || AuthCode.Data is null)
             {
                 return NotFound();
@@ -210,7 +209,10 @@ namespace Controller.Controllers
                 return Forbid("Auth code has expired.");
             }
 
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(AuthCode.Data.VerificationCode, organizationid, request.DisplayName, request.Host, request.Port);
+            HttpContext.User.AddIdentity(new System.Security.Claims.ClaimsIdentity(
+                new[] { new System.Security.Claims.Claim("id", AuthCode.Data.UserId.ToString()) }));
+
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(AuthCode.Data.VerificationCode, AuthCode.Data.OrganizationId, request.DisplayName, request.Host, request.Port);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -220,6 +222,7 @@ namespace Controller.Controllers
             {
                 return Forbid();
             }
+
             return Ok(result.Data.ToDTO());
         }
 
