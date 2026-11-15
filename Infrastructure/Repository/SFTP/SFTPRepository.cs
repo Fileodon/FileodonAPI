@@ -33,7 +33,7 @@ public sealed class SFTPRepository : ISFTPRepository
 
         try
         {
-            await client.ConnectAsync(CancellationToken.None);
+            await client.ConnectAsync(cancellationToken);
             bool fileExists = await client.ExistsAsync(remoteFilePath, cancellationToken);
             if (fileExists)
             {
@@ -117,7 +117,14 @@ public sealed class SFTPRepository : ISFTPRepository
             client.Dispose();
             foreach (SFTPUploadFile file in workItem.Files)
             {
-                File.Delete(file.LocalPath);
+                try
+                {
+                    File.Delete(file.LocalPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete local temporary file {LocalPath} after SFTP upload job {JobId}", file.LocalPath, workItem.JobId);
+                }
             }
         }
     }
@@ -211,6 +218,11 @@ public sealed class SFTPRepository : ISFTPRepository
         }
         catch (SftpException ex)
         {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
             switch (ex.StatusCode)
             {
                 case StatusCode.NoSuchFile:
@@ -245,61 +257,257 @@ public sealed class SFTPRepository : ISFTPRepository
         try
         {
             await client.ConnectAsync(cancellationToken);
+            foreach (string directory in directoriesToCreate)
+            {
+                currentPath = Path.Combine(currentPath, directory).Replace("\\", "/");
+                bool pathExists = await client.ExistsAsync(currentPath, cancellationToken);
+                if (pathExists is false)
+                {
+                    try
+                    {
+                        await client.CreateDirectoryAsync(currentPath, cancellationToken);
+                        createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Ok, currentPath));
+                    }
+                    catch (SftpException ex)
+                    {
+                        switch (ex.StatusCode)
+                        {
+                            case StatusCode.PermissionDenied:
+                                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.PermissionDenied, currentPath, "Permission denied when creating the directory on the SFTP server."));
+                                break;
+                            default:
+                                _logger.LogError(ex, "An unexpected SFTP error occurred while creating the directory on the SFTP server.");
+                                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Failure, currentPath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "An error occurred while creating the directory on the SFTP server.");
+                        throw new InvalidOperationException("An error occurred while creating the directory on the SFTP server.", ex);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        ISftpFile fileRef = await client.GetAsync(currentPath, cancellationToken);
+                        if (fileRef.IsDirectory is false)
+                        {
+                            createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Failure, currentPath, "A file with the same name already exists on the SFTP server."));
+                        }
+                        else
+                        {
+                            createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Ok, currentPath));
+                        }
+                    }
+                    catch (SftpException ex)
+                    {
+                        switch (ex.StatusCode)
+                        {
+                            case StatusCode.NoSuchFile:
+                                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.NoSuchFile, currentPath, "The specified directory does not exist on the SFTP server."));
+                                break;
+                            case StatusCode.PermissionDenied:
+                                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.PermissionDenied, currentPath, "Permission denied when checking the directory on the SFTP server."));
+                                break;
+                            default:
+                                _logger.LogError(ex, "An unexpected SFTP error occurred while checking the directory on the SFTP server.");
+                                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Failure, currentPath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "An error occurred while checking the directory on the SFTP server.");
+                        throw new InvalidOperationException("An error occurred while checking the directory on the SFTP server.", ex);
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while connecting to the SFTP server.");
             throw new InvalidOperationException("An error occurred while connecting to the SFTP server.", ex);
         }
-
-        foreach (string directory in directoriesToCreate)
+        finally
         {
-            currentPath = Path.Combine(currentPath, directory).Replace("\\", "/");
-            SFTPActionExistsResult existsResult = await FileExistsAsync(connection, currentPath, cancellationToken);
-            if (existsResult.StatusCode == StatusCode.NoSuchFile)
+            if (client.IsConnected)
             {
-                try
-                {
-                    await client.CreateDirectoryAsync(currentPath, cancellationToken);
-                    createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Ok, currentPath));
-                }
-                catch (SftpException ex)
-                {
-                    switch (ex.StatusCode)
-                    {
-                        case StatusCode.PermissionDenied:
-                            createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.PermissionDenied, currentPath, $"Permission denied when creating directory: {currentPath}"));
-                            break;
-                        default:
-                            _logger.LogError(ex, "An unexpected SFTP error occurred while creating directory on the SFTP server.");
-                            createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Failure, currentPath, $"An unexpected SFTP error occurred: {ex.Message}"));
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    if (client.IsConnected)
-                    {
-                        client.Disconnect();
-                    }
-                    client.Dispose();
-                    _logger.LogError(ex, "An error occurred while creating directory on the SFTP server.");
-                    throw new InvalidOperationException("An error occurred while creating directory on the SFTP server.", ex);
-                }
+                client.Disconnect();
+            }
+            client.Dispose();
+        }
+
+        return createDirectoryResults;
+    }
+
+    public async Task<List<SFTPActionDeleteResult>> DeleteAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        List<SFTPActionDeleteResult> deleteResults = [];
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            bool pathExists = await client.ExistsAsync(remoteFilePath, cancellationToken);
+
+            if (pathExists is false)
+            {
+                deleteResults.Add(new SFTPActionDeleteResult(StatusCode.NoSuchFile, remoteFilePath, "The specified file or directory does not exist on the SFTP server."));
+                return deleteResults;
+            }
+
+            ISftpFile fileRef = await client.GetAsync(remoteFilePath, cancellationToken);
+            if (fileRef.IsDirectory)
+            {
+                deleteResults = await DeleteFolderAsync(client, remoteFilePath, deleteResults, cancellationToken);
             }
             else
             {
-                createDirectoryResults.Add(new SFTPActionCreateDirectoryResult(StatusCode.Ok, currentPath));
+                deleteResults = await DeleteFileAsync(client, remoteFilePath, deleteResults, cancellationToken);
+            }
+
+            return deleteResults;
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.NoSuchFile, remoteFilePath, "The specified file or directory does not exist on the SFTP server."));
+                    return deleteResults;
+                case StatusCode.PermissionDenied:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.PermissionDenied, remoteFilePath, "Permission denied when deleting the file or directory on the SFTP server."));
+                    return deleteResults;
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while deleting the file or directory on the SFTP server.");
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.Failure, remoteFilePath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                    return deleteResults;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting the file or directory on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while deleting the file or directory on the SFTP server.", ex);
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+            client.Dispose();
+        }
+    }
+
+    private async Task<List<SFTPActionDeleteResult>> DeleteFolderAsync(SftpClient client, string currentPath, List<SFTPActionDeleteResult> deleteResults, CancellationToken cancellationToken)
+    {
+        IAsyncEnumerable<ISftpFile> files;
+        try
+        {
+            files = client.ListDirectoryAsync(currentPath, cancellationToken);
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.NoSuchFile, currentPath, "The specified directory does not exist on the SFTP server."));
+                    return deleteResults;
+                case StatusCode.PermissionDenied:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.PermissionDenied, currentPath, "Permission denied when listing files in the specified directory on the SFTP server."));
+                    return deleteResults;
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while listing files in the specified directory on the SFTP server.");
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.Failure, currentPath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                    return deleteResults;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while listing files in the specified directory on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while listing files in the specified directory on the SFTP server.", ex);
+        }
+
+        await foreach (ISftpFile file in files)
+        {
+            if (file.Name == "." || file.Name == "..")
+            {
+                continue;
+            }
+
+            if (file.IsDirectory)
+            {
+                deleteResults = await DeleteFolderAsync(client, file.FullName, deleteResults, cancellationToken);
+            }
+            else
+            {
+                deleteResults = await DeleteFileAsync(client, file.FullName, deleteResults, cancellationToken);
             }
         }
 
-        if (client.IsConnected)
+        try
         {
-            client.Disconnect();
+            await client.DeleteDirectoryAsync(currentPath, cancellationToken);
+            deleteResults.Add(new SFTPActionDeleteResult(StatusCode.Ok, currentPath));
+            return deleteResults;
         }
-        client.Dispose();
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.NoSuchFile, currentPath, "The specified directory does not exist on the SFTP server."));
+                    break;
+                case StatusCode.PermissionDenied:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.PermissionDenied, currentPath, "Permission denied when deleting the directory on the SFTP server."));
+                    break;
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while deleting the directory on the SFTP server.");
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.Failure, currentPath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                    break;
+            }
+            return deleteResults;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting the directory on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while deleting the directory on the SFTP server.", ex);
+        }
+    }
 
-        return createDirectoryResults;
+    private async Task<List<SFTPActionDeleteResult>> DeleteFileAsync(SftpClient client, string filePath, List<SFTPActionDeleteResult> deleteResults, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await client.DeleteFileAsync(filePath, cancellationToken);
+            deleteResults.Add(new SFTPActionDeleteResult(StatusCode.Ok, filePath));
+            return deleteResults;
+        }
+        catch (SftpException ex)
+        {
+            switch (ex.StatusCode)
+            {
+                case StatusCode.NoSuchFile:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.NoSuchFile, filePath, "The specified file does not exist on the SFTP server."));
+                    break;
+                case StatusCode.PermissionDenied:
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.PermissionDenied, filePath, "Permission denied when deleting the file on the SFTP server."));
+                    break;
+                default:
+                    _logger.LogError(ex, "An unexpected SFTP error occurred while deleting the file on the SFTP server.");
+                    deleteResults.Add(new SFTPActionDeleteResult(StatusCode.Failure, filePath, $"An unexpected SFTP error occurred: {ex.Message}"));
+                    break;
+            }
+            return deleteResults;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting the file on the SFTP server.");
+            throw new InvalidOperationException("An error occurred while deleting the file on the SFTP server.", ex);
+        }
     }
 
     private SftpClient CreateSftpClient(SFTPConnection connection)
