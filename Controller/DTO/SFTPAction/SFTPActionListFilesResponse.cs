@@ -1,9 +1,10 @@
+using System.Text.Json.Serialization;
+using Infrastructure.Models.DTO.SFTPAction;
 using Renci.SshNet.Sftp;
 
 namespace Controller.DTO.SFTPAction;
 
-public record class SFTPActionListFilesResponse
-(
+public record class SFTPFileInfo(
     string AbsoluteName,
     string RelativeName,
     DateTime LastAccessTime,
@@ -13,18 +14,30 @@ public record class SFTPActionListFilesResponse
     bool hasAccess
 );
 
+public record class SFTPActionListFilesResponse
+{
+    public required List<SFTPFileInfo> Files { get; init; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public required StatusCode StatusCode { get; init; }
+    public string? ErrorMessage { get; init; }
+}
+
 public static class SFTPActionListFilesResponseExtensions
 {
-    public static SFTPActionListFilesResponse FromSftpFile(ISftpFile sftpFile)
+    public static SFTPActionListFilesResponse FromSftpFile(this SFTPActionListResult result)
     {
-        return new SFTPActionListFilesResponse(
-            AbsoluteName: sftpFile.FullName,
-            RelativeName: sftpFile.Name,
-            LastAccessTime: sftpFile.LastAccessTime,
-            LastWriteTime: sftpFile.LastWriteTime,
-            Size: sftpFile.Length,
-            IsDirectory: sftpFile.IsDirectory,
-            hasAccess: true // Tror vi kan bruge sftp klienten til at validere om vi har adgang. Der er ikke en "currentUser" eller lign Read værdi på !SftpFile fra hvad jeg kan se
-        );
+        return new SFTPActionListFilesResponse
+        {
+            Files = [.. result.SftpFiles.Where(file => file.Name != ".").Select(file => new SFTPFileInfo(
+                AbsoluteName: file.FullName,
+                RelativeName: file.Name,
+                LastAccessTime: file.LastAccessTime,
+                LastWriteTime: file.LastWriteTime,
+                Size: file.Length,
+                IsDirectory: file.IsDirectory
+            ))],
+            StatusCode = result.StatusCode,
+            ErrorMessage = result.ErrorMessage
+        };
     }
 }
