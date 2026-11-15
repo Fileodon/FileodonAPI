@@ -9,21 +9,21 @@ public class PermissionAttributeTest
     public void TestPermissionSuccess()
     {
         // Arrange
-        var attribute = new PermissionAttribute(PermissionFlags.Read | PermissionFlags.Create);
+        var attribute = new PermissionAttribute(PermissionFlags.OrganizationRead | PermissionFlags.OrganizationCreate);
         // Act
         var requiredPermissions = attribute.Permission;
         // Assert
-        Assert.Equal(PermissionFlags.Read | PermissionFlags.Create, requiredPermissions);
+        Assert.Equal(PermissionFlags.OrganizationRead | PermissionFlags.OrganizationCreate, requiredPermissions);
     }
 
     [Fact]
     public void TestPermissionFailure()
     {
         // Arrange
-        var attribute = new PermissionAttribute(PermissionFlags.Update | PermissionFlags.Delete);
+        var attribute = new PermissionAttribute(PermissionFlags.OrganizationUpdate | PermissionFlags.UserOrganizationDelete);
         // Act
         var requiredPermissions = attribute.Permission;
         // Assert
-        Assert.NotEqual(PermissionFlags.Read | PermissionFlags.Create, requiredPermissions);
+        Assert.NotEqual(PermissionFlags.OrganizationRead | PermissionFlags.OrganizationCreate, requiredPermissions);
     }
 }

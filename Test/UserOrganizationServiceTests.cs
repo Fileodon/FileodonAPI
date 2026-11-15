@@ -242,9 +242,12 @@ public sealed class UserOrganizationServiceTests
     [Fact]
     public async Task EditUserOrganization_throws_when_membership_does_not_exist()
     {
+        const int userOrganizationId = 42;
+        const int organizationId = 24;
+        const string roleId = "new-role";
         Mock<IUserOrganizationRepository> repository = new();
         repository
-            .Setup(item => item.GetByIdAsync(42))
+            .Setup(item => item.GetByIdAsync(userOrganizationId))
             .ReturnsAsync((UserOrganization?)null);
         UserOrganizationService service = CreateService(
             CreateUnitOfWork(repository),
@@ -253,7 +256,7 @@ public sealed class UserOrganizationServiceTests
             CreateUserManager());
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.EditUserOrganizationAsync(42, "new-role"));
+            () => service.EditUserOrganizationAsync(userOrganizationId, organizationId, roleId));
 
         Assert.Equal("UserOrganization not found", exception.Message);
     }
@@ -261,13 +264,16 @@ public sealed class UserOrganizationServiceTests
     [Fact]
     public async Task EditUserOrganization_throws_when_role_does_not_exist()
     {
+        const int userOrganizationId = 42;
+        const int organizationId = 24;
+        const string roleId = "non-existent-role";
         Mock<IUserOrganizationRepository> repository = new();
         repository
             .Setup(item => item.GetByIdAsync(42))
             .ReturnsAsync(CreateMembership());
         Mock<IRoleRepository> roleRepository = new();
         roleRepository
-            .Setup(item => item.GetByIdAsync("new-role"))
+            .Setup(item => item.GetByIdAsync(organizationId, roleId))
             .ReturnsAsync((AspNetRole?)null);
         UserOrganizationService service = CreateService(
             CreateUnitOfWork(repository),
@@ -276,7 +282,7 @@ public sealed class UserOrganizationServiceTests
             CreateUserManager());
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.EditUserOrganizationAsync(42, "new-role"));
+            () => service.EditUserOrganizationAsync(userOrganizationId, organizationId, roleId));
 
         Assert.Equal("Role not found", exception.Message);
         repository.Verify(item => item.PutAsync(It.IsAny<UserOrganization>()), Times.Never);
@@ -285,9 +291,11 @@ public sealed class UserOrganizationServiceTests
     [Fact]
     public async Task EditUserOrganization_updates_role_and_returns_membership_with_relationships()
     {
+        const int organizationId = 24;
+        const string roleId = "new-role";
         UserOrganization membership = CreateMembership();
         UserOrganization updatedMembership = CreateMembership();
-        updatedMembership.RoleId = "new-role";
+        updatedMembership.RoleId = roleId;
         Mock<IUserOrganizationRepository> repository = new();
         repository
             .Setup(item => item.GetByIdAsync(membership.Id))
@@ -300,15 +308,15 @@ public sealed class UserOrganizationServiceTests
             .ReturnsAsync(updatedMembership);
         Mock<IRoleRepository> roleRepository = new();
         roleRepository
-            .Setup(item => item.GetByIdAsync("new-role"))
-            .ReturnsAsync(new AspNetRole { Id = "new-role" });
+            .Setup(item => item.GetByIdAsync(organizationId, roleId))
+            .ReturnsAsync(new AspNetRole { Id = roleId });
         UserOrganizationService service = CreateService(
             CreateUnitOfWork(repository),
             repository,
             roleRepository,
             CreateUserManager());
 
-        UserOrganization result = await service.EditUserOrganizationAsync(membership.Id, "new-role");
+        UserOrganization result = await service.EditUserOrganizationAsync(membership.Id, organizationId, roleId);
 
         Assert.Equal("new-role", membership.RoleId);
         Assert.Same(updatedMembership, result);
@@ -318,6 +326,8 @@ public sealed class UserOrganizationServiceTests
     [Fact]
     public async Task EditUserOrganization_throws_when_updated_membership_cannot_be_reloaded()
     {
+        const int organizationId = 24;
+        const string roleId = "new-role";
         UserOrganization membership = CreateMembership();
         Mock<IUserOrganizationRepository> repository = new();
         repository
@@ -331,8 +341,8 @@ public sealed class UserOrganizationServiceTests
             .ReturnsAsync((UserOrganization?)null);
         Mock<IRoleRepository> roleRepository = new();
         roleRepository
-            .Setup(item => item.GetByIdAsync("new-role"))
-            .ReturnsAsync(new AspNetRole { Id = "new-role" });
+            .Setup(item => item.GetByIdAsync(organizationId, roleId))
+            .ReturnsAsync(new AspNetRole { Id = roleId });
         UserOrganizationService service = CreateService(
             CreateUnitOfWork(repository),
             repository,
@@ -340,7 +350,7 @@ public sealed class UserOrganizationServiceTests
             CreateUserManager());
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.EditUserOrganizationAsync(membership.Id, "new-role"));
+            () => service.EditUserOrganizationAsync(membership.Id, organizationId, roleId));
 
         Assert.Equal("Could not find User organization after update", exception.Message);
     }
