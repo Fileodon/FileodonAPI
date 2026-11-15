@@ -20,6 +20,7 @@ public class UserOrganizationController : ControllerBase
     [HttpGet()]
     [ProducesResponseType(typeof(List<GetUsersUserOrganizationResponse>), 200)]
     [ProducesResponseType(401)]
+    [AllowUnverifiedEmail]
     public async Task<IActionResult> GetUserOrganizations()
     {
         string? currentUserId =
@@ -38,6 +39,7 @@ public class UserOrganizationController : ControllerBase
     [ProducesResponseType(typeof(GetUserOrganizationResponse), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
+    [AllowUnverifiedEmail]
     public async Task<IActionResult> GetUserOrganizationById(int id)
     {
         var userOrganization = await _userOrgService.GetByIdAsync(id);
@@ -104,6 +106,7 @@ public class UserOrganizationController : ControllerBase
     [Permission(Infrastructure.Models.Enums.PermissionFlags.UserOrganizationRead)]
     [ProducesResponseType(typeof(List<GetUserOrganizationResponse>), 200)]
     [ProducesResponseType(403)]
+    [AllowUnverifiedEmail]
     public async Task<IActionResult> GetOrganizationUserOrganizations(int organizationId)
     {
         // TODO check permissions of user on organization

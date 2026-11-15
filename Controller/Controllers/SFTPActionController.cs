@@ -14,6 +14,7 @@ namespace Controller.Controllers
     [Route("organization/{organizationid}/[controller]/{sftpconnectionid}")]
     [ApiController]
     [Authorize]
+    [RequireVerifiedEmail]
     public class SFTPActionController : ControllerBase
     {
         // 10GB limit

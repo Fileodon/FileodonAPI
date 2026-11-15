@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
 
 [Authorize]
+[RequireVerifiedEmail]
 [Route("[controller]")]
 [ApiController]
 public class OrganizationController : ControllerBase
@@ -25,6 +26,7 @@ public class OrganizationController : ControllerBase
     // PErmissions her. skal måske rettere afkorte responsen? Ellers skal vi bare ikke permissions på dette
     [ProducesResponseType(typeof(GetOrganizationResponse), 200)]
     [ProducesResponseType(401)]
+    [AllowUnverifiedEmail]
     public async Task<IActionResult> GetOrganizationById(int organizationId)
     {
         string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -91,7 +93,7 @@ public class OrganizationController : ControllerBase
     [ProducesResponseType(401)]
     [ProducesResponseType(403)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> UpdateOrganization(int organizationId, 
+    public async Task<IActionResult> UpdateOrganization(int organizationId,
         [FromBody] EditOrganizationRequest validatedRequest)
     {
         string? userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;

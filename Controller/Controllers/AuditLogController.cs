@@ -1,4 +1,5 @@
 using Controller.DTO.AuditLog;
+using Controller.Middleware.Attribute;
 using Domain.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ namespace Controller.Controllers;
 [Authorize]
 [Route("[controller]")]
 [ApiController]
+[RequireVerifiedEmail]
 public class AuditLogController : ControllerBase
 {
     private readonly IAuditLogService _service;
