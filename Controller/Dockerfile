@@ -2,10 +2,11 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
 WORKDIR /app
+USER root
+RUN mkdir -p /app/data && chown $APP_UID /app/data
+USER $APP_UID
 EXPOSE 8080
-EXPOSE 8081
 
 
 # This stage is used to build the service project
