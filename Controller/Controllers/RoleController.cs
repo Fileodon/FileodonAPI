@@ -2,7 +2,6 @@
 using Controller.Middleware.Attribute;
 using Domain.Interface;
 using Infrastructure.Models;
-using Infrastructure.Models.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
