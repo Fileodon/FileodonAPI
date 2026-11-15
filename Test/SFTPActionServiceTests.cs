@@ -16,13 +16,13 @@ public sealed class SFTPActionServiceTests
     {
         SFTPConnection connection = CreateConnection();
         Mock<ISFTPRepository> repository = new();
-        List<SFTPActionDeleteResult> expected = [new(StatusCode.Ok, "/file.txt")];
+        SFTPActionDeleteResult expected = new(StatusCode.Ok, ["/file.txt"]);
         repository
             .Setup(item => item.DeleteAsync(connection, "/file.txt", It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         SFTPActionService service = CreateService(repository);
 
-        List<SFTPActionDeleteResult> result =
+        SFTPActionDeleteResult result =
             await service.DeleteAsync(connection, "/file.txt", CancellationToken.None);
 
         Assert.Same(expected, result);

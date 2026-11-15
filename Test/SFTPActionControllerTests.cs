@@ -27,12 +27,13 @@ public sealed class SFTPActionControllerTests
         actionService
             .Setup(service => service.DeleteAsync(
                 It.IsAny<SFTPConnection>(), "/file.txt", It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new SFTPActionDeleteResult(StatusCode.Ok, "/file.txt")]);
+            .ReturnsAsync(new SFTPActionDeleteResult(StatusCode.Ok, ["/file.txt"]));
 
         IActionResult result = await controller.DeleteFileAsync(OrganizationId, ConnectionId, "/file.txt");
 
         OkObjectResult response = Assert.IsType<OkObjectResult>(result);
-        Assert.Single(Assert.IsType<IEnumerable<SFTPActionDeleteResponse>>(response.Value, false));
+        SFTPActionDeleteResponse deleteResponse = Assert.IsType<SFTPActionDeleteResponse>(response.Value);
+        Assert.Equal(["/file.txt"], deleteResponse.DeletedItems);
     }
 
     [Fact]

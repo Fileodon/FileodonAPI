@@ -4,6 +4,7 @@ namespace Infrastructure.Models.DTO.SFTPAction;
 
 public record class SFTPActionDeleteResult(
     StatusCode StatusCode,
-    string RemotePath,
-    string? ErrorMessage = null
+    List<string> DeletedItems,
+    string? ErrorMessage = null,
+    string? RemotePath = null
 );

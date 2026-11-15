@@ -8,8 +8,9 @@ public record class SFTPActionDeleteResponse
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public required StatusCode StatusCode { get; init; }
-    public required string RemotePath { get; init; }
+    public required List<string> DeletedItems { get; init; }
     public string? ErrorMessage { get; init; } = null;
+    public string? RemotePath { get; init; } = null;
 }
 
 public static class SFTPActionDeleteResponseExtensions
@@ -19,8 +20,9 @@ public static class SFTPActionDeleteResponseExtensions
         return new SFTPActionDeleteResponse
         {
             StatusCode = result.StatusCode,
-            RemotePath = result.RemotePath,
-            ErrorMessage = result.ErrorMessage
+            DeletedItems = result.DeletedItems,
+            ErrorMessage = result.ErrorMessage,
+            RemotePath = result.RemotePath
         };
     }
 }

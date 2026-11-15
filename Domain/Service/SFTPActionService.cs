@@ -92,7 +92,7 @@ public class SFTPActionService : ISFTPActionService
         return await _sFTPRepository.RenameFileAsync(connection, sourceFilePath, destinationFilePath, cancellationToken);
     }
 
-    public async Task<List<SFTPActionDeleteResult>> DeleteAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
+    public async Task<SFTPActionDeleteResult> DeleteAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
     {
         return await _sFTPRepository.DeleteAsync(connection, remoteFilePath, cancellationToken);
     }
