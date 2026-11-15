@@ -4,5 +4,5 @@ namespace Controller.DTO.SFTPConnection;
 
 public record SFTPConnectionStatusUpdateRequest(
     int SFTPConnectionId,
-    SFTPConnectionStatus NewStatus
+    SFTPConnectionStatus NewStatus,
 );

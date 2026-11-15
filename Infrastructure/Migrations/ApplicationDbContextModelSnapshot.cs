@@ -307,7 +307,6 @@ namespace Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("DisplayName")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("display_name");
 
@@ -320,7 +319,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("organization_id");
 
-                    b.Property<int>("Port")
+                    b.Property<int?>("Port")
                         .HasColumnType("integer")
                         .HasColumnName("port");
 

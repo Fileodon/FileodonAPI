@@ -45,12 +45,11 @@ public class SFTPConnectionAuthCodeRepository : BaseRepository<SFTPConnectionAut
     /// <param name="authCode"></param>
     /// <param name="organizationId"></param>
     /// <returns></returns>
-    public Task<SFTPConnectionAuthCode?> GetAuthCodeAsync(string authCode, int organizationId)
+    public Task<SFTPConnectionAuthCode?> GetAuthCodeAsync(string authCode)
     {
         return _context.SFTPConnectionAuthCodes
             .Where(ac =>
-                ac.VerificationCode.ToLower() == authCode.ToLower() &&
-                ac.Organization!.Id == organizationId)
+                ac.VerificationCode.ToLower() == authCode.ToLower())
             .FirstOrDefaultAsync();
     }
 }

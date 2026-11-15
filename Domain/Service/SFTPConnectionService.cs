@@ -44,7 +44,7 @@ public class SFTPConnectionService : ISFTPConnectionService
         }
     }
 
-    public async Task<MutationEnvelope<SFTPConnection>> AddSFTPConnectionAsync(string authCode, int organizationId, string displayName, string host, int port)
+    public async Task<MutationEnvelope<SFTPConnection>> AddSFTPConnectionAsync(string authCode, int organizationId, string? displayName, string host, int? port)
     {
         await _unitOfWork.BeginTransactionAsync();
         try
@@ -130,7 +130,7 @@ public class SFTPConnectionService : ISFTPConnectionService
         {
             return new MutationEnvelope<SFTPConnection>(MutationStatus.NotFound, default);
         }
-        
+
         if (sftpConnectionStatus.PublicKey is not null)
         {
             byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(sftpConnectionStatus.PublicKey));
@@ -224,9 +224,9 @@ public class SFTPConnectionService : ISFTPConnectionService
         }
     }
 
-    public async Task<MutationEnvelope<SFTPConnectionAuthCode>> GetSFTPConnectionAuthCodeAsync(string authCode, int organizationId)
+    public async Task<MutationEnvelope<SFTPConnectionAuthCode>> GetSFTPConnectionAuthCodeAsync(string authCode)
     {
-        SFTPConnectionAuthCode? sFTPConnectionAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.GetAuthCodeAsync(authCode, organizationId);
+        SFTPConnectionAuthCode? sFTPConnectionAuthCode = await _unitOfWork.SFTPConnectionAuthCodeRepository.GetAuthCodeAsync(authCode);
 
         if (sFTPConnectionAuthCode == null)
         {

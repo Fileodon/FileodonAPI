@@ -189,29 +189,20 @@ namespace Controller.Controllers
             return Ok(result.Data.ToDTO());
         }
 
-        [HttpPost]
-        [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
-        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
+
+        [HttpGet("getCode")]
+        [ProducesResponseType(typeof(SFTPConnectionAuthCodeResponse), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        [AllowAnonymous]
-        public async Task<IActionResult> AddServer(int organizationid, [FromBody] SFTPConnectionCreateRequest request)
+        public async Task<IActionResult> GetCode(int organizationid)
         {
-            MutationEnvelope<SFTPConnectionAuthCode> AuthCode = await _sFTPConnectionService.GetSFTPConnectionAuthCodeAsync(request.AuthCode, organizationid);
-            if (AuthCode.Status == MutationStatus.NotFound || AuthCode.Data is null)
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
             {
-                return NotFound();
+                return Unauthorized("User ID claim is missing.");
             }
-            if (AuthCode.Data.ExpiresAt < DateTime.UtcNow)
-            {
-                return Forbid("Auth code has expired.");
-            }
-            
-            HttpContext.User.AddIdentity(new System.Security.Claims.ClaimsIdentity(
-                new[] { new System.Security.Claims.Claim("id", AuthCode.Data.UserId.ToString()) }));
 
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(AuthCode.Data.VerificationCode, organizationid, request.DisplayName, request.Host, request.Port);
+            MutationEnvelope<SFTPConnectionAuthCode> result = await _sFTPConnectionService.GenerateVerificationCodeAsync(organizationid, userId);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
@@ -221,6 +212,43 @@ namespace Controller.Controllers
             {
                 return Forbid();
             }
+            return Ok(result.Data.ToDTO());
+        }
+
+        // Fjerner {orgid} fra url
+        [HttpPost("~/organization/[controller]")]
+        [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        [AllowAnonymous]
+        public async Task<IActionResult> AddServer([FromBody] SFTPConnectionCreateRequest request)
+        {
+            MutationEnvelope<SFTPConnectionAuthCode> AuthCode = await _sFTPConnectionService.GetSFTPConnectionAuthCodeAsync(request.AuthCode);
+            if (AuthCode.Status == MutationStatus.NotFound || AuthCode.Data is null)
+            {
+                return NotFound();
+            }
+            if (AuthCode.Data.ExpiresAt < DateTime.UtcNow)
+            {
+                return Forbid("Auth code has expired.");
+            }
+
+            HttpContext.User.AddIdentity(new System.Security.Claims.ClaimsIdentity(
+                new[] { new System.Security.Claims.Claim("id", AuthCode.Data.UserId.ToString()) }));
+
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.AddSFTPConnectionAsync(AuthCode.Data.VerificationCode, AuthCode.Data.OrganizationId, request.DisplayName, request.Host, request.Port);
+
+            if (result.Status == MutationStatus.NotFound || result.Data is null)
+            {
+                return NotFound();
+            }
+            if (result.Status == MutationStatus.Forbidden)
+            {
+                return Forbid();
+            }
+
             return Ok(result.Data.ToDTO());
         }
 

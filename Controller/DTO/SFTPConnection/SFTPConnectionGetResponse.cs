@@ -12,7 +12,7 @@ public record BaseSFTPConnectionGetResponse
 public record DetailedSFTPConnectionGetResponse : BaseSFTPConnectionGetResponse
 {
     public required string Host { get; init; }
-    public required int Port { get; init; }
+    public int? Port { get; init; }
     public string? PublicKey { get; init; }
 }
 

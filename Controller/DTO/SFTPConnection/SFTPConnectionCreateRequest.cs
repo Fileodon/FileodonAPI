@@ -2,7 +2,7 @@ namespace Controller.DTO.SFTPConnection;
 
 public record SFTPConnectionCreateRequest(
     string AuthCode,
-    string DisplayName,
+    string? DisplayName,
     string Host,
-    int Port
+    int? Port
 );
