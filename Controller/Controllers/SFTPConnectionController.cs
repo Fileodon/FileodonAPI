@@ -189,32 +189,6 @@ namespace Controller.Controllers
             return Ok(result.Data.ToDTO());
         }
 
-
-        [HttpGet("getCode")]
-        [ProducesResponseType(typeof(SFTPConnectionAuthCodeResponse), 200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> GetCode(int organizationid)
-        {
-            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
-            {
-                return Unauthorized("User ID claim is missing.");
-            }
-
-            MutationEnvelope<SFTPConnectionAuthCode> result = await _sFTPConnectionService.GenerateVerificationCodeAsync(organizationid, userId);
-
-            if (result.Status == MutationStatus.NotFound || result.Data is null)
-            {
-                return NotFound();
-            }
-            if (result.Status == MutationStatus.Forbidden)
-            {
-                return Forbid();
-            }
-            return Ok(result.Data.ToDTO());
-        }
-
         // Fjerner {orgid} fra url
         [HttpPost("~/organization/[controller]")]
         [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
