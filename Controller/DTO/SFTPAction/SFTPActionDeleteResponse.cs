@@ -10,7 +10,7 @@ public record class SFTPActionDeleteResponse
     public required StatusCode StatusCode { get; init; }
     public required List<string> DeletedItems { get; init; }
     public string? ErrorMessage { get; init; } = null;
-    public string? RemotePath { get; init; } = null;
+    public string? FailedRemotePath { get; init; } = null;
 }
 
 public static class SFTPActionDeleteResponseExtensions
@@ -22,7 +22,7 @@ public static class SFTPActionDeleteResponseExtensions
             StatusCode = result.StatusCode,
             DeletedItems = result.DeletedItems,
             ErrorMessage = result.ErrorMessage,
-            RemotePath = result.RemotePath
+            FailedRemotePath = result.FailedRemotePath
         };
     }
 }

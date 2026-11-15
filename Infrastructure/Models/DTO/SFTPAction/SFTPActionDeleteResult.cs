@@ -6,5 +6,5 @@ public record class SFTPActionDeleteResult(
     StatusCode StatusCode,
     List<string> DeletedItems,
     string? ErrorMessage = null,
-    string? RemotePath = null
+    string? FailedRemotePath = null
 );
