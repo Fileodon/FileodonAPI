@@ -263,7 +263,7 @@ namespace Controller.Controllers
         }
 
         [HttpDelete("delete")]
-        [ProducesResponseType(typeof(SFTPActionDeleteResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(List<SFTPActionDeleteResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -285,9 +285,9 @@ namespace Controller.Controllers
                 return Forbid("You do not have permission to access this SFTP connection.");
             }
 
-            SFTPActionDeleteResult deleteResult = await _sftpActionService.DeleteAsync(connection.Data, remoteFilePath, HttpContext.RequestAborted);
+            List<SFTPActionDeleteResult> deleteResult = await _sftpActionService.DeleteAsync(connection.Data, remoteFilePath, HttpContext.RequestAborted);
 
-            return Ok(deleteResult.ToResponse());
+            return Ok(deleteResult.Select(result => result.ToResponse()));
         }
     }
 }
