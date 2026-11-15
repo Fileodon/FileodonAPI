@@ -10,8 +10,7 @@ public record class SFTPFileInfo(
     DateTime LastAccessTime,
     DateTime LastWriteTime,
     long Size,
-    bool IsDirectory,
-    bool hasAccess
+    bool IsDirectory
 );
 
 public record class SFTPActionListFilesResponse
