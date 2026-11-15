@@ -16,7 +16,6 @@ public sealed class SFTPRepository : ISFTPRepository
     private readonly ICryptoService _cryptoService;
     private readonly ISFTPUploadJobStore _jobStore;
     private readonly ILogger<SFTPRepository> _logger;
-    private readonly SftpClient _sftpClient;
 
     public SFTPRepository(
         ICryptoService cryptoService,
