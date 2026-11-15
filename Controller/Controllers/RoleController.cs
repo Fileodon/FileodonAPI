@@ -9,6 +9,7 @@ namespace Controller.Controllers;
 [Authorize]
 [ApiController]
 [Route("/organization/{organizationId}/[controller]")]
+[RequireVerifiedEmail]
 public class RoleController : ControllerBase
 {
     private readonly IRoleService _roleService;
@@ -19,6 +20,7 @@ public class RoleController : ControllerBase
     [HttpGet]
     [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleRead)]
     [ProducesResponseType(typeof(List<GetRoleResponse>), 200)]
+    [AllowUnverifiedEmail]
     public async Task<IActionResult> GetAllRolesAsync(int organizationId)
     {
         var roles = await _roleService.GetAllAsync(organizationId);
@@ -27,6 +29,7 @@ public class RoleController : ControllerBase
     [HttpGet("{id}")]
     [Permission(Infrastructure.Models.Enums.PermissionFlags.RoleRead)]
     [ProducesResponseType(typeof(GetRoleResponse), 200)]
+    [AllowUnverifiedEmail]
     public async Task<IActionResult> GetRoleByIdAsync(int organizationId, string id)
     {
         var role = await _roleService.GetByIdAsync(organizationId, id);

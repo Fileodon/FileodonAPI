@@ -135,6 +135,8 @@ builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISFTPActionService, SFTPActionService>();
+builder.Services.AddScoped<IAuthorizationHandler, EmailVerifiedHandler>();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, VerifiedEmailResultHandler>();
 #endregion
 #region FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
@@ -240,7 +242,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("EmailVerified", policy =>
+    {
+        policy.RequireAuthenticatedUser()
+            .AddRequirements(new EmailVerifiedRequirement());
+    });
+});
 #endregion
 
 builder.Services.AddSingleton<

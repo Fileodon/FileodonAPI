@@ -1,5 +1,6 @@
 using Controller.DTO.SFTPConnection;
 using Controller.Extensions;
+using Controller.Middleware.Attribute;
 using Domain.DTO;
 using Domain.Enum;
 using Domain.Interface;
@@ -13,6 +14,7 @@ namespace Controller.Controllers
     [Route("organization/{organizationid}/[controller]")]
     [Authorize]
     [ApiController]
+    [RequireVerifiedEmail]
     public class SFTPConnectionController : ControllerBase
     {
         private readonly ISFTPConnectionService _sFTPConnectionService;
@@ -29,6 +31,7 @@ namespace Controller.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
+        [AllowUnverifiedEmail]
         public async Task<IActionResult> GetSFTPConnection(int organizationid, int sftpconnectionid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
@@ -256,6 +259,7 @@ namespace Controller.Controllers
         [ProducesResponseType(typeof(IEnumerable<BaseSFTPConnectionGetResponse>), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
+        [AllowUnverifiedEmail]
         public async Task<IActionResult> GetOrganizationSFTPConnections(int organizationid)
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
