@@ -197,7 +197,7 @@ public class SFTPConnectionService : ISFTPConnectionService
         }
     }
 
-    public async Task<MutationEnvelope<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName)
+    public async Task<MutationEnvelope<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName, int? port)
     {
         SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, organizationId, userId);
 
@@ -210,6 +210,7 @@ public class SFTPConnectionService : ISFTPConnectionService
         try
         {
             sFTPConnection.DisplayName = displayName;
+            sFTPConnection.Port = (port == null || port == 0) ? sFTPConnection.Port : port;
             SFTPConnection updatedConnection = await _unitOfWork.SFTPConnectionRepository.UpdateAsync(sFTPConnection);
 
             await _unitOfWork.SaveChangesAsync();

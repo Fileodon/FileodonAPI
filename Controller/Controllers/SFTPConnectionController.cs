@@ -87,7 +87,7 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName);
+            MutationEnvelope<SFTPConnection> result = await _sFTPConnectionService.UpdateSFTPConnectionAsync(sftpconnectionid, organizationid, userId, request.DisplayName, request.Port);
 
             if (result.Status == MutationStatus.NotFound || result.Data is null)
             {
