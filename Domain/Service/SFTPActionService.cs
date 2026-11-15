@@ -28,6 +28,11 @@ public class SFTPActionService : ISFTPActionService
         return _sFTPRepository.DownloadFileAsync(connection, remoteFilePath, cancellationToken);
     }
 
+    public Task<List<SFTPActionCreateDirectoryResult>> CreateDirectoryAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
+    {
+        return _sFTPRepository.CreateDirectoryAsync(connection, remoteDirectoryPath, cancellationToken);
+    }
+
     public async Task<Guid> EnqueueUploadAsync(
         SFTPConnection connection,
         IReadOnlyList<SFTPUploadInput> files,

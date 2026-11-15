@@ -1,7 +1,6 @@
 using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
-using Renci.SshNet.Sftp;
 
 namespace Domain.Interface;
 
@@ -13,4 +12,5 @@ public interface ISFTPActionService
     public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection);
     public Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken);
     public Task<SFTPActionDownloadResult> DownloadFileAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken);
+    public Task<List<SFTPActionCreateDirectoryResult>> CreateDirectoryAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken);
 }

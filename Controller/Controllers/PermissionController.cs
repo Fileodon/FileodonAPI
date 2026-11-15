@@ -1,6 +1,5 @@
 ﻿using Controller.DTO.Permission;
 using Domain.Interface;
-using Infrastructure.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
