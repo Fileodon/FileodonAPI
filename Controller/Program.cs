@@ -1,5 +1,7 @@
 #region Using Directives
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
@@ -268,7 +270,12 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 
