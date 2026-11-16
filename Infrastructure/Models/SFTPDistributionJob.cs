@@ -14,6 +14,8 @@ public sealed class SFTPDistributionJob
     public long TotalBytes { get; set; }
     public required string FilesJson { get; set; }
     public required string DestinationsJson { get; set; }
+    public required string ProgressJson { get; set; }
+    public string? Error { get; set; }
 
     public Organization Organization { get; set; } = null!;
     public User User { get; set; } = null!;

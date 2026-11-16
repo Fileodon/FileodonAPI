@@ -168,6 +168,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.Property(job => job.UserId).IsRequired();
             entity.Property(job => job.FilesJson).IsRequired();
             entity.Property(job => job.DestinationsJson).IsRequired();
+            entity.Property(job => job.ProgressJson).IsRequired();
             entity.Property(job => job.CreatedAt).HasColumnType("timestamp with time zone");
             entity.Property(job => job.ReadyAt).HasColumnType("timestamp with time zone");
             entity.HasOne(job => job.Organization)

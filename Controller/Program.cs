@@ -202,6 +202,7 @@ builder.Services.AddSingleton<ISFTPUploadQueue, SFTPUploadQueue>();
 builder.Services.AddScoped<ISFTPUploadSender, SFTPUploadSender>();
 builder.Services.AddSingleton<ISFTPRepository, SFTPRepository>();
 builder.Services.AddHostedService<SFTPUploadWorker>();
+builder.Services.AddHostedService<SFTPDistributionWorker>();
 #endregion
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path

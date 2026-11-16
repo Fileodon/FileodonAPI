@@ -112,32 +112,8 @@ namespace Controller.Controllers
                 return Unauthorized("User ID claim is missing.");
             }
 
-            var locations = distributeRequest.Locations;
-
-            if (distributeRequest.Files.Count == 0)
-            {
-                return BadRequest("At least one file must be uploaded.");
-            }
-            if (locations.Count == 0)
-            {
-                return BadRequest("At least one destination must be specified.");
-            }
-
-            if (distributeRequest.Files.Any(file => string.IsNullOrWhiteSpace(file.FileName)))
-            {
-                return BadRequest("Every uploaded file must have a file name.");
-            }
-            if (locations.Any(location => string.IsNullOrWhiteSpace(location.RemotePath)))
-            {
-                return BadRequest("Every destination must have a remote path.");
-            }
-            if (locations
-                .Select(location => location.SftpConnectionId)
-                .Distinct()
-                .Count() != locations.Count)
-            {
-                return BadRequest("Each SFTP connection may only be selected once.");
-            }
+            List<SFTPActionDistributeLocation> locations = distributeRequest.Locations;
+            List<IFormFile> files = distributeRequest.Files;
 
             IEnumerable<SFTPConnection> accessibleConnections =
                 await _sftpConnectionService.GetOrganizationSFTPConnectionsAsync(organizationid, userId);
@@ -148,7 +124,7 @@ namespace Controller.Controllers
                 return Forbid("One or more selected SFTP connections cannot be accessed.");
             }
 
-            List<SFTPUploadInput> files = [.. distributeRequest.Files
+            List<SFTPUploadInput> inputFiles = [.. files
                 .Select(file => new SFTPUploadInput(
                     file.OpenReadStream(),
                     Path.GetFileName(file.FileName),
@@ -159,7 +135,7 @@ namespace Controller.Controllers
                     organizationid,
                     userId,
                     [.. locations.Select(location => new SFTPDistributionLocation(location.SftpConnectionId, location.RemotePath))],
-                    files,
+                    inputFiles,
                     HttpContext.RequestAborted);
 
                 SFTPDistributionJobSnapshot? snapshot = await _sftpActionService.GetDistributionJobAsync(
@@ -174,7 +150,7 @@ namespace Controller.Controllers
             }
             finally
             {
-                foreach (SFTPUploadInput file in files)
+                foreach (SFTPUploadInput file in inputFiles)
                 {
                     await file.Content.DisposeAsync();
                 }

@@ -451,6 +451,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("destinations_json");
 
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
                     b.Property<string>("FilesJson")
                         .IsRequired()
                         .HasColumnType("text")
@@ -459,6 +463,11 @@ namespace Infrastructure.Migrations
                     b.Property<int>("OrganizationId")
                         .HasColumnType("integer")
                         .HasColumnName("organization_id");
+
+                    b.Property<string>("ProgressJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("progress_json");
 
                     b.Property<DateTimeOffset?>("ReadyAt")
                         .HasColumnType("timestamp with time zone")

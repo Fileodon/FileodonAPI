@@ -12,6 +12,13 @@ public sealed record SFTPDistributionDestination(
 
 public sealed record SFTPDistributionFile(string LocalPath, string RemotePath, long Length);
 
+public sealed record SFTPDistributionDestinationProgress(
+    int SftpConnectionId,
+    SFTPDistributionDestinationStatus Status,
+    int CompletedFiles,
+    long UploadedBytes,
+    string? Error);
+
 public sealed record SFTPDistributionJobSnapshot(
     Guid JobId,
     SFTPDistributionJobStatus Status,
@@ -19,4 +26,17 @@ public sealed record SFTPDistributionJobSnapshot(
     long TotalBytes,
     IReadOnlyList<SFTPDistributionDestination> Destinations,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? ReadyAt);
+    DateTimeOffset? ReadyAt,
+    int CompletedFiles,
+    long UploadedBytes,
+    double ProgressPercentage,
+    IReadOnlyList<SFTPDistributionDestinationProgress> DestinationProgress,
+    string? Error);
+
+public sealed record SFTPDistributionJobWorkItem(
+    Guid JobId,
+    int OrganizationId,
+    string UserId,
+    IReadOnlyList<SFTPDistributionFile> Files,
+    IReadOnlyList<SFTPDistributionDestination> Destinations,
+    List<SFTPDistributionDestinationProgress> Progress);

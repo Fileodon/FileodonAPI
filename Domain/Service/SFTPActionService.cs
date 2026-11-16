@@ -60,6 +60,14 @@ public class SFTPActionService : ISFTPActionService
             }
 
             List<SFTPDistributionDestination> destinations = BuildDistributionPlan(locations);
+            List<SFTPDistributionDestinationProgress> progress = [.. destinations
+                .Where(destination => destination.Depth == 0)
+                .Select(destination => new SFTPDistributionDestinationProgress(
+                    destination.SftpConnectionId,
+                    SFTPDistributionDestinationStatus.Pending,
+                    0,
+                    0,
+                    null))];
             SFTPDistributionJob job = new()
             {
                 Id = jobId,
@@ -70,7 +78,8 @@ public class SFTPActionService : ISFTPActionService
                 TotalFiles = stagedFiles.Count,
                 TotalBytes = stagedFiles.Sum(file => file.Length),
                 FilesJson = JsonSerializer.Serialize(stagedFiles),
-                DestinationsJson = JsonSerializer.Serialize(destinations)
+                DestinationsJson = JsonSerializer.Serialize(destinations),
+                ProgressJson = JsonSerializer.Serialize(progress)
             };
 
             await _distributionJobRepository.CreateAndMarkReadyAsync(job, cancellationToken);

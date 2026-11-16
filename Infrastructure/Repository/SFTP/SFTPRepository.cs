@@ -126,6 +126,49 @@ public sealed class SFTPRepository : ISFTPRepository
                     _logger.LogError(ex, "Failed to delete local temporary file {LocalPath} after SFTP upload job {JobId}", file.LocalPath, workItem.JobId);
                 }
             }
+
+        }
+    }
+
+    public async Task UploadDistributionAsync(
+        SFTPConnection connection,
+        SFTPDistributionDestination destination,
+        IReadOnlyList<SFTPDistributionFile> files,
+        Action<int, long> progress,
+        CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
+            {
+                SFTPDistributionFile file = files[fileIndex];
+                await using FileStream input = File.OpenRead(file.LocalPath);
+                string remoteFilePath = Path.Combine(
+                    destination.RemotePath,
+                    Path.GetFileName(file.RemotePath)).Replace("\\", "/");
+                var uploadProgress = new Progress<UploadFileProgressReport>(report =>
+                    progress(fileIndex, (long)report.TotalBytesUploaded));
+
+                await client.UploadFileAsync(
+                    input,
+                    remoteFilePath,
+                    canOverride: true,
+                    uploadProgress,
+                    cancellationToken);
+                progress(fileIndex, file.Length);
+            }
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+
+            client.Dispose();
         }
     }
 

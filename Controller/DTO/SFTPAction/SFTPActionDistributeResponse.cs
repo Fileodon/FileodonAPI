@@ -10,7 +10,12 @@ public sealed record SFTPActionDistributeResponse(
     long TotalBytes,
     IReadOnlyList<SFTPDistributionDestination> Destinations,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? ReadyAt);
+    DateTimeOffset? ReadyAt,
+    int CompletedFiles,
+    long UploadedBytes,
+    double ProgressPercentage,
+    IReadOnlyList<SFTPDistributionDestinationProgress> DestinationProgress,
+    string? Error);
 
 public static class SFTPActionDistributeResponseExtensions
 {
@@ -22,5 +27,10 @@ public static class SFTPActionDistributeResponseExtensions
             snapshot.TotalBytes,
             snapshot.Destinations,
             snapshot.CreatedAt,
-            snapshot.ReadyAt);
+            snapshot.ReadyAt,
+            snapshot.CompletedFiles,
+            snapshot.UploadedBytes,
+            snapshot.ProgressPercentage,
+            snapshot.DestinationProgress,
+            snapshot.Error);
 }

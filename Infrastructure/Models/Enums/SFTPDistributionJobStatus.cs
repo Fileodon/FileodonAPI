@@ -3,5 +3,8 @@ namespace Infrastructure.Models.Enums;
 public enum SFTPDistributionJobStatus
 {
     Pending,
-    Ready
+    Ready,
+    Processing,
+    Completed,
+    Failed
 }
