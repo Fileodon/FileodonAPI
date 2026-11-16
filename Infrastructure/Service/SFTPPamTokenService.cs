@@ -26,8 +26,9 @@ public sealed class SFTPPamTokenService(ICryptoService cryptoService) : ISFTPPam
             new("job_id", jobId.ToString("D")),
             new("destination_connection_id", connection.Id.ToString())
         ];
+        RsaSecurityKey signingKey = new(rsa.ExportParameters(includePrivateParameters: true));
         SigningCredentials credentials = new(
-            new RsaSecurityKey(rsa),
+            signingKey,
             SecurityAlgorithms.RsaSha256);
         JwtSecurityToken token = new(
             issuer: "Fileodon Master Server",

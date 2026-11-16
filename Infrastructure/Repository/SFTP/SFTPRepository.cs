@@ -173,6 +173,61 @@ public sealed class SFTPRepository : ISFTPRepository
         }
     }
 
+    public async Task UploadDistributionFromParentAsync(
+        SFTPConnection parentConnection,
+        SFTPDistributionDestination parent,
+        SFTPConnection destinationConnection,
+        SFTPDistributionDestination destination,
+        IReadOnlyList<SFTPDistributionFile> files,
+        string pamToken,
+        Action<int, long> progress,
+        CancellationToken cancellationToken)
+    {
+        using SftpClient sourceClient = CreateSftpClient(parentConnection);
+        using SftpClient destinationClient = CreateSftpClient(destinationConnection, pamToken);
+
+        try
+        {
+            await sourceClient.ConnectAsync(cancellationToken);
+            await destinationClient.ConnectAsync(cancellationToken);
+
+            for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
+            {
+                SFTPDistributionFile file = files[fileIndex];
+                string fileName = Path.GetFileName(file.RemotePath);
+                string sourcePath = Path.Combine(parent.RemotePath, fileName).Replace("\\", "/");
+                string destinationPath = Path.Combine(destination.RemotePath, fileName).Replace("\\", "/");
+                await using Stream input = await sourceClient.OpenAsync(
+                    sourcePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    cancellationToken);
+                var uploadProgress = new Progress<UploadFileProgressReport>(report =>
+                    progress(fileIndex, (long)report.TotalBytesUploaded));
+
+                await destinationClient.UploadFileAsync(
+                    input,
+                    destinationPath,
+                    canOverride: true,
+                    uploadProgress,
+                    cancellationToken);
+                progress(fileIndex, file.Length);
+            }
+        }
+        finally
+        {
+            if (sourceClient.IsConnected)
+            {
+                sourceClient.Disconnect();
+            }
+
+            if (destinationClient.IsConnected)
+            {
+                destinationClient.Disconnect();
+            }
+        }
+    }
+
     public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
         SftpClient client = CreateSftpClient(connection);

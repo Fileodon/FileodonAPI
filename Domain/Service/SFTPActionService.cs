@@ -70,9 +70,8 @@ public class SFTPActionService : ISFTPActionService
             }
 
             List<SFTPDistributionDestination> destinations = BuildDistributionPlan(locations);
-            List<SFTPDistributionDestinationProgress> progress = [.. destinations
-                .Where(destination => destination.Depth == 0)
-                .Select(destination => new SFTPDistributionDestinationProgress(
+            List<SFTPDistributionDestinationProgress> progress = [.. destinations.Select(destination =>
+                new SFTPDistributionDestinationProgress(
                     destination.SftpConnectionId,
                     SFTPDistributionDestinationStatus.Pending,
                     0,

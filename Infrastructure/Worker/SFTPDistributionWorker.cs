@@ -59,7 +59,7 @@ public sealed class SFTPDistributionWorker(
         SFTPDistributionJobWorkItem workItem,
         CancellationToken cancellationToken)
     {
-        List<SFTPDistributionDestination> destinations = [.. workItem.Destinations.Where(destination => destination.Depth == 0)];
+        List<SFTPDistributionDestination> destinations = [.. workItem.Destinations];
         Dictionary<int, SFTPConnection> connections;
         await using (AsyncServiceScope scope = scopeFactory.CreateAsyncScope())
         {
@@ -75,13 +75,14 @@ public sealed class SFTPDistributionWorker(
 
         if (connections.Count != destinations.Count)
         {
-            throw new InvalidOperationException("One or more initial SFTP destinations could not be resolved.");
+            throw new InvalidOperationException("One or more SFTP destinations could not be resolved.");
         }
 
         object progressLock = new();
         Dictionary<int, long[]> uploadedByFile = destinations.ToDictionary(
             destination => destination.SftpConnectionId,
             _ => new long[workItem.Files.Count]);
+        bool hasFailures = false;
         using CancellationTokenSource progressCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         Task progressTask = PersistProgressLoopAsync(
             workItem.JobId,
@@ -91,29 +92,47 @@ public sealed class SFTPDistributionWorker(
 
         try
         {
-            foreach (SFTPDistributionDestination destination in destinations)
+            foreach (int depth in destinations.Select(destination => destination.Depth).Distinct().OrderBy(value => value))
             {
-                lock (progressLock)
+                foreach (SFTPDistributionDestination destination in destinations.Where(item => item.Depth == depth))
                 {
-                    UpdateDestination(
-                        workItem.Progress,
-                        destination.SftpConnectionId,
-                        SFTPDistributionDestinationStatus.Processing,
-                        uploadedByFile[destination.SftpConnectionId],
-                        workItem.Files);
-                }
+                    SFTPDistributionDestination? parent = destination.ParentConnectionId is null
+                        ? null
+                        : destinations.First(item => item.SftpConnectionId == destination.ParentConnectionId);
+                    if (parent is not null &&
+                        GetProgress(workItem.Progress, parent.SftpConnectionId).Status !=
+                        SFTPDistributionDestinationStatus.Completed)
+                    {
+                        lock (progressLock)
+                        {
+                            UpdateDestination(
+                                workItem.Progress,
+                                destination.SftpConnectionId,
+                                SFTPDistributionDestinationStatus.Failed,
+                                uploadedByFile[destination.SftpConnectionId],
+                                workItem.Files,
+                                "Parent destination did not complete successfully.");
+                        }
+                        hasFailures = true;
+                        continue;
+                    }
 
-                try
-                {
-                    string pamToken = pamTokenService.CreateToken(
-                        connections[destination.SftpConnectionId],
-                        workItem.JobId);
-                    await sftpRepository.UploadDistributionAsync(
-                        connections[destination.SftpConnectionId],
-                        destination,
-                        workItem.Files,
-                        pamToken,
-                        (fileIndex, uploadedBytes) =>
+                    lock (progressLock)
+                    {
+                        UpdateDestination(
+                            workItem.Progress,
+                            destination.SftpConnectionId,
+                            SFTPDistributionDestinationStatus.Processing,
+                            uploadedByFile[destination.SftpConnectionId],
+                            workItem.Files);
+                    }
+
+                    try
+                    {
+                        string pamToken = pamTokenService.CreateToken(
+                            connections[destination.SftpConnectionId],
+                            workItem.JobId);
+                        Action<int, long> progress = (fileIndex, uploadedBytes) =>
                         {
                             lock (progressLock)
                             {
@@ -127,33 +146,56 @@ public sealed class SFTPDistributionWorker(
                                     uploadedByFile[destination.SftpConnectionId],
                                     workItem.Files);
                             }
-                        },
-                        cancellationToken);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
+                        };
+
+                        if (parent is null)
+                        {
+                            await sftpRepository.UploadDistributionAsync(
+                                connections[destination.SftpConnectionId],
+                                destination,
+                                workItem.Files,
+                                pamToken,
+                                progress,
+                                cancellationToken);
+                        }
+                        else
+                        {
+                            await sftpRepository.UploadDistributionFromParentAsync(
+                                connections[parent.SftpConnectionId],
+                                parent,
+                                connections[destination.SftpConnectionId],
+                                destination,
+                                workItem.Files,
+                                pamToken,
+                                progress,
+                                cancellationToken);
+                        }
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        lock (progressLock)
+                        {
+                            UpdateDestination(
+                                workItem.Progress,
+                                destination.SftpConnectionId,
+                                SFTPDistributionDestinationStatus.Failed,
+                                uploadedByFile[destination.SftpConnectionId],
+                                workItem.Files,
+                                ex.Message);
+                        }
+                        hasFailures = true;
+                        continue;
+                    }
+
                     lock (progressLock)
                     {
                         UpdateDestination(
                             workItem.Progress,
                             destination.SftpConnectionId,
-                            SFTPDistributionDestinationStatus.Failed,
+                            SFTPDistributionDestinationStatus.Completed,
                             uploadedByFile[destination.SftpConnectionId],
-                            workItem.Files,
-                            ex.Message);
+                            workItem.Files);
                     }
-
-                    throw;
-                }
-
-                lock (progressLock)
-                {
-                    UpdateDestination(
-                        workItem.Progress,
-                        destination.SftpConnectionId,
-                        SFTPDistributionDestinationStatus.Completed,
-                        uploadedByFile[destination.SftpConnectionId],
-                        workItem.Files);
                 }
             }
 
@@ -161,9 +203,9 @@ public sealed class SFTPDistributionWorker(
             await progressTask;
             await UpdateJobAsync(
                 workItem.JobId,
-                SFTPDistributionJobStatus.Completed,
+                hasFailures ? SFTPDistributionJobStatus.Failed : SFTPDistributionJobStatus.Completed,
                 workItem.Progress,
-                null,
+                hasFailures ? "One or more distribution destinations failed." : null,
                 cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -276,4 +318,9 @@ public sealed class SFTPDistributionWorker(
         };
         progress[index] = updated;
     }
+
+    private static SFTPDistributionDestinationProgress GetProgress(
+        IReadOnlyList<SFTPDistributionDestinationProgress> progress,
+        int connectionId) =>
+        progress.First(item => item.SftpConnectionId == connectionId);
 }
