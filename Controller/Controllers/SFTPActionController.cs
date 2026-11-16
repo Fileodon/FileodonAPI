@@ -122,7 +122,7 @@ namespace Controller.Controllers
         }
 
         [HttpGet("list")]
-        [ProducesResponseType(typeof(IEnumerable<SFTPActionListFilesResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(SFTPActionListFilesResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
