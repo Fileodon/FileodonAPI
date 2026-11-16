@@ -134,10 +134,11 @@ public sealed class SFTPRepository : ISFTPRepository
         SFTPConnection connection,
         SFTPDistributionDestination destination,
         IReadOnlyList<SFTPDistributionFile> files,
+        string pamToken,
         Action<int, long> progress,
         CancellationToken cancellationToken)
     {
-        SftpClient client = CreateSftpClient(connection);
+        SftpClient client = CreateSftpClient(connection, pamToken);
 
         try
         {
@@ -575,7 +576,7 @@ public sealed class SFTPRepository : ISFTPRepository
         return DeleteFailure(StatusCode.Failure, remotePath, $"An unexpected SFTP error occurred: {exception.Message}", deletedItems);
     }
 
-    private SftpClient CreateSftpClient(SFTPConnection connection)
+    private SftpClient CreateSftpClient(SFTPConnection connection, string? pamToken = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
         byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
@@ -583,6 +584,17 @@ public sealed class SFTPRepository : ISFTPRepository
         using var keyStream = new MemoryStream(Encoding.UTF8.GetBytes(pem));
         PrivateKeyFile privateKey = new(keyStream);
 
-        return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
+        if (pamToken is null)
+        {
+            return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
+        }
+
+        ConnectionInfo connectionInfo = new(
+            connection.Host,
+            connection.Port ?? 22,
+            "fileodon",
+            new PrivateKeyAuthenticationMethod("fileodon", privateKey),
+            new PasswordAuthenticationMethod("fileodon", pamToken));
+        return new SftpClient(connectionInfo);
     }
 }

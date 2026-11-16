@@ -12,6 +12,7 @@ public interface ISFTPRepository
         SFTPConnection connection,
         SFTPDistributionDestination destination,
         IReadOnlyList<SFTPDistributionFile> files,
+        string pamToken,
         Action<int, long> progress,
         CancellationToken cancellationToken);
     public Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken);

@@ -15,13 +15,21 @@ public class SFTPActionService : ISFTPActionService
     private readonly ILogger<SFTPActionService> _logger;
     private readonly ISFTPRepository _sFTPRepository;
     private readonly ISFTPUploadSender _uploadSender;
-    private readonly ISFTPDistributionJobRepository _distributionJobRepository;
+    private readonly ISFTPDistributionJobRepository? _distributionJobRepository;
+
+    public SFTPActionService(
+        ILogger<SFTPActionService> logger,
+        ISFTPRepository sFTPRepository,
+        ISFTPUploadSender uploadSender)
+        : this(logger, sFTPRepository, uploadSender, null)
+    {
+    }
 
     public SFTPActionService(
         ILogger<SFTPActionService> logger,
         ISFTPRepository sFTPRepository,
         ISFTPUploadSender uploadSender,
-        ISFTPDistributionJobRepository distributionJobRepository)
+        ISFTPDistributionJobRepository? distributionJobRepository)
     {
         _logger = logger;
         _sFTPRepository = sFTPRepository;
@@ -36,6 +44,8 @@ public class SFTPActionService : ISFTPActionService
         IReadOnlyList<SFTPUploadInput> files,
         CancellationToken cancellationToken)
     {
+        ISFTPDistributionJobRepository distributionJobRepository = _distributionJobRepository
+            ?? throw new InvalidOperationException("The distribution job repository is required.");
         if (locations.Count == 0)
             throw new ArgumentException("At least one destination is required.", nameof(locations));
         if (files.Count == 0)
@@ -82,7 +92,7 @@ public class SFTPActionService : ISFTPActionService
                 ProgressJson = JsonSerializer.Serialize(progress)
             };
 
-            await _distributionJobRepository.CreateAndMarkReadyAsync(job, cancellationToken);
+            await distributionJobRepository.CreateAndMarkReadyAsync(job, cancellationToken);
             return jobId;
         }
         catch

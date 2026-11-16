@@ -1,5 +1,6 @@
 using Infrastructure.Interface.Repository;
 using Infrastructure.Interface.Repository.SFTP;
+using Infrastructure.Interface;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Models.Enums;
@@ -12,6 +13,7 @@ namespace Infrastructure.Worker;
 public sealed class SFTPDistributionWorker(
     IServiceScopeFactory scopeFactory,
     ISFTPRepository sftpRepository,
+    ISFTPPamTokenService pamTokenService,
     ILogger<SFTPDistributionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -103,10 +105,14 @@ public sealed class SFTPDistributionWorker(
 
                 try
                 {
+                    string pamToken = pamTokenService.CreateToken(
+                        connections[destination.SftpConnectionId],
+                        workItem.JobId);
                     await sftpRepository.UploadDistributionAsync(
                         connections[destination.SftpConnectionId],
                         destination,
                         workItem.Files,
+                        pamToken,
                         (fileIndex, uploadedBytes) =>
                         {
                             lock (progressLock)
