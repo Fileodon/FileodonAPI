@@ -119,6 +119,7 @@ builder.Services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuth
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<ISFTPDistributionJobRepository, SFTPDistributionJobRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISFTPConnectionService, SFTPConnectionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();

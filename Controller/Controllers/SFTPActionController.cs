@@ -75,12 +75,11 @@ namespace Controller.Controllers
                 }
             }
 
-            List<SFTPUploadInput> files = uploadRequest.Files
+            List<SFTPUploadInput> files = [.. uploadRequest.Files
                 .Select((file, index) => new SFTPUploadInput(
                     file.OpenReadStream(),
                     remoteFilePaths[index],
-                    file.Length))
-                .ToList();
+                    file.Length))];
             try
             {
                 Guid jobId = await _sftpActionService.EnqueueUploadAsync(connection.Data, files, HttpContext.RequestAborted);
@@ -149,12 +148,11 @@ namespace Controller.Controllers
                 return Forbid("One or more selected SFTP connections cannot be accessed.");
             }
 
-            List<SFTPUploadInput> files = distributeRequest.Files
+            List<SFTPUploadInput> files = [.. distributeRequest.Files
                 .Select(file => new SFTPUploadInput(
                     file.OpenReadStream(),
                     Path.GetFileName(file.FileName),
-                    file.Length))
-                .ToList();
+                    file.Length))];
             try
             {
                 Guid jobId = await _sftpActionService.CreateDistributionJobAsync(

@@ -1,13 +1,12 @@
+using System.Text.Json;
 using Domain.Interface;
+using Infrastructure.Interface.Repository;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Models.Enums;
 using Infrastructure.Worker;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
-using Infrastructure;
 
 namespace Domain.Service;
 
@@ -16,26 +15,18 @@ public class SFTPActionService : ISFTPActionService
     private readonly ILogger<SFTPActionService> _logger;
     private readonly ISFTPRepository _sFTPRepository;
     private readonly ISFTPUploadSender _uploadSender;
-    private readonly ApplicationDbContext? _dbContext;
-
-    public SFTPActionService(
-        ILogger<SFTPActionService> logger,
-        ISFTPRepository sFTPRepository,
-        ISFTPUploadSender uploadSender)
-        : this(logger, sFTPRepository, uploadSender, null)
-    {
-    }
+    private readonly ISFTPDistributionJobRepository _distributionJobRepository;
 
     public SFTPActionService(
         ILogger<SFTPActionService> logger,
         ISFTPRepository sFTPRepository,
         ISFTPUploadSender uploadSender,
-        ApplicationDbContext? dbContext)
+        ISFTPDistributionJobRepository distributionJobRepository)
     {
         _logger = logger;
         _sFTPRepository = sFTPRepository;
         _uploadSender = uploadSender;
-        _dbContext = dbContext;
+        _distributionJobRepository = distributionJobRepository;
     }
 
     public async Task<Guid> CreateDistributionJobAsync(
@@ -45,8 +36,6 @@ public class SFTPActionService : ISFTPActionService
         IReadOnlyList<SFTPUploadInput> files,
         CancellationToken cancellationToken)
     {
-        ApplicationDbContext dbContext = _dbContext
-            ?? throw new InvalidOperationException("The database context is required for distribution jobs.");
         if (locations.Count == 0)
             throw new ArgumentException("At least one destination is required.", nameof(locations));
         if (files.Count == 0)
@@ -84,15 +73,7 @@ public class SFTPActionService : ISFTPActionService
                 DestinationsJson = JsonSerializer.Serialize(destinations)
             };
 
-            await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction =
-                await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            dbContext.SFTPDistributionJobs.Add(job);
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            job.Status = SFTPDistributionJobStatus.Ready;
-            job.ReadyAt = DateTimeOffset.UtcNow;
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await _distributionJobRepository.CreateAndMarkReadyAsync(job, cancellationToken);
             return jobId;
         }
         catch
@@ -109,26 +90,13 @@ public class SFTPActionService : ISFTPActionService
         string userId,
         CancellationToken cancellationToken)
     {
-        ApplicationDbContext dbContext = _dbContext
-            ?? throw new InvalidOperationException("The database context is required for distribution jobs.");
-        SFTPDistributionJob? job = await dbContext.SFTPDistributionJobs
-            .AsNoTracking()
-            .SingleOrDefaultAsync(
-                item => item.Id == jobId &&
-                        item.OrganizationId == organizationId &&
-                        item.UserId == userId,
-                cancellationToken);
-        if (job is null)
-            return null;
-
-        return new SFTPDistributionJobSnapshot(
-            job.Id,
-            job.Status,
-            job.TotalFiles,
-            job.TotalBytes,
-            JsonSerializer.Deserialize<List<SFTPDistributionDestination>>(job.DestinationsJson) ?? [],
-            job.CreatedAt,
-            job.ReadyAt);
+        ISFTPDistributionJobRepository distributionJobRepository = _distributionJobRepository
+            ?? throw new InvalidOperationException("The distribution job repository is required.");
+        return await distributionJobRepository.GetAsync(
+            jobId,
+            organizationId,
+            userId,
+            cancellationToken);
     }
 
     private static List<SFTPDistributionDestination> BuildDistributionPlan(
