@@ -96,7 +96,8 @@ public class SmtpEmailSender : ISmtpEmailSender
                <p style="margin:28px 0;text-align:center;">
                  <a href="{encodedValue}" style="display:inline-block;padding:14px 26px;background:#087cf5;border-radius:7px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">{WebUtility.HtmlEncode(actionLabel)}</a>
                </p>
-               <p style="color:#667085;font-size:13px;line-height:1.6;word-break:break-all;">Or copy and paste this link into your browser:<br />{encodedValue}</p>
+               <p style="color:#667085;font-size:13px;line-height:1.6;word-break:break-all;">Or copy and paste this link into your browser:<br /> </p>
+               <a href="{encodedValue}" style="color:#667085;display:inline-block;max-width:100%;overflow-wrap:anywhere;word-break:break-all;">{encodedValue}</a>
                """;
 
     return $"""
