@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Infrastructure.Models.DTO;
 
 namespace Infrastructure.Interface;

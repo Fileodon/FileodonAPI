@@ -84,7 +84,7 @@ public sealed class SFTPUploadJobStore : ISFTPUploadJobStore
             ConnectionId = connectionId,
             TotalFiles = totalFiles,
             TotalBytes = totalBytes,
-            FileLengths = fileLengths.ToArray(),
+            FileLengths = [.. fileLengths],
             UploadedBytesByFile = new long[totalFiles],
             CompletedFiles = new bool[totalFiles],
             Status = SFTPUploadJobStatus.Queued

@@ -435,6 +435,73 @@ namespace Infrastructure.Migrations
                     b.ToTable("sftp_connection_auth_codes", (string)null);
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.SFTPDistributionJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DestinationsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("destinations_json");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<string>("FilesJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("files_json");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("ProgressJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("progress_json");
+
+                    b.Property<DateTimeOffset?>("ReadyAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ready_at");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TotalBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("total_bytes");
+
+                    b.Property<int>("TotalFiles")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_files");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sftp_distribution_jobs");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_sftp_distribution_jobs_organization_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_sftp_distribution_jobs_user_id");
+
+                    b.ToTable("sftp_distribution_jobs", (string)null);
+                });
+
             modelBuilder.Entity("Infrastructure.Models.User", b =>
                 {
                     b.Property<string>("Id")
@@ -862,6 +929,27 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .HasConstraintName("fk_sftp_connection_auth_codes_users_user_id");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPDistributionJob", b =>
+                {
+                    b.HasOne("Infrastructure.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_distribution_jobs_organizations_organization_id");
+
+                    b.HasOne("Infrastructure.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_distribution_jobs_users_user_id");
 
                     b.Navigation("Organization");
 

@@ -126,8 +126,159 @@ public sealed class SFTPRepository : ISFTPRepository
                     _logger.LogError(ex, "Failed to delete local temporary file {LocalPath} after SFTP upload job {JobId}", file.LocalPath, workItem.JobId);
                 }
             }
+
         }
     }
+
+    public async Task UploadDistributionAsync(
+        SFTPConnection connection,
+        SFTPDistributionDestination destination,
+        IReadOnlyList<SFTPDistributionFile> files,
+        Action<int, long> progress,
+        CancellationToken cancellationToken)
+    {
+        SftpClient client = CreateSftpClient(connection);
+
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
+            {
+                SFTPDistributionFile file = files[fileIndex];
+                await using FileStream input = File.OpenRead(file.LocalPath);
+                string remoteFilePath = Path.Combine(
+                    destination.RemotePath,
+                    Path.GetFileName(file.RemotePath)).Replace("\\", "/");
+                var uploadProgress = new Progress<UploadFileProgressReport>(report =>
+                    progress(fileIndex, (long)report.TotalBytesUploaded));
+
+                await client.UploadFileAsync(
+                    input,
+                    remoteFilePath,
+                    canOverride: true,
+                    uploadProgress,
+                    cancellationToken);
+                progress(fileIndex, file.Length);
+            }
+        }
+        finally
+        {
+            if (client.IsConnected)
+            {
+                client.Disconnect();
+            }
+
+            client.Dispose();
+        }
+    }
+
+    public async Task UploadDistributionFromParentAsync(
+        SFTPConnection parentConnection,
+        SFTPDistributionDestination parent,
+        SFTPConnection destinationConnection,
+        SFTPDistributionDestination destination,
+        IReadOnlyList<SFTPDistributionFile> files,
+        string pamToken,
+        Action<int, long> progress,
+        CancellationToken cancellationToken)
+    {
+        using SshClient parentClient = CreateSshClient(parentConnection);
+        parentClient.Connect();
+        using ShellStream shell = parentClient.CreateShellStream(
+            "sftp-distribution",
+            120,
+            40,
+            1024,
+            768,
+            4096);
+
+        string sftpCommand =
+            $"sftp -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null " +
+            "-oBatchMode=no -oPubkeyAuthentication=no " +
+            "-oKbdInteractiveAuthentication=yes -oPasswordAuthentication=yes " +
+            "-oPreferredAuthentications=password,keyboard-interactive " +
+            $"-P {destinationConnection.Port ?? 22} fileodon@{QuoteShell(destinationConnection.Host)}";
+        shell.WriteLine(sftpCommand);
+        await ReadUntilAsync(shell, "password:", cancellationToken);
+        System.Console.WriteLine(pamToken);
+        shell.WriteLine(pamToken);
+        await ReadUntilAsync(shell, "sftp>", cancellationToken);
+
+        for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
+        {
+            SFTPDistributionFile file = files[fileIndex];
+            string fileName = Path.GetFileName(file.RemotePath);
+            string sourcePath = Path.Combine(parent.RemotePath, fileName).Replace("\\", "/");
+            string destinationPath = Path.Combine(destination.RemotePath, fileName).Replace("\\", "/");
+            shell.WriteLine($"put {QuoteShell(sourcePath)} {QuoteShell(destinationPath)}");
+            string output = await ReadUntilAsync(shell, "sftp>", cancellationToken);
+            if (output.Contains("Failure", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Couldn't", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Parent server failed to transfer '{sourcePath}' to '{destinationPath}': {output}");
+            }
+
+            progress(fileIndex, file.Length);
+        }
+
+        shell.WriteLine("bye");
+    }
+
+    private SshClient CreateSshClient(SFTPConnection connection)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
+        byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
+        string pem = _cryptoService.ConvertPrivateKeyToPem(decryptedKey);
+        using MemoryStream keyStream = new(Encoding.UTF8.GetBytes(pem));
+        PrivateKeyFile privateKey = new(keyStream);
+        return new SshClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
+    }
+
+    private static async Task<string> ReadUntilAsync(
+        ShellStream shell,
+        string expected,
+        CancellationToken cancellationToken)
+    {
+        StringBuilder output = new();
+        DateTime deadline = DateTime.UtcNow.AddMinutes(2);
+        while (DateTime.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (shell.DataAvailable)
+            {
+                string chunk = shell.Read();
+                output.Append(chunk);
+                string text = output.ToString();
+                if (text.Contains(expected, StringComparison.OrdinalIgnoreCase))
+                {
+                    return text;
+                }
+
+                if (text.Contains("command not found", StringComparison.OrdinalIgnoreCase) ||
+                    text.Contains("could not resolve hostname", StringComparison.OrdinalIgnoreCase) ||
+                    text.Contains("connection refused", StringComparison.OrdinalIgnoreCase) ||
+                    text.Contains("permission denied", StringComparison.OrdinalIgnoreCase) ||
+                    text.Contains("allows sftp connections only"))
+                {
+                    throw new InvalidOperationException(
+                        $"The parent server could not start the remote SFTP transfer: {text}");
+                }
+            }
+            else
+            {
+                await Task.Delay(50, cancellationToken);
+            }
+        }
+
+        throw new TimeoutException(
+            $"Timed out waiting for the remote SFTP shell prompt '{expected}'. " +
+            $"Remote output: {output}");
+    }
+
+    private static string QuoteShell(string value) =>
+        $"'{value.Replace("'", "'\\''")}'";
 
     public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
@@ -532,7 +683,7 @@ public sealed class SFTPRepository : ISFTPRepository
         return DeleteFailure(StatusCode.Failure, remotePath, $"An unexpected SFTP error occurred: {exception.Message}", deletedItems);
     }
 
-    private SftpClient CreateSftpClient(SFTPConnection connection)
+    private SftpClient CreateSftpClient(SFTPConnection connection, string? pamToken = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
         byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
@@ -540,6 +691,16 @@ public sealed class SFTPRepository : ISFTPRepository
         using var keyStream = new MemoryStream(Encoding.UTF8.GetBytes(pem));
         PrivateKeyFile privateKey = new(keyStream);
 
-        return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
+        if (pamToken is null)
+        {
+            return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
+        }
+        ConnectionInfo connectionInfo = new(
+            connection.Host,
+            connection.Port ?? 22,
+            "fileodon",
+            new PrivateKeyAuthenticationMethod("fileodon", privateKey),
+            new PasswordAuthenticationMethod("fileodon", pamToken));
+        return new SftpClient(connectionInfo);
     }
 }

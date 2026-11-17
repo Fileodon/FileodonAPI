@@ -5,6 +5,7 @@ using Infrastructure.Interface;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO;
 using Infrastructure.Models.Enums;
+using Microsoft.Extensions.Configuration;
 
 namespace Domain.Service;
 
@@ -12,11 +13,13 @@ public class SFTPConnectionService : ISFTPConnectionService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICryptoService _cryptoService;
+    private readonly IConfiguration _configuration;
 
-    public SFTPConnectionService(IUnitOfWork unitOfWork, ICryptoService cryptoService)
+    public SFTPConnectionService(IUnitOfWork unitOfWork, ICryptoService cryptoService, IConfiguration configuration)
     {
         _unitOfWork = unitOfWork;
         _cryptoService = cryptoService;
+        _configuration = configuration;
     }
 
     public async Task<MutationEnvelope<SFTPConnectionAuthCode>> GenerateVerificationCodeAsync(int organizationId, string userId)
@@ -242,5 +245,25 @@ public class SFTPConnectionService : ISFTPConnectionService
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var random = new Random();
         return new string([.. Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)])]);
+    }
+
+    public async Task<string?> GetPAMPublicKeyAsync()
+    {
+        string? publicKeyPath = _configuration["SFTPPamJwt:PublicKeyPath"];
+
+        if (string.IsNullOrEmpty(publicKeyPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            string publicKey = await File.ReadAllTextAsync(publicKeyPath);
+            return publicKey;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 }

@@ -26,6 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<SFTPConnectionAuditLog> SFTPConnectionAuditLogs => Set<SFTPConnectionAuditLog>();
     public DbSet<UserOrganizationAuditLog> UserOrganizationAuditLogs => Set<UserOrganizationAuditLog>();
     public DbSet<RoleAuditLog> RoleAuditLogs => Set<RoleAuditLog>();
+    public DbSet<SFTPDistributionJob> SFTPDistributionJobs => Set<SFTPDistributionJob>();
 
     // Kan bruges til at se kørte sql commands - brug kun i under development!
     // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -157,6 +158,26 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.HasOne(connection => connection.Organization)
                 .WithMany(organization => organization.SFTPConnections)
                 .HasForeignKey(connection => connection.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SFTPDistributionJob>(entity =>
+        {
+            entity.ToTable("sftp_distribution_jobs");
+            entity.HasKey(job => job.Id);
+            entity.Property(job => job.UserId).IsRequired();
+            entity.Property(job => job.FilesJson).IsRequired();
+            entity.Property(job => job.DestinationsJson).IsRequired();
+            entity.Property(job => job.ProgressJson).IsRequired();
+            entity.Property(job => job.CreatedAt).HasColumnType("timestamp with time zone");
+            entity.Property(job => job.ReadyAt).HasColumnType("timestamp with time zone");
+            entity.HasOne(job => job.Organization)
+                .WithMany()
+                .HasForeignKey(job => job.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(job => job.User)
+                .WithMany()
+                .HasForeignKey(job => job.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

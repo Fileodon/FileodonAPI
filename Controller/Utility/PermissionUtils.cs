@@ -5,17 +5,14 @@ public static class PermissionUtils
 {
     public static List<GetPermissionResponse> GetAllPermissions()
     {
-        return  Enum.GetValues<PermissionFlags>()
-            .Select(flag => new GetPermissionResponse(flag, (long)flag))
-            .ToList();
+        return [.. Enum.GetValues<PermissionFlags>().Select(flag => new GetPermissionResponse(flag, (long)flag))];
     }
 
     public static List<GetPermissionResponse> GetPermissionsFromTotal(long total)
     {
         var permissions = (PermissionFlags)total;
-        return Enum.GetValues<PermissionFlags>()
+        return [.. Enum.GetValues<PermissionFlags>()
             .Where(flag => permissions.HasFlag(flag))
-            .Select(flag => new GetPermissionResponse(flag, (long)flag))
-            .ToList();
+            .Select(flag => new GetPermissionResponse(flag, (long)flag))];
     }
 }

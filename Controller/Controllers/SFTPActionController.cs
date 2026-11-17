@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Controller.DTO.SFTPAction;
 using Controller.Extensions;
 using Controller.Middleware.Attribute;
 using Domain.Enum;
 using Domain.Interface;
+using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Models.Enums;
 using Infrastructure.Worker;
@@ -73,12 +75,11 @@ namespace Controller.Controllers
                 }
             }
 
-            List<SFTPUploadInput> files = uploadRequest.Files
+            List<SFTPUploadInput> files = [.. uploadRequest.Files
                 .Select((file, index) => new SFTPUploadInput(
                     file.OpenReadStream(),
                     remoteFilePaths[index],
-                    file.Length))
-                .ToList();
+                    file.Length))];
             try
             {
                 Guid jobId = await _sftpActionService.EnqueueUploadAsync(connection.Data, files, HttpContext.RequestAborted);
@@ -91,6 +92,90 @@ namespace Controller.Controllers
                     await file.Content.DisposeAsync();
                 }
             }
+        }
+
+        [HttpPost("/organization/{organizationid}/[controller]/distribute")]
+        [Consumes("multipart/form-data")]
+        [RequestFormLimits(MultipartBodyLengthLimit = uploadLimit)]
+        [RequestSizeLimit(uploadLimit)]
+        [ProducesResponseType(typeof(SFTPActionDistributeResponse), StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Permission(PermissionFlags.SftpActionCreate)]
+        public async Task<IActionResult> DistributeFileAsync([FromRoute] int organizationid, [FromForm] SFTPActionDistributeRequest distributeRequest)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            List<SFTPActionDistributeLocation> locations = distributeRequest.Locations;
+            List<IFormFile> files = distributeRequest.Files;
+
+            IEnumerable<SFTPConnection> accessibleConnections =
+                await _sftpConnectionService.GetOrganizationSFTPConnectionsAsync(organizationid, userId);
+            Dictionary<int, SFTPConnection> connectionsById = accessibleConnections
+                .ToDictionary(connection => connection.Id);
+            if (locations.Any(location => !connectionsById.ContainsKey(location.SftpConnectionId)))
+            {
+                return Forbid("One or more selected SFTP connections cannot be accessed.");
+            }
+
+            List<SFTPUploadInput> inputFiles = [.. files
+                .Select(file => new SFTPUploadInput(
+                    file.OpenReadStream(),
+                    Path.GetFileName(file.FileName),
+                    file.Length))];
+            try
+            {
+                Guid jobId = await _sftpActionService.CreateDistributionJobAsync(
+                    organizationid,
+                    userId,
+                    [.. locations.Select(location => new SFTPDistributionLocation(location.SftpConnectionId, location.RemotePath))],
+                    inputFiles,
+                    HttpContext.RequestAborted);
+
+                SFTPDistributionJobSnapshot? snapshot = await _sftpActionService.GetDistributionJobAsync(
+                    jobId,
+                    organizationid,
+                    userId,
+                    HttpContext.RequestAborted);
+                return AcceptedAtAction(
+                    nameof(PollDistribution),
+                    new { jobId, organizationid },
+                    snapshot!.ToResponse());
+            }
+            finally
+            {
+                foreach (SFTPUploadInput file in inputFiles)
+                {
+                    await file.Content.DisposeAsync();
+                }
+            }
+        }
+
+        [HttpGet("/organization/{organizationid}/[controller]/distribute/{jobId:guid}")]
+        [ProducesResponseType(typeof(SFTPActionDistributeResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PollDistribution(
+            Guid jobId,
+            [FromRoute] int organizationid)
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            SFTPDistributionJobSnapshot? snapshot = await _sftpActionService.GetDistributionJobAsync(
+                jobId,
+                organizationid,
+                userId,
+                HttpContext.RequestAborted);
+            return snapshot is null ? NotFound("SFTP distribution job not found.") : Ok(snapshot.ToResponse());
         }
 
         [HttpPost("create-directory")]

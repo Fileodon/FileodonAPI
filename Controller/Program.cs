@@ -1,5 +1,8 @@
 #region Using Directives
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Security.Cryptography;
 using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
@@ -40,6 +43,10 @@ const string PolicyName = "default";
 const string CorsPolicyName = "AllowListed";
 
 var builder = WebApplication.CreateBuilder(args);
+string dataDirectory = Path.Combine(builder.Environment.ContentRootPath, "data");
+Directory.CreateDirectory(dataDirectory);
+Directory.CreateDirectory(Path.Combine(dataDirectory, "logs"));
+Environment.SetEnvironmentVariable("FILEODON_DATA_DIRECTORY", dataDirectory);
 
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -50,7 +57,7 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration).CreateLogger();
 builder.Services.AddSerilog();
 
-string filepath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+string filepath = Path.Combine(dataDirectory, ".env");
 if (File.Exists(filepath))
     DotEnv.Load(filepath);
 else
@@ -61,9 +68,14 @@ builder.Configuration.AddEnvironmentVariables();
 string? keyPath = builder.Configuration["Encryption:KeyPath"];
 if (string.IsNullOrEmpty(keyPath))
 {
-    Log.Error("Encryption key path is not set in configuration.");
-    throw new InvalidOperationException("Encryption key path is not set in configuration.");
+    keyPath = Path.Combine(dataDirectory, "encryption.key");
 }
+else if (!Path.IsPathRooted(keyPath))
+{
+    keyPath = Path.Combine(builder.Environment.ContentRootPath, keyPath);
+}
+
+builder.Configuration["Encryption:KeyPath"] = keyPath;
 
 if (!File.Exists(keyPath))
 {
@@ -71,20 +83,30 @@ if (!File.Exists(keyPath))
     CryptoService.CreateKey(keyPath);
 }
 
+string jwtKeyPath = Path.Combine(dataDirectory, "jwt.key");
+if (!File.Exists(jwtKeyPath))
+{
+    Log.Warning("JWT key file not found at {KeyPath}. Generating a new secret.", jwtKeyPath);
+    File.WriteAllText(jwtKeyPath, await TokenService.GenerateSecret());
+}
+
+builder.Configuration["JWT:KEY"] = File.ReadAllText(jwtKeyPath).Trim();
+
+string pamPrivateKeyPath = Path.Combine(dataDirectory, "sftp-pam-jwt-private.key");
+string pamPublicKeyPath = Path.Combine(dataDirectory, "sftp-pam-jwt-public.key");
+if (!File.Exists(pamPrivateKeyPath) || !File.Exists(pamPublicKeyPath))
+{
+    Log.Warning("SFTP PAM JWT keypair not found. Generating a new ES256 keypair.");
+    using ECDsa pamKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+    File.WriteAllBytes(pamPrivateKeyPath, pamKey.ExportPkcs8PrivateKey());
+    File.WriteAllText(pamPublicKeyPath, pamKey.ExportSubjectPublicKeyInfoPem());
+}
+
+builder.Configuration["SFTPPamJwt:PrivateKeyPath"] = pamPrivateKeyPath;
+builder.Configuration["SFTPPamJwt:PublicKeyPath"] = pamPublicKeyPath;
+
 string connectionString = Database.InitializeConnectionString(builder);
 
-if (string.IsNullOrEmpty(builder.Configuration["JWT:KEY"]))
-{
-    Log.Warning("JWT key is not set in configuration. Generating a new secret.");
-    string key = await TokenService.GenerateSecret();
-    if (string.IsNullOrEmpty(key))
-    {
-        Log.Error("Failed to generate JWT secret.");
-        throw new InvalidOperationException("Failed to generate JWT secret.");
-    }
-    DotEnv.WriteEntry("JWT:KEY", key);
-    builder.Configuration["JWT:KEY"] = key;
-}
 #region CORS
 string[] allowedOrigins = [.. (builder.Configuration.GetValue<string>("CORS:ALLOWED_HOSTS") ?? string.Empty)
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -119,6 +141,7 @@ builder.Services.AddScoped<ISFTPConnectionAuthCodeRepository, SFTPConnectionAuth
 builder.Services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<ISFTPDistributionJobRepository, SFTPDistributionJobRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISFTPConnectionService, SFTPConnectionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -198,7 +221,9 @@ builder.Services.AddSingleton<ISFTPUploadJobStore, SFTPUploadJobStore>();
 builder.Services.AddSingleton<ISFTPUploadQueue, SFTPUploadQueue>();
 builder.Services.AddScoped<ISFTPUploadSender, SFTPUploadSender>();
 builder.Services.AddSingleton<ISFTPRepository, SFTPRepository>();
+builder.Services.AddSingleton<ISFTPPamTokenService, SFTPPamTokenService>();
 builder.Services.AddHostedService<SFTPUploadWorker>();
+builder.Services.AddHostedService<SFTPDistributionWorker>();
 #endregion
 
 // Add CryptoService as a singleton, ensuring that the key is loaded from configuration or a default path
@@ -267,7 +292,12 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 
