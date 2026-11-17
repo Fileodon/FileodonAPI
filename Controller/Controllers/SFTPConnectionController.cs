@@ -287,5 +287,26 @@ namespace Controller.Controllers
 
             return Ok(result.Select(conn => conn.ToDetailedGetResponseDTO()));
         }
+
+        [HttpGet("~/organization/[controller]/pam/publickey")]
+        [ProducesResponseType(typeof(string), 200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<IActionResult> GetPAMPublicKey()
+        {
+            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
+            {
+                return Unauthorized("User ID claim is missing.");
+            }
+
+            string? publicKey = await _sFTPConnectionService.GetPAMPublicKeyAsync();
+
+            if (publicKey is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(publicKey);
+        }
     }
 }

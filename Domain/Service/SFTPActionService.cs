@@ -51,7 +51,7 @@ public class SFTPActionService : ISFTPActionService
         if (files.Count == 0)
             throw new ArgumentException("At least one file is required.", nameof(files));
 
-        string directory = Path.Combine(Path.GetTempPath(), "fileodon-sftp-distribution");
+        string directory = Path.Combine(GetDataDirectory(), "sftp-distribution");
         Directory.CreateDirectory(directory);
         List<SFTPDistributionFile> stagedFiles = [];
         Guid jobId = Guid.NewGuid();
@@ -185,7 +185,7 @@ public class SFTPActionService : ISFTPActionService
             throw new ArgumentException("At least one file is required.", nameof(files));
         }
 
-        string directory = Path.Combine(Path.GetTempPath(), "fileodon-sftp");
+        string directory = Path.Combine(GetDataDirectory(), "sftp");
         Directory.CreateDirectory(directory);
         List<SFTPUploadFile> stagedFiles = [];
 
@@ -223,6 +223,10 @@ public class SFTPActionService : ISFTPActionService
 
     public SFTPUploadJobSnapshot? GetUploadStatus(Guid jobId, SFTPConnection connection) =>
         _uploadSender.GetStatus(jobId, connection);
+
+    private static string GetDataDirectory() =>
+        Environment.GetEnvironmentVariable("FILEODON_DATA_DIRECTORY")
+        ?? Path.Combine(AppContext.BaseDirectory, "data");
 
     public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {

@@ -15,4 +15,5 @@ public interface ISFTPConnectionService
     public Task<IEnumerable<SFTPConnection>> GetOrganizationSFTPConnectionsAsync(int organizationId, string userId);
     public Task<MutationEnvelope<SFTPConnection>> DeleteSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId);
     public Task<MutationEnvelope<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName, int? port);
+    public Task<string?> GetPAMPublicKeyAsync();
 }

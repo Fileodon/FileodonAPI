@@ -129,9 +129,6 @@ public sealed class SFTPDistributionWorker(
 
                     try
                     {
-                        string pamToken = pamTokenService.CreateToken(
-                            connections[destination.SftpConnectionId],
-                            workItem.JobId);
                         Action<int, long> progress = (fileIndex, uploadedBytes) =>
                         {
                             lock (progressLock)
@@ -154,12 +151,14 @@ public sealed class SFTPDistributionWorker(
                                 connections[destination.SftpConnectionId],
                                 destination,
                                 workItem.Files,
-                                pamToken,
                                 progress,
                                 cancellationToken);
                         }
                         else
                         {
+                            string pamToken = pamTokenService.CreateToken(
+                                connections[destination.SftpConnectionId],
+                                workItem.JobId);
                             await sftpRepository.UploadDistributionFromParentAsync(
                                 connections[parent.SftpConnectionId],
                                 parent,

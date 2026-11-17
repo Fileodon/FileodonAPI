@@ -1,39 +1,47 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using System.Net;
 using System.Security.Cryptography;
-using System.Text;
 using Infrastructure.Interface;
 using Infrastructure.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Service;
 
-public sealed class SFTPPamTokenService(ICryptoService cryptoService) : ISFTPPamTokenService
+public sealed class SFTPPamTokenService(IConfiguration configuration) : ISFTPPamTokenService
 {
     public string CreateToken(SFTPConnection connection, Guid jobId)
     {
-        ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
-
-        byte[] encryptedKey = Convert.FromBase64String(connection.PrivateKey);
-        byte[] privateKey = cryptoService.Decrypt(encryptedKey);
-        using RSA rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(privateKey, out _);
+        string privateKeyPath = configuration["SFTPPamJwt:PrivateKeyPath"]
+            ?? throw new InvalidOperationException(
+                "SFTPPamJwt:PrivateKeyPath is not set in configuration.");
+        using ECDsa ecdsa = ECDsa.Create();
+        try
+        {
+            ecdsa.ImportPkcs8PrivateKey(File.ReadAllBytes(privateKeyPath), out _);
+        }
+        catch (Exception ex) when (ex is IOException or CryptographicException)
+        {
+            throw new InvalidOperationException(
+                $"Unable to load the SFTP PAM JWT private key from '{privateKeyPath}'.",
+                ex);
+        }
 
         DateTime expiresAt = DateTime.UtcNow.AddMinutes(2);
-        List<Claim> claims =
-        [
-            new(JwtRegisteredClaimNames.Sub, "fileodon"),
-            new("job_id", jobId.ToString("D")),
-            new("destination_connection_id", connection.Id.ToString())
-        ];
-        RsaSecurityKey signingKey = new(rsa.ExportParameters(includePrivateParameters: true));
+        ECDsaSecurityKey signingKey = new(ecdsa)
+        {
+            KeyId = configuration["SFTPPamJwt:KeyId"] ?? "fileodon-es256-v1",
+            CryptoProviderFactory = new CryptoProviderFactory
+            {
+                CacheSignatureProviders = false
+            }
+        };
         SigningCredentials credentials = new(
             signingKey,
-            SecurityAlgorithms.RsaSha256);
+            SecurityAlgorithms.EcdsaSha256);
         JwtSecurityToken token = new(
             issuer: "Fileodon Master Server",
-            audience: connection.Host,
-            claims: claims,
+            audience: Dns.GetHostEntry(connection.Host).HostName.Split('.')[0],
             notBefore: DateTime.UtcNow,
             expires: expiresAt,
             signingCredentials: credentials);
