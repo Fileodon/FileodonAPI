@@ -61,7 +61,7 @@ public class EmailTransport : IEmailTransport
         using var client = new SmtpClient();
         try
         {
-            var socketOptions = useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.SslOnConnect;
+            var socketOptions = useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
 
             await client.ConnectAsync(host, port, socketOptions, cancellationToken);
             await client.AuthenticateAsync(username, password, cancellationToken);
