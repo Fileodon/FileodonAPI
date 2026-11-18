@@ -4,7 +4,7 @@ using Infrastructure.Models;
 using Infrastructure.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
-namespace Domain.Services;
+namespace Domain.Service;
 
 public class AuthorizationPermissionService
     : IAuthorizationPermissionService
