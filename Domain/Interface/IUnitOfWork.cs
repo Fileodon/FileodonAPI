@@ -22,6 +22,7 @@ public interface IUnitOfWork : IDisposable
     IUserOrganizationRepository UserOrganizationRepository { get; }
     IAuditLogRepository AuditLogRepository { get; }
     IUserRepository UserRepository { get; }
+    ISFTPActionAuditLogRepository SFTPActionAuditLogRepository { get; }
     Task BeginTransactionAsync();
     Task CommitAsync();
     Task RollbackAsync();

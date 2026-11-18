@@ -35,4 +35,12 @@ public class AuditLogRepository(ApplicationDbContext context) : IAuditLogReposit
             .Include(audit => audit.Actor)
             .Where(audit => audit.UserOrganization.OrganizationId == id);
     }
+
+    public async Task<IEnumerable<SFTPActionAuditLog>> GetSFTPActionAuditLogsFromOrganizationId(int id)
+    {
+        return _context.SFTPActionAuditLogs
+            .Include(audit => audit.SFTPConnection)
+            .Include(audit => audit.Actor)
+            .Where(audit => audit.SFTPConnection.OrganizationId == id);
+    }
 }

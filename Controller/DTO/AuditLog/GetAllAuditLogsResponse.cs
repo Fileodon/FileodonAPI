@@ -25,7 +25,8 @@ public class GetAllAuditLogsResponse
         IEnumerable<OrganizationAuditLog>? organizationAuditLogs = null,
         IEnumerable<SFTPConnectionAuditLog>? sFTPConnectionAuditLogs = null,
         IEnumerable<UserOrganizationAuditLog>? userOrganizationAuditLogs = null,
-        IEnumerable<RoleAuditLog>? roleAuditLogs = null
+        IEnumerable<RoleAuditLog>? roleAuditLogs = null,
+        IEnumerable<SFTPActionAuditLog>? sFTPActionAuditLogs = null
     )
     {
         auditLogs = new List<AuditLogDTO>();
@@ -72,6 +73,17 @@ public class GetAllAuditLogsResponse
                 });
             }
             total += roleAuditLogs.Count();
+        }
+        if (sFTPActionAuditLogs != null)
+        {
+            foreach (var auditLog in sFTPActionAuditLogs)
+            {
+                auditLogs.Add(FormatBaseAuditLog(auditLog) with
+                {
+                    SFTPConnectionId = auditLog.SFTPConnectionID
+                });
+            }
+            total += sFTPActionAuditLogs.Count();
         }
     }
 

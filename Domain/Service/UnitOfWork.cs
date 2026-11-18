@@ -22,7 +22,9 @@ public sealed class UnitOfWork : IUnitOfWork
     public ISFTPConnectionAuthCodeRepository SFTPConnectionAuthCodeRepository { get; }
     public IUserOrganizationRepository UserOrganizationRepository { get; }
     public IUserRepository UserRepository { get; }
+    public ISFTPActionAuditLogRepository SFTPActionAuditLogRepository { get; }
     public bool AutomaticTransactionsEnabled => _transactionSettings.AutomaticTransactionsEnabled;
+
 
     public UnitOfWork(
     ApplicationDbContext context,
@@ -35,7 +37,8 @@ public sealed class UnitOfWork : IUnitOfWork
     ISFTPConnectionAuthCodeRepository sftpConnectionAuthCodeRepository,
     IUserOrganizationRepository userOrganizationRepository,
     IAuditLogRepository auditLogRepository,
-    IUserRepository userRepository)
+    IUserRepository userRepository,
+    ISFTPActionAuditLogRepository sFTPActionAuditLogRepository)
     {
         _context = context;
         _transactionSettings = transactionSettings;
@@ -48,7 +51,7 @@ public sealed class UnitOfWork : IUnitOfWork
         SFTPConnectionAuthCodeRepository = sftpConnectionAuthCodeRepository;
         UserOrganizationRepository = userOrganizationRepository;
         UserRepository = userRepository;
-
+        SFTPActionAuditLogRepository = sFTPActionAuditLogRepository;
     }
 
     public async Task BeginTransactionAsync()

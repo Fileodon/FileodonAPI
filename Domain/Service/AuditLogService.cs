@@ -19,12 +19,14 @@ public class AuditLogService(IUnitOfWork unitOfWork) : IAuditLogService
             var sftpConnectionAuditLog = await _unitOfWork.AuditLogRepository.GetSFTPConnectionAuditLogsFromOrganizationId(id);
             var userOrgAuditLogs = await _unitOfWork.AuditLogRepository.GetUserOrganizationAuditLogsFromOrganizationId(id);
             var roleAuditLogs = await _unitOfWork.AuditLogRepository.GetRoleAuditLogsFromOrganizationId(id);
+            var sftpActionAuditLogs = await _unitOfWork.AuditLogRepository.GetSFTPActionAuditLogsFromOrganizationId(id);
             return new AllAuditLogsServiceReturn
             {
                 organizationAuditLogs = orgAuditLogs,
                 SFTPConnectionAuditLogs = sftpConnectionAuditLog,
                 RoleAuditLogs = roleAuditLogs,
-                UserOrganizationAuditLogs = userOrgAuditLogs
+                UserOrganizationAuditLogs = userOrgAuditLogs,
+                SFTPActionAuditLogs = sftpActionAuditLogs
             };
         }
         catch
@@ -83,6 +85,21 @@ public class AuditLogService(IUnitOfWork unitOfWork) : IAuditLogService
         try
         {
             return await _unitOfWork.UserOrganizationRepository.GetUserOrganizationAuditLogsAsync(id);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<SFTPActionAuditLog>> GetSFTPActionAuditLogs(int id)
+    {
+        using IDisposable transactionScope = _unitOfWork.DisableAutomaticTransactions();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            return await _unitOfWork.SFTPActionAuditLogRepository.GetSFTPActionAuditLogsAsync(id);
         }
         catch
         {

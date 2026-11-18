@@ -2,6 +2,7 @@ using System.Text.Json;
 using Domain.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Interface.Repository.SFTP;
+using Infrastructure.Interface.Service;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Models.Enums;
@@ -15,26 +16,24 @@ public class SFTPActionService : ISFTPActionService
     private readonly ILogger<SFTPActionService> _logger;
     private readonly ISFTPRepository _sFTPRepository;
     private readonly ISFTPUploadSender _uploadSender;
-    private readonly ISFTPDistributionJobRepository? _distributionJobRepository;
-
-    public SFTPActionService(
-        ILogger<SFTPActionService> logger,
-        ISFTPRepository sFTPRepository,
-        ISFTPUploadSender uploadSender)
-        : this(logger, sFTPRepository, uploadSender, null)
-    {
-    }
+    private readonly ISFTPDistributionJobRepository _distributionJobRepository;
+    private readonly IUserContextService _userContextService;
+    private readonly ISFTPActionAuditLogRepository _sFTPActionAuditLogRepository;
 
     public SFTPActionService(
         ILogger<SFTPActionService> logger,
         ISFTPRepository sFTPRepository,
         ISFTPUploadSender uploadSender,
-        ISFTPDistributionJobRepository? distributionJobRepository)
+        ISFTPDistributionJobRepository distributionJobRepository,
+        IUserContextService userContextService,
+        ISFTPActionAuditLogRepository sFTPActionAuditLogRepository)
     {
         _logger = logger;
         _sFTPRepository = sFTPRepository;
         _uploadSender = uploadSender;
         _distributionJobRepository = distributionJobRepository;
+        _userContextService = userContextService;
+        _sFTPActionAuditLogRepository = sFTPActionAuditLogRepository;
     }
 
     public async Task<Guid> CreateDistributionJobAsync(
@@ -167,11 +166,15 @@ public class SFTPActionService : ISFTPActionService
 
     public Task<SFTPActionDownloadResult> DownloadFileAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
     {
+        SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.Download, oldData: remoteFilePath);
+        _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
         return _sFTPRepository.DownloadFileAsync(connection, remoteFilePath, cancellationToken);
     }
 
     public Task<List<SFTPActionCreateDirectoryResult>> CreateDirectoryAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
+        SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.CreateDirectory, newData: remoteDirectoryPath);
+        _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
         return _sFTPRepository.CreateDirectoryAsync(connection, remoteDirectoryPath, cancellationToken);
     }
 
@@ -200,6 +203,8 @@ public class SFTPActionService : ISFTPActionService
                 }
 
                 stagedFiles.Add(new SFTPUploadFile(localPath, file.RemoteFilePath, file.Length));
+                SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.Upload, newData: file.RemoteFilePath);
+                await _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
             }
 
             return _uploadSender.Enqueue(new SFTPUploadJobRequest(connection, stagedFiles));
@@ -218,6 +223,8 @@ public class SFTPActionService : ISFTPActionService
 
     public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
     {
+        SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.CheckExists, oldData: remoteFilePath);
+        await _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
         return await _sFTPRepository.FileExistsAsync(connection, remoteFilePath, cancellationToken);
     }
 
@@ -230,16 +237,41 @@ public class SFTPActionService : ISFTPActionService
 
     public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
+        SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.ListFiles, remoteDirectoryPath);
+        await _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
         return await _sFTPRepository.ListFilesAsync(connection, remoteDirectoryPath, cancellationToken);
     }
 
     public async Task<SFTPActionRenameResult> RenameFileAsync(SFTPConnection connection, string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
     {
+        SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.Rename, sourceFilePath, destinationFilePath);
+        await _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
         return await _sFTPRepository.RenameFileAsync(connection, sourceFilePath, destinationFilePath, cancellationToken);
     }
 
     public async Task<SFTPActionDeleteResult> DeleteAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
     {
+        SFTPActionAuditLog auditLog = CreateAuditLog(connection.Id, SFTPActionType.Delete, oldData: remoteFilePath);
+        await _sFTPActionAuditLogRepository.AddSFTPActionAuditLog(auditLog);
         return await _sFTPRepository.DeleteAsync(connection, remoteFilePath, cancellationToken);
+    }
+
+
+
+    private SFTPActionAuditLog CreateAuditLog(int connectionId, SFTPActionType actionType, string? oldData = null, string? newData = null)
+    {
+        string userId = _userContextService.GetCurrentUserId() ?? throw new InvalidOperationException("User ID is required to create an audit log.");
+        string source = _userContextService.getUserAgent() ?? "Unkown";
+
+        return new SFTPActionAuditLog
+        {
+            SFTPConnectionID = connectionId,
+            Action = actionType.ToString(),
+            OldData = oldData,
+            NewData = newData,
+            ActorId = userId,
+            Source = source,
+            Timestamp = DateTime.UtcNow
+        };
     }
 }
