@@ -1,7 +1,7 @@
 using Infrastructure.Interface.Service;
 using Microsoft.AspNetCore.Http;
 
-namespace Infrastructure.Services;
+namespace Infrastructure.Service;
 
 
 public class UserContextService : IUserContextService

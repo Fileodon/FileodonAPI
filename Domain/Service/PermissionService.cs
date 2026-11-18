@@ -3,7 +3,7 @@ using Domain.Interface;
 using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 
-namespace Domain.Services;
+namespace Domain.Service;
 
 public class PermissionService : IPermissionService
 {

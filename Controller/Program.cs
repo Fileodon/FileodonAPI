@@ -1,8 +1,8 @@
 #region Using Directives
 
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Security.Cryptography;
 using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
@@ -11,7 +11,6 @@ using Controller.Utility;
 using Controller.Validators.SFTPConnectionModels;
 using Domain.Interface;
 using Domain.Service;
-using Domain.Services;
 using Domain.Worker;
 using FluentValidation;
 using Infrastructure;
@@ -24,7 +23,6 @@ using Infrastructure.Models;
 using Infrastructure.Repository;
 using Infrastructure.Repository.SFTP;
 using Infrastructure.Service;
-using Infrastructure.Services;
 using Infrastructure.Worker;
 using MicroElements.AspNetCore.OpenApi.FluentValidation;
 using Microsoft.AspNetCore.Authentication;
@@ -118,11 +116,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy(CorsPolicyName,
                      policy =>
                      {
-                        policy.WithOrigins(allowedOrigins)
-                               .AllowAnyHeader()
-                               .AllowAnyMethod()
-                               .AllowCredentials();
-                        policy.WithExposedHeaders("Content-Disposition");
+                         policy.WithOrigins(allowedOrigins)
+                                .AllowAnyHeader()
+                                .AllowAnyMethod()
+                                .AllowCredentials();
+                         policy.WithExposedHeaders("Content-Disposition");
                      }
     );
 });
