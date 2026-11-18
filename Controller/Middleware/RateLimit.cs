@@ -1,12 +1,17 @@
-using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Controller.Middleware;
 
-public sealed class RateLimit(IConfiguration configuration) : IRateLimiterPolicy<string>
+public sealed class RateLimit : IRateLimiterPolicy<string>
 {
-    private readonly IConfiguration _configuration = configuration;
+    private readonly IConfiguration _configuration;
+
+    public RateLimit(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
 
     public RateLimitPartition<string> GetPartition(HttpContext httpContext)
     {
@@ -69,7 +74,7 @@ public sealed class RateLimit(IConfiguration configuration) : IRateLimiterPolicy
     {
         if (httpContext.User.Identity?.IsAuthenticated == true)
         {
-            string? userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            string? userId = httpContext.User.FindFirstValue("id")
                 ?? httpContext.User.FindFirstValue("sub")
                 ?? httpContext.User.FindFirstValue("unique_name");
 

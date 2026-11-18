@@ -25,6 +25,51 @@ public sealed class DotEnvTests
     }
 
     [Fact]
+    public void Converts_a_legacy_environment_variable_to_double_underscore_form()
+    {
+        const string legacyKey = "FILEODON_TEST_LEGACY";
+        const string convertedKey = "FILEODON__TEST__LEGACY";
+        string filePath = CreateEnvFile($"{legacyKey}=test-value");
+
+        try
+        {
+            RemoveEnvironmentVariable(legacyKey);
+            RemoveEnvironmentVariable(convertedKey);
+
+            DotEnv.Load(filePath);
+
+            Assert.Equal("test-value", Environment.GetEnvironmentVariable(convertedKey));
+        }
+        finally
+        {
+            RemoveEnvironmentVariable(legacyKey);
+            RemoveEnvironmentVariable(convertedKey);
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
+    public void Does_not_convert_an_already_nested_environment_variable()
+    {
+        const string key = "FILEODON_TEST__NESTED";
+        string filePath = CreateEnvFile($"{key}=test-value");
+
+        try
+        {
+            RemoveEnvironmentVariable(key);
+
+            DotEnv.Load(filePath);
+
+            Assert.Equal("test-value", Environment.GetEnvironmentVariable(key));
+        }
+        finally
+        {
+            RemoveEnvironmentVariable(key);
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public void Ignores_blank_lines_and_comments()
     {
         const string key = "FILEODON_TEST_DOTENV_COMMENT";
@@ -80,6 +125,93 @@ public sealed class DotEnvTests
         Assert.False(File.Exists(filePath));
     }
 
+    [Fact]
+    public void Creates_env_file_from_env_example_when_available()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            const string exampleContents = "JWT_KEY=example-key\nDATABASE_URL=example-database";
+            File.WriteAllText(".env.example", exampleContents);
+
+            DotEnv.CreateEnvFile(".env");
+
+            Assert.Equal(exampleContents, File.ReadAllText(".env"));
+        });
+    }
+
+    [Fact]
+    public void Creates_empty_env_file_when_env_example_is_unavailable()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            DotEnv.CreateEnvFile(".env");
+
+            Assert.True(File.Exists(".env"));
+            Assert.Equal(string.Empty, File.ReadAllText(".env"));
+        });
+    }
+
+    [Fact]
+    public void Does_not_overwrite_an_existing_env_file()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            File.WriteAllText(".env.example", "JWT_KEY=example-key");
+            File.WriteAllText(".env", "JWT_KEY=existing-key");
+
+            DotEnv.CreateEnvFile(".env");
+
+            Assert.Equal("JWT_KEY=existing-key", File.ReadAllText(".env"));
+        });
+    }
+
+    [Fact]
+    public void Updates_an_existing_entry()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            File.WriteAllLines(".env", ["EXISTING_KEY=old-value", "OTHER_KEY=keep"]);
+
+            DotEnv.WriteEntry(" existing_key ", "new-value");
+
+            Assert.Equal(
+                ["EXISTING_KEY=new-value", "OTHER_KEY=keep"],
+                File.ReadAllLines(".env"));
+        });
+    }
+
+    [Fact]
+    public void Appends_a_new_entry()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            File.WriteAllLines(".env", ["EXISTING_KEY=keep"]);
+
+            DotEnv.WriteEntry("new_key", "new-value");
+
+            Assert.Equal(
+                ["EXISTING_KEY=keep", "NEW_KEY=new-value"],
+                File.ReadAllLines(".env"));
+        });
+    }
+
+    [Fact]
+    public void Removes_duplicate_entries_when_updating()
+    {
+        ExecuteInTemporaryDirectory(() =>
+        {
+            File.WriteAllLines(
+                ".env",
+                ["DUPLICATE_KEY=first", "OTHER_KEY=keep", "DUPLICATE_KEY=second"]);
+
+            DotEnv.WriteEntry("duplicate_key", "new-value");
+
+            Assert.Equal(
+                ["OTHER_KEY=keep", "DUPLICATE_KEY=new-value"],
+                File.ReadAllLines(".env"));
+        });
+    }
+
     private static string CreateEnvFile(params string[] lines)
     {
         string filePath = Path.Combine(
@@ -92,6 +224,23 @@ public sealed class DotEnvTests
     private static void RemoveEnvironmentVariable(string key)
     {
         Environment.SetEnvironmentVariable(key, null);
+    }
+
+    private static void ExecuteInTemporaryDirectory(Action action)
+    {
+        string originalDirectory = Directory.GetCurrentDirectory();
+        string temporaryDirectory = Directory.CreateTempSubdirectory("fileodon-test-").FullName;
+
+        try
+        {
+            Directory.SetCurrentDirectory(temporaryDirectory);
+            action();
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDirectory);
+            Directory.Delete(temporaryDirectory, recursive: true);
+        }
     }
 }
 

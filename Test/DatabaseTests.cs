@@ -33,15 +33,15 @@ public sealed class DatabaseTests
     public void Reports_all_missing_environment_variables()
     {
         WebApplicationBuilder builder = CreateBuilder();
-        builder.Configuration["DB_HOST"] = "database.example";
-        builder.Configuration["DB_PORT"] = "5432";
+        builder.Configuration["DB:HOST"] = "database.example";
+        builder.Configuration["DB:PORT"] = "5432";
 
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
             () => Database.InitializeConnectionString(builder));
 
-        Assert.Contains("DB_USER", exception.Message);
-        Assert.Contains("DB_PASSWORD", exception.Message);
-        Assert.Contains("DB_NAME", exception.Message);
+        Assert.Contains("DB:USER", exception.Message);
+        Assert.Contains("DB:PASSWORD", exception.Message);
+        Assert.Contains("DB:NAME", exception.Message);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class DatabaseTests
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
             () => Database.InitializeConnectionString(builder));
 
-        Assert.Contains("DB_HOST", exception.Message);
+        Assert.Contains("DB:HOST", exception.Message);
     }
 
     private static WebApplicationBuilder CreateBuilder(string? connectionString = null)
@@ -81,10 +81,10 @@ public sealed class DatabaseTests
         string password,
         string database)
     {
-        builder.Configuration["DB_HOST"] = host;
-        builder.Configuration["DB_PORT"] = port;
-        builder.Configuration["DB_USER"] = user;
-        builder.Configuration["DB_PASSWORD"] = password;
-        builder.Configuration["DB_NAME"] = database;
+        builder.Configuration["DB:HOST"] = host;
+        builder.Configuration["DB:PORT"] = port;
+        builder.Configuration["DB:USER"] = user;
+        builder.Configuration["DB:PASSWORD"] = password;
+        builder.Configuration["DB:NAME"] = database;
     }
 }

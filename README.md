@@ -68,12 +68,15 @@ The API first attempts to read `ConnectionStrings:DefaultConnection` from config
 Example `.env` file:
 
 ```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=fileodon
+DB__HOST=localhost
+DB__PORT=5432
+DB__USER=postgres
+DB__PASSWORD=postgres
+DB__NAME=fileodon
 ```
+
+> [!NOTE]
+> Double underscore `__` is used in the `.env` file to represent nested configuration keys in ASP.NET Core. For example, `DB__HOST` corresponds to `DB:HOST` in configuration.
 
 If you prefer to use application configuration instead, add a `ConnectionStrings` section to `Controller/appsettings.Development.json` or your secrets configuration:
 
@@ -143,11 +146,11 @@ Important notes:
 
 - The project expects either a `DefaultConnection` connection string or individual `DB_*` environment variables.
 - If those values are missing, it builds a PostgreSQL connection string using default values:
-  - DB_HOST = `localhost`
-  - DB_PORT = `5432`
-  - DB_USER = `postgres`
-  - DB_PASSWORD = `postgres`
-  - DB_NAME = `postgres`
+  - DB__HOST = `localhost`
+  - DB__PORT = `5432`
+  - DB__USER = `postgres`
+  - DB__PASSWORD = `postgres`
+  - DB__NAME = `postgres`
 
 ## Authentication and identity
 
@@ -168,6 +171,44 @@ app.MapIdentityApi<IdentityUser>();
 ```
 
 This creates standard endpoints for identity operations, such as registration and login, depending on the current ASP.NET Core Identity configuration.
+
+## Repository transactions
+
+Repositories automatically wrap each write operation (`PostAsync`, `PutAsync`, `UpdateAsync`, and
+`DeleteAsync`) in a database transaction. If the operation fails, the transaction is rolled back
+and the exception is rethrown. Read operations are not wrapped because they do not change state.
+
+For a transaction spanning multiple repositories, use the registered `IUnitOfWork` and explicitly
+commit or roll back the shared transaction:
+
+```csharp
+await unitOfWork.BeginTransactionAsync();
+try
+{
+    await unitOfWork.OrganizationRepository.PostAsync(organization);
+    await unitOfWork.ProfileRepository.PostAsync(profile);
+    await unitOfWork.CommitAsync();
+}
+catch
+{
+    await unitOfWork.RollbackAsync();
+    throw;
+}
+```
+
+Automatic per-operation transactions can be temporarily disabled for a scope. This is useful when
+the caller intentionally controls the transaction boundary itself:
+
+```csharp
+using (unitOfWork.DisableAutomaticTransactions())
+{
+    await unitOfWork.OrganizationRepository.PostAsync(organization);
+    await unitOfWork.SaveChangesAsync();
+}
+```
+
+An explicitly started unit-of-work transaction takes precedence over automatic transactions, so
+repository calls inside that scope participate in the same transaction.
 
 ## Swagger / API documentation
 
@@ -292,7 +333,7 @@ Verify:
 
 - PostgreSQL is running
 - username/password are correct
-- the `DB_NAME` database exists
+- the `DB__NAME` database exists
 - the database server is listening on the configured port
 
 ### `dotnet ef` not recognized

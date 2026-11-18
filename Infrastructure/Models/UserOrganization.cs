@@ -1,15 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Infrastructure.Interface;
 
-namespace Infrastructure.Models
+namespace Infrastructure.Models;
+
+public partial class UserOrganization : IAuditAble
 {
-    public partial class UserOrganization
-    {
-        public int Id { get; set; }
-        public string? UserId { get; set; }
-        public int? OrganizationId { get; set; }
-        public virtual Organization? Organization { get; set; }
-        public virtual User? User { get; set; }
-    }
+    public int Id { get; set; }
+
+    //FK
+    public string? UserId { get; set; }
+    public string RoleId { get; set; } = null!;
+    public int? OrganizationId { get; set; }
+
+    public virtual Organization? Organization { get; set; }
+    public virtual User? User { get; set; }
+    public virtual AspNetRole Role { get; set; } = null!;
+    public virtual ICollection<UserOrganizationAuditLog> AuditLogs { get; set; } = [];
 }

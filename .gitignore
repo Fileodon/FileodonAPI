@@ -3,6 +3,13 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Persistent data
+data/
+
+# key files
+*.key
+*.pem
+
 # dotenv files
 .env
 

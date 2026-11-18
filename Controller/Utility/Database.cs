@@ -21,17 +21,9 @@ public static class Database
         if (string.IsNullOrEmpty(connectionString))
         {
             Log.Information("Connection string not found in configuration. Attempting to load from environment variables.");
-            string filepath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
-            if (File.Exists(filepath))
-            {
-                Log.Information($"Loading environment variables from {filepath}");
-                DotEnv.Load(filepath);
-            }
-
-            builder.Configuration.AddEnvironmentVariables();
 
             List<string> missingEnvVars = [];
-            foreach (string envVar in (List<string>)["DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"])
+            foreach (string envVar in (List<string>)["DB:HOST", "DB:PORT", "DB:USER", "DB:PASSWORD", "DB:NAME"])
             {
                 if (string.IsNullOrEmpty(builder.Configuration[envVar]))
                 {
@@ -44,11 +36,11 @@ public static class Database
                 throw new InvalidOperationException($"Missing required environment variables: {string.Join(", ", missingEnvVars)}");
             }
 
-            string dbHost = builder.Configuration["DB_HOST"] ?? throw new InvalidOperationException("DB_HOST environment variable is not set.");
-            string dbPort = builder.Configuration["DB_PORT"] ?? throw new InvalidOperationException("DB_PORT environment variable is not set.");
-            string dbUser = builder.Configuration["DB_USER"] ?? throw new InvalidOperationException("DB_USER environment variable is not set.");
-            string dbPassword = builder.Configuration["DB_PASSWORD"] ?? throw new InvalidOperationException("DB_PASSWORD environment variable is not set.");
-            string dbName = builder.Configuration["DB_NAME"] ?? throw new InvalidOperationException("DB_NAME environment variable is not set.");
+            string dbHost = builder.Configuration["DB:HOST"] ?? throw new InvalidOperationException("DB:HOST environment variable is not set.");
+            string dbPort = builder.Configuration["DB:PORT"] ?? throw new InvalidOperationException("DB:PORT environment variable is not set.");
+            string dbUser = builder.Configuration["DB:USER"] ?? throw new InvalidOperationException("DB:USER environment variable is not set.");
+            string dbPassword = builder.Configuration["DB:PASSWORD"] ?? throw new InvalidOperationException("DB:PASSWORD environment variable is not set.");
+            string dbName = builder.Configuration["DB:NAME"] ?? throw new InvalidOperationException("DB:NAME environment variable is not set.");
 
             connectionString = $"Host={dbHost};Port={dbPort};Username={dbUser};Password={dbPassword};Database={dbName}";
         }

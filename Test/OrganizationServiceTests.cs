@@ -1,0 +1,264 @@
+using Domain.DTO;
+using Domain.Enum;
+using Domain.Interface;
+using Domain.Service;
+using Infrastructure.Models;
+using Infrastructure.Models.Enums;
+using Moq;
+
+namespace Test;
+
+public sealed class OrganizationServiceTests
+{
+    [Fact]
+    public async Task CreateOrganization_creates_an_organization_and_owner_role_for_the_requesting_user()
+    {
+        const string userId = "owner-id";
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        Organization? postedOrganization = null;
+        AspNetRole? postedOwnerRole = null;
+        UserOrganization? postedUserOrganization = null;
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.PostAsync(It.IsAny<Organization>()))
+            .Callback<Organization>(organization => postedOrganization = organization)
+            .ReturnsAsync((Organization organization) =>
+            {
+                organization.Id = 42;
+                return organization;
+            });
+        unitOfWork
+            .Setup(work => work.RoleRepository.PostAsync(It.IsAny<AspNetRole>()))
+            .Callback<AspNetRole>(role => postedOwnerRole = role)
+            .ReturnsAsync((AspNetRole role) =>
+            {
+                role.Id = "80192b21-4b21-4fa6-8a16-337278dc0e70";
+                return role;
+            });
+        unitOfWork
+            .Setup(work => work.UserOrganizationRepository.PostAsync(It.IsAny<UserOrganization>()))
+            .Callback<UserOrganization>(membership => postedUserOrganization = membership)
+            .ReturnsAsync((UserOrganization membership) => membership);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        Organization result = await service.CreateOrganizationAsync(
+            "Acme",
+            "acme.example.com",
+            "owner@acme.example.com",
+            userId);
+
+        Assert.Equal(42, result.Id);
+        Assert.NotNull(postedOrganization);
+        Assert.Equal(userId, postedOrganization.UserOwnerId);
+        Assert.Equal("Acme", postedOrganization.OrgName);
+        Assert.Equal("acme.example.com", postedOrganization.WorkspaceURL);
+        Assert.Equal("owner@acme.example.com", postedOrganization.ContactEmail);
+        Assert.NotNull(postedOwnerRole);
+        Assert.Equal("Owner", postedOwnerRole.Name);
+        Assert.Equal(42, postedOwnerRole.OrganizationId);
+        Assert.Equal((long)PermissionFlags.All, postedOwnerRole.PermissionMask);
+        Assert.NotNull(postedUserOrganization);
+        Assert.Equal(userId, postedUserOrganization.UserId);
+        Assert.Equal("80192b21-4b21-4fa6-8a16-337278dc0e70", postedUserOrganization.RoleId);
+        Assert.Equal(42, postedUserOrganization.OrganizationId);
+        unitOfWork.Verify(work => work.BeginTransactionAsync(), Times.Once);
+        unitOfWork.Verify(work => work.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateOrganization_rolls_back_when_owner_role_is_not_created()
+    {
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.PostAsync(It.IsAny<Organization>()))
+            .ReturnsAsync((Organization organization) =>
+            {
+                organization.Id = 42;
+                return organization;
+            });
+        unitOfWork
+            .Setup(work => work.RoleRepository.PostAsync(It.IsAny<AspNetRole>()))
+            .ReturnsAsync(new AspNetRole { Id = string.Empty });
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        Exception exception = await Assert.ThrowsAsync<Exception>(() =>
+            service.CreateOrganizationAsync(
+                "Acme",
+                "acme.example.com",
+                "owner@acme.example.com",
+                "80192b21-4b21-4fa6-8a16-337278dc0e70"));
+
+        Assert.Equal("Failed to create owner role for organization.", exception.Message);
+        unitOfWork.Verify(work => work.BeginTransactionAsync(), Times.Once);
+        unitOfWork.Verify(work => work.RollbackAsync(), Times.Once);
+        unitOfWork.Verify(work => work.CommitAsync(), Times.Never);
+        unitOfWork.Verify(
+            work => work.UserOrganizationRepository.PostAsync(It.IsAny<UserOrganization>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Owner_can_update_an_organization()
+    {
+        const string userId = "owner-id";
+        const string workspaceURL = "acme.example.com";
+        const string contactEmail = "example@example.com";
+        Organization organization = CreateOrganization(userId);
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
+            .ReturnsAsync(organization);
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.PutAsync(
+                organization))
+            .ReturnsAsync(organization);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        MutationEnvelope<Organization> result =
+            await service.UpdateOrganizationAsync(organization.Id, "Updated name", workspaceURL, contactEmail, userId);
+
+        Assert.Equal(MutationStatus.Success, result.Status);
+        Assert.Same(organization, result.Data);
+        unitOfWork.Verify(work => work.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Owner_can_delete_an_organization()
+    {
+        const string userId = "owner-id";
+        Organization organization = CreateOrganization(userId);
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
+            .ReturnsAsync(organization);
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.DeleteByIdAsync(organization.Id, userId))
+            .ReturnsAsync(organization);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        MutationEnvelope<Organization> result =
+            await service.DeleteOrganizationByIdAsync(organization.Id, userId);
+
+        Assert.Equal(MutationStatus.Success, result.Status);
+        Assert.Same(organization, result.Data);
+        unitOfWork.Verify(work => work.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Non_owner_cannot_update_an_organization()
+    {
+        const string userId = "member-id";
+        const string workspaceURL = "acme.example.com";
+        const string contactEmail = "example@example.com";
+        Organization organization = CreateOrganization("owner-id");
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
+            .ReturnsAsync(organization);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        MutationEnvelope<Organization> result =
+            await service.UpdateOrganizationAsync(organization.Id, "Updated name", workspaceURL, contactEmail, userId);
+
+        Assert.Equal(MutationStatus.Forbidden, result.Status);
+        Assert.Null(result.Data);
+        unitOfWork.Verify(
+            work => work.OrganizationRepository.UpdateOrganizationAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Non_owner_cannot_delete_an_organization()
+    {
+        const string userId = "member-id";
+        Organization organization = CreateOrganization("owner-id");
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.GetByIdAsync(organization.Id, userId))
+            .ReturnsAsync(organization);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        MutationEnvelope<Organization> result =
+            await service.DeleteOrganizationByIdAsync(organization.Id, userId);
+
+        Assert.Equal(MutationStatus.Forbidden, result.Status);
+        Assert.Null(result.Data);
+        unitOfWork.Verify(
+            work => work.OrganizationRepository.DeleteByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Non_member_cannot_get_an_organization()
+    {
+        const string userId = "non-member-id";
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
+            .ReturnsAsync((Organization?)null);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        Organization? result = await service.GetOrganizationByIdAsync(42, userId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task Non_member_cannot_update_or_delete_an_organization()
+    {
+        const string userId = "non-member-id";
+        const string workspaceURL = "acme.example.com";
+        const string contactEmail = "example@example.com";
+        Mock<IUnitOfWork> unitOfWork = CreateUnitOfWork();
+        unitOfWork
+            .Setup(work => work.OrganizationRepository.GetByIdAsync(42, userId))
+            .ReturnsAsync((Organization?)null);
+        OrganizationService service = CreateOrganizationService(unitOfWork);
+
+        MutationEnvelope<Organization> updateResult =
+            await service.UpdateOrganizationAsync(42, "Updated name", workspaceURL, contactEmail, userId);
+        MutationEnvelope<Organization> deleteResult =
+            await service.DeleteOrganizationByIdAsync(42, userId);
+
+        Assert.Equal(MutationStatus.NotFound, updateResult.Status);
+        Assert.Equal(MutationStatus.NotFound, deleteResult.Status);
+        unitOfWork.Verify(
+            work => work.OrganizationRepository.UpdateOrganizationAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+        unitOfWork.Verify(
+            work => work.OrganizationRepository.DeleteByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>()),
+            Times.Never);
+    }
+
+    private static Mock<IUnitOfWork> CreateUnitOfWork()
+    {
+        Mock<IUnitOfWork> unitOfWork = new();
+        unitOfWork
+            .Setup(work => work.DisableAutomaticTransactions())
+            .Returns(Mock.Of<IDisposable>());
+        return unitOfWork;
+    }
+
+    private static OrganizationService CreateOrganizationService(
+        Mock<IUnitOfWork> unitOfWork) =>
+        new(unitOfWork.Object);
+
+    private static Organization CreateOrganization(string ownerId) =>
+        new()
+        {
+            Id = 42,
+            UserOwnerId = ownerId,
+            OrgName = "Acme",
+            WorkspaceURL = "acme.example.com",
+            ContactEmail = "owner@acme.example.com"
+        };
+}
