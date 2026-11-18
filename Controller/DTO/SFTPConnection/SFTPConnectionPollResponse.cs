@@ -1,7 +1,3 @@
-using System.Text.Json.Serialization;
-using Infrastructure.Models.Enums;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-
 namespace Controller.DTO.SFTPConnection;
 
 public record SFTPConnectionPollResponse
