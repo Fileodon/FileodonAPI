@@ -222,6 +222,27 @@ namespace Controller.Controllers
             return Ok("Email confirmed successfully.");
         }
 
+        // https://stackoverflow.com/questions/72188657/how-to-get-client-ip-in-net-core-6-web-api
+        [HttpGet("ip")]
+        [AllowAnonymous]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
+        public async Task<IActionResult> GetIp()
+        {
+            var ip = this.HttpContext.Connection.RemoteIpAddress;
+            if (ip is null)
+            {
+                return BadRequest("Ip is not found");
+            }
+
+            if (ip.IsIPv4MappedToIPv6)
+            {
+                return Ok(ip.MapToIPv4().ToString());
+            }
+
+            return Ok(ip.ToString());
+        }
+
         [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(BasicUserInformationResponse), 200)]
@@ -242,6 +263,8 @@ namespace Controller.Controllers
             }
             return Ok(await user.ToBasicUserInformationResponse());
         }
+
+
 
         private void SetRefreshTokenCookie(string refreshToken, DateTimeOffset expiresAt)
         {
