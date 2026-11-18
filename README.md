@@ -1,356 +1,269 @@
 # Fileodon API
 
-Fileodon API is an ASP.NET Core Web API built on .NET 10, using PostgreSQL with Entity Framework Core and ASP.NET Core Identity for authentication and identity endpoints.
+The Fileodon API is an ASP.NET Core Web API for managing users, organizations, roles,
+permissions, SFTP connections, file operations, and audit logs. It targets **.NET 10**,
+uses **PostgreSQL** with Entity Framework Core, and exposes an OpenAPI/Swagger UI for
+development.
 
-This repository is organized into a small multi-project solution:
+This README is the quickest path from a fresh checkout to a running local API.
 
-- `Controller/` — ASP.NET Core host, configuration, middleware, Swagger, and API endpoints
-- `Infrastructure/` — EF Core DbContext and persistence layer
-- `Domain/` — domain model definitions
+## What you need
 
-## Requirements
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [PostgreSQL 14 or newer](https://www.postgresql.org/download/)
+- [Git](https://git-scm.com/downloads)
+- Optional: [Docker Desktop](https://www.docker.com/products/docker-desktop/) for Mailpit
 
-Before working on the project, make sure you have the following installed:
-
-- .NET SDK 10.0+
-- PostgreSQL 14+ or a compatible local instance
-- A tool for managing PostgreSQL (optional but recommended: pgAdmin or psql)
-- Git
-
-## Solution layout
-
-```text
-FileodonAPI.sln
-.env.example
-Controller/
-  Program.cs
-  appsettings.json
-  appsettings.Development.json
-  Controller.csproj
-  Utility/
-    DotEnv.cs
-Infrastructure/
-  ApplicationDbContext.cs
-  Infrastructure.csproj
-Domain/
-  Domain.csproj
-Scripts/
-  apply_migrations.bat
-  create_migration.bat
-```
+The solution also contains a `Test` project with xUnit tests. You do not need a separate
+frontend to run or explore the API.
 
 ## Quick start
 
-1. Restore packages:
+### 1. Clone the repository
 
 ```bash
-dotnet restore
+git clone https://github.com/Fileodon/FileodonAPI.git
+cd FileodonAPI
 ```
 
-2. Create a local environment file from the sample template:
+### 2. Create a PostgreSQL database
 
-```bash
-copy .env.example .env
-```
-
-On Linux/macOS:
-
-```bash
-cp .env.example .env
-```
-
-Update the values in `.env` to match your local PostgreSQL instance.
-
-The project includes a sample template at `.env.example`, so the user can create a local copy named `.env` without committing secrets to source control.
-
-The API first attempts to read `ConnectionStrings:DefaultConnection` from configuration. If it is missing, it looks for a `.env` file in the current working directory and then reads environment variables from the process environment.
-
-Example `.env` file:
-
-```env
-DB__HOST=localhost
-DB__PORT=5432
-DB__USER=postgres
-DB__PASSWORD=postgres
-DB__NAME=fileodon
-```
-
-> [!NOTE]
-> Double underscore `__` is used in the `.env` file to represent nested configuration keys in ASP.NET Core. For example, `DB__HOST` corresponds to `DB:HOST` in configuration.
-
-If you prefer to use application configuration instead, add a `ConnectionStrings` section to `Controller/appsettings.Development.json` or your secrets configuration:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=fileodon"
-  }
-}
-```
-
-3. Run the API:
-
-```bash
-dotnet run --project Controller
-```
-
-The app will start using the ASP.NET Core development environment and expose Swagger UI in development.
-
-## Database setup
-
-The project uses PostgreSQL through Npgsql and the `ApplicationDbContext` in `Infrastructure/ApplicationDbContext.cs`.
-
-### Create the database
-
-Ensure PostgreSQL is running and the database exists:
+Create a database for local development. For example, from `psql`:
 
 ```sql
 CREATE DATABASE fileodon;
 ```
 
-If your credentials differ, update the connection values accordingly.
+The PostgreSQL server must be running and the user in your connection settings must have
+access to this database.
 
-### Apply EF Core migrations
+### 3. Configure the API
 
-Install the EF Core CLI if you do not already have it:
+Copy the example environment file into the API's data directory. The application reads
+this file from `Controller/data/.env`:
+
+Windows PowerShell:
+
+```powershell
+Copy-Item Controller\.env.example Controller\data\.env
+```
+
+macOS/Linux:
+
+```bash
+cp Controller/.env.example Controller/data/.env
+```
+
+Open `Controller/data/.env` and set the database values:
+
+```env
+DB__HOST=localhost
+DB__PORT=5432
+DB__USER=postgres
+DB__PASSWORD=your-postgres-password
+DB__NAME=fileodon
+```
+
+The double underscore (`__`) maps to the nested ASP.NET Core configuration key. For
+example, `DB__HOST` becomes `DB:HOST`.
+
+The application creates `Controller/data` and its encryption, JWT, SFTP PAM, and log
+files automatically on first startup. These files are local runtime data and should not
+be committed.
+
+> **Alternative:** You can provide a complete connection string as
+> `ConnectionStrings__DefaultConnection` instead of the `DB__*` values.
+
+### 4. Restore, build, and run
+
+From the repository root:
+
+```bash
+dotnet restore
+dotnet build
+dotnet run --project Controller
+```
+
+The API checks the database connection and applies pending EF Core migrations
+automatically during startup.
+
+When using the launch profile, the development URLs are:
+
+- Swagger UI: `https://localhost:7248/api/`
+- HTTP Swagger UI: `http://localhost:5283/api/`
+- Health check: `https://localhost:7248/api/system/health`
+
+The HTTPS development certificate may need to be trusted once:
+
+```bash
+dotnet dev-certs https --trust
+```
+
+## Optional email setup with Mailpit
+
+Email confirmation and password-reset flows require an SMTP server. Mailpit provides a
+local inbox without sending real email:
+
+```bash
+docker compose up -d mailpit
+```
+
+Add these values to `Controller/data/.env`:
+
+```env
+SMTP__HOST=localhost
+SMTP__PORT=1025
+SMTP__STARTTLS=false
+SMTP__USER=
+SMTP__PASSWORD=
+SMTP__FROM_ADDRESS=no-reply@localhost
+```
+
+Open the Mailpit inbox at <http://localhost:8025>.
+
+`docker-compose.yml` only starts Mailpit; PostgreSQL is expected to be installed and
+running separately.
+
+## Configuration
+
+The most useful local settings are:
+
+| Variable | Purpose |
+| --- | --- |
+| `DB__HOST` | PostgreSQL host |
+| `DB__PORT` | PostgreSQL port |
+| `DB__USER` | PostgreSQL user |
+| `DB__PASSWORD` | PostgreSQL password |
+| `DB__NAME` | PostgreSQL database |
+| `API__HOST` | Public API URL used in generated links |
+| `CORS__ALLOWED_HOSTS` | Comma-separated frontend origins |
+| `SMTP__*` | SMTP settings for confirmation and reset emails |
+| `SFTPPamJwt__KeyId` | Identifier for the SFTP PAM signing key |
+
+Use environment variables or a local secrets provider for credentials. Do not put
+passwords, tokens, or private keys in source control.
+
+## Database migrations
+
+Normal application startup applies all existing migrations automatically. To manage
+migrations while developing the schema, install the EF Core CLI once:
 
 ```bash
 dotnet tool install --global dotnet-ef
 ```
 
-Then apply migrations:
+Create a migration:
 
 ```bash
-dotnet ef database update --project Infrastructure --startup-project Controller --context ApplicationDbContext
+dotnet ef migrations add <MigrationName> `
+  --project Infrastructure `
+  --startup-project Controller
 ```
 
-If the project has no migrations yet, generate one:
+On macOS/Linux, use `\` instead of PowerShell's backtick for line continuation, or put
+the command on one line:
 
 ```bash
-dotnet ef migrations add InitialCreate --project Infrastructure --startup-project Controller --context ApplicationDbContext
+dotnet ef migrations add <MigrationName> --project Infrastructure --startup-project Controller
 ```
 
-## Configuration model
-
-The application uses ASP.NET Core configuration providers in this order:
-
-1. `appsettings.json`
-2. `appsettings.Development.json`
-3. user secrets / environment-specific config
-4. `.env` loaded via `DotEnv.Load(...)`
-5. OS environment variables via `builder.Configuration.AddEnvironmentVariables()`
-
-The custom `.env` loader is implemented in `Controller/Utility/DotEnv.cs` and reads simple `KEY=value` pairs.
-
-Important notes:
-
-- The project expects either a `DefaultConnection` connection string or individual `DB_*` environment variables.
-- If those values are missing, it builds a PostgreSQL connection string using default values:
-  - DB__HOST = `localhost`
-  - DB__PORT = `5432`
-  - DB__USER = `postgres`
-  - DB__PASSWORD = `postgres`
-  - DB__NAME = `postgres`
-
-## Authentication and identity
-
-The API is configured with ASP.NET Core Identity and generated Identity endpoints.
-
-Core setup in `Controller/Program.cs` includes:
-
-```csharp
-builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-```
-
-The generated identity routes are mapped in the app with:
-
-```csharp
-app.MapIdentityApi<IdentityUser>();
-```
-
-This creates standard endpoints for identity operations, such as registration and login, depending on the current ASP.NET Core Identity configuration.
-
-## Repository transactions
-
-Repositories automatically wrap each write operation (`PostAsync`, `PutAsync`, `UpdateAsync`, and
-`DeleteAsync`) in a database transaction. If the operation fails, the transaction is rolled back
-and the exception is rethrown. Read operations are not wrapped because they do not change state.
-
-For a transaction spanning multiple repositories, use the registered `IUnitOfWork` and explicitly
-commit or roll back the shared transaction:
-
-```csharp
-await unitOfWork.BeginTransactionAsync();
-try
-{
-    await unitOfWork.OrganizationRepository.PostAsync(organization);
-    await unitOfWork.ProfileRepository.PostAsync(profile);
-    await unitOfWork.CommitAsync();
-}
-catch
-{
-    await unitOfWork.RollbackAsync();
-    throw;
-}
-```
-
-Automatic per-operation transactions can be temporarily disabled for a scope. This is useful when
-the caller intentionally controls the transaction boundary itself:
-
-```csharp
-using (unitOfWork.DisableAutomaticTransactions())
-{
-    await unitOfWork.OrganizationRepository.PostAsync(organization);
-    await unitOfWork.SaveChangesAsync();
-}
-```
-
-An explicitly started unit-of-work transaction takes precedence over automatic transactions, so
-repository calls inside that scope participate in the same transaction.
-
-## Swagger / API documentation
-
-Swagger is enabled in development mode:
-
-```csharp
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-        options.RoutePrefix = string.Empty;
-    });
-}
-```
-
-Because `RoutePrefix` is set to an empty string, the Swagger UI is served at the root path during development, typically:
-
-```text
-https://localhost:<port>/
-```
-
-This makes it easier to use the UI directly without navigating to `/swagger`.
-
-### Testing secured endpoints in Swagger
-
-To authorize requests in Swagger UI:
-
-1. Register or log in through the Identity endpoints.
-2. Copy the JWT token.
-3. In Swagger UI, click the Authorize button.
-4. Use the value format:
-
-```text
-Bearer <your-token>
-```
-
-Then any endpoint marked with `[Authorize]` can be tested from Swagger.
-
-## Development workflow
-
-### Restore and build
+Apply migrations manually when needed:
 
 ```bash
-dotnet restore
-dotnet build
+dotnet ef database update --project Infrastructure --startup-project Controller
 ```
 
-### Run in development mode
-
-```bash
-dotnet run --project Controller
-```
-
-### Watch for changes
-
-```bash
-dotnet watch --project Controller run
-```
-
-## Common tasks
-
-### Add a migration
-
-```bash
-dotnet ef migrations add <MigrationName> --project Infrastructure --startup-project Controller --context ApplicationDbContext
-```
-
-If you prefer using the bundled Windows scripts, run:
+Windows contributors can also use:
 
 ```bat
 Scripts\create_migration.bat
-```
-
-This script prompts for a migration name and runs the equivalent `dotnet ef` command.
-
-### Update the database
-
-```bash
-dotnet ef database update --project Infrastructure --startup-project Controller --context ApplicationDbContext
-```
-
-Or use the helper script:
-
-```bat
 Scripts\apply_migrations.bat
 ```
 
-This applies any pending migrations using the project and startup project paths already configured in the script.
+## Running tests
 
-### Inspect the app in Swagger
-
-Open the application root in a browser while running in development:
-
-```text
-https://localhost:<port>/
-```
-
-### Run tests
-
-This project does not currently include an explicit test project in the solution snapshot, so use the .NET solution-level test command when you add tests:
+Run the complete test suite from the repository root:
 
 ```bash
 dotnet test
 ```
 
-## Troubleshooting
+Tests use SQLite in-memory databases where appropriate and do not require your local
+PostgreSQL database.
 
-### Connection string not found
+## Docker
 
-If startup logs report that `DefaultConnection` is missing, check:
-
-- `Controller/appsettings.json`
-- `Controller/appsettings.Development.json`
-- environment variables
-- the `.env` file in the current working directory
-
-### PostgreSQL login failures
-
-Verify:
-
-- PostgreSQL is running
-- username/password are correct
-- the `DB__NAME` database exists
-- the database server is listening on the configured port
-
-### `dotnet ef` not recognized
-
-Install the .NET EF Core tool:
+Build the API image from the repository root:
 
 ```bash
-dotnet tool install --global dotnet-ef
+docker build -f Controller/Dockerfile -t fileodon-api .
+docker run --rm -p 8080:8080 fileodon-api
 ```
 
-Then reopen the terminal if necessary.
+The container listens on port `8080`. Provide the database configuration as environment
+variables when starting it, for example:
 
-## Notes for contributors
+```bash
+docker run --rm -p 8080:8080 `
+  -e DB__HOST=host.docker.internal `
+  -e DB__PORT=5432 `
+  -e DB__USER=postgres `
+  -e DB__PASSWORD=your-postgres-password `
+  -e DB__NAME=fileodon `
+  fileodon-api
+```
 
-- Prefer environment variables or secrets for local development credentials rather than committing production values.
-- Keep sensitive configuration out of source control.
-- Validate connectivity and migrations before pushing changes affecting the database schema or authentication flow.
+Use `\` instead of backticks on macOS/Linux. Mount `/app/data` in a persistent
+deployment so generated keys and logs survive container replacement.
+
+## Project layout
+
+```text
+FileodonAPI.sln
+├── Controller/       API host, controllers, middleware, configuration
+├── Domain/           Domain services, DTOs, interfaces, and workers
+├── Infrastructure/   EF Core DbContext, repositories, and migrations
+├── Test/             xUnit tests
+├── Scripts/          Windows migration helpers
+└── docker-compose.yml
+```
+
+## Common troubleshooting
+
+### The API says database settings are missing
+
+Verify that the file is exactly `Controller/data/.env`, that all five `DB__*` values
+are set, and that the API is started from the repository root. You can also use
+`ConnectionStrings__DefaultConnection`.
+
+### The API cannot connect to PostgreSQL
+
+Check that PostgreSQL is running, the port is correct, the database exists, and the
+configured user can log in. A rejected connection prevents the API from starting.
+
+### Registration emails do not arrive
+
+Start Mailpit, configure the `SMTP__*` values above, and check <http://localhost:8025>.
+For a real SMTP provider, replace the Mailpit settings with that provider's host, port,
+TLS, credentials, and sender address.
+
+### Swagger does not load
+
+Use the `/api/` URL in Development and confirm that the process is still running. The
+OpenAPI document is available at `/api/openapi/v1.json` in Development.
+
+## Contributing
+
+Before opening a change, run:
+
+```bash
+dotnet build
+dotnet test
+```
+
+Keep generated data, logs, credentials, and key files out of commits. Add database
+migrations when changing the EF Core model, and verify that a clean checkout can restore,
+build, and start with the documented configuration.
 
 ## License
 
