@@ -297,6 +297,55 @@ namespace Infrastructure.Migrations
                     b.ToTable("role_audit_logs", (string)null);
                 });
 
+            modelBuilder.Entity("Infrastructure.Models.SFTPActionAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("text")
+                        .HasColumnName("new_data");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("text")
+                        .HasColumnName("old_data");
+
+                    b.Property<int>("SFTPConnectionID")
+                        .HasColumnType("integer")
+                        .HasColumnName("sftp_connection_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sftp_action_audit_logs");
+
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_sftp_action_audit_logs_actor_id");
+
+                    b.HasIndex("SFTPConnectionID")
+                        .HasDatabaseName("ix_sftp_action_audit_logs_sftp_connection_id");
+
+                    b.ToTable("sftp_action_audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>
                 {
                     b.Property<int>("Id")
@@ -881,6 +930,27 @@ namespace Infrastructure.Migrations
                     b.Navigation("Actor");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Infrastructure.Models.SFTPActionAuditLog", b =>
+                {
+                    b.HasOne("Infrastructure.Models.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_action_audit_logs_users_actor_id");
+
+                    b.HasOne("Infrastructure.Models.SFTPConnection", "SFTPConnection")
+                        .WithMany()
+                        .HasForeignKey("SFTPConnectionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sftp_action_audit_logs_sftp_connections_sftp_connection_id");
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("SFTPConnection");
                 });
 
             modelBuilder.Entity("Infrastructure.Models.SFTPConnection", b =>

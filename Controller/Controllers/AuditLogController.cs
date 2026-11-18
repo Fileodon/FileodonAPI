@@ -32,7 +32,8 @@ public class AuditLogController : ControllerBase
             data.organizationAuditLogs,
             data.SFTPConnectionAuditLogs,
             data.UserOrganizationAuditLogs,
-            data.RoleAuditLogs
+            data.RoleAuditLogs,
+            data.SFTPActionAuditLogs
         );
         return Ok(dto);
     }
@@ -79,4 +80,14 @@ public class AuditLogController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpGet("sftpAction/{sftpConnectionId}")]
+    [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSFTPActionAuditLogs(int sftpConnectionId)
+    {
+        var auditLogs = await _service.GetSFTPActionAuditLogs(sftpConnectionId);
+        GetAllAuditLogsResponse dto = new GetAllAuditLogsResponse(
+            sFTPActionAuditLogs: auditLogs
+        );
+        return Ok(dto);
+    }
 }

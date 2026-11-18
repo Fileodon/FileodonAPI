@@ -1,8 +1,8 @@
 #region Using Directives
 
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Security.Cryptography;
 using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
@@ -118,11 +118,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy(CorsPolicyName,
                      policy =>
                      {
-                        policy.WithOrigins(allowedOrigins)
-                               .AllowAnyHeader()
-                               .AllowAnyMethod()
-                               .AllowCredentials();
-                        policy.WithExposedHeaders("Content-Disposition");
+                         policy.WithOrigins(allowedOrigins)
+                                .AllowAnyHeader()
+                                .AllowAnyMethod()
+                                .AllowCredentials();
+                         policy.WithExposedHeaders("Content-Disposition");
                      }
     );
 });
@@ -161,6 +161,7 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISFTPActionService, SFTPActionService>();
 builder.Services.AddScoped<IAuthorizationHandler, EmailVerifiedHandler>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, VerifiedEmailResultHandler>();
+builder.Services.AddScoped<ISFTPActionAuditLogRepository, SFTPActionAuditLogRepository>();
 #endregion
 #region FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();

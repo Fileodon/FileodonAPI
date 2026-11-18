@@ -8,6 +8,7 @@ public record class AllAuditLogsServiceReturn
     public IEnumerable<SFTPConnectionAuditLog>? SFTPConnectionAuditLogs { get; set; } = null;
     public IEnumerable<RoleAuditLog>? RoleAuditLogs { get; set; } = null;
     public IEnumerable<UserOrganizationAuditLog>? UserOrganizationAuditLogs { get; set; } = null;
+    public IEnumerable<SFTPActionAuditLog>? SFTPActionAuditLogs { get; set; } = null;
 }
 
 public interface IAuditLogService
@@ -17,4 +18,5 @@ public interface IAuditLogService
     Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogs(int id);
     Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogs(string id);
     Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogs(int id);
+    Task<IEnumerable<SFTPActionAuditLog>> GetSFTPActionAuditLogs(int id);
 }

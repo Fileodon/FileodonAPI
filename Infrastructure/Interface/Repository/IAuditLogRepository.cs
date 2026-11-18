@@ -8,4 +8,5 @@ public interface IAuditLogRepository
     Task<IEnumerable<SFTPConnectionAuditLog>> GetSFTPConnectionAuditLogsFromOrganizationId(int id);
     Task<IEnumerable<RoleAuditLog>> GetRoleAuditLogsFromOrganizationId(int id);
     Task<IEnumerable<UserOrganizationAuditLog>> GetUserOrganizationAuditLogsFromOrganizationId(int id);
+    Task<IEnumerable<SFTPActionAuditLog>> GetSFTPActionAuditLogsFromOrganizationId(int id);
 }

@@ -27,6 +27,7 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
     public DbSet<UserOrganizationAuditLog> UserOrganizationAuditLogs => Set<UserOrganizationAuditLog>();
     public DbSet<RoleAuditLog> RoleAuditLogs => Set<RoleAuditLog>();
     public DbSet<SFTPDistributionJob> SFTPDistributionJobs => Set<SFTPDistributionJob>();
+    public DbSet<SFTPActionAuditLog> SFTPActionAuditLogs => Set<SFTPActionAuditLog>();
 
     // Kan bruges til at se kørte sql commands - brug kun i under development!
     // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
