@@ -80,6 +80,7 @@ internal sealed class AuthenticationTestContext : IDisposable
         services.AddScoped<IUserOrganizationRepository, UserOrganizationRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ISFTPActionAuditLogRepository, SFTPActionAuditLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         Mock<ISmtpEmailSender> emailSender = new();
         emailSender

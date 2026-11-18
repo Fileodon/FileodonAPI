@@ -1,5 +1,7 @@
 using Domain.Service;
+using Infrastructure.Interface.Repository;
 using Infrastructure.Interface.Repository.SFTP;
+using Infrastructure.Interface.Service;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO.SFTPAction;
 using Infrastructure.Worker;
@@ -120,11 +122,21 @@ public sealed class SFTPActionServiceTests
         repository.Verify(item => item.FileExistsAsync(connection, "/missing.txt", It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static SFTPActionService CreateService(Mock<ISFTPRepository> repository) =>
-        new(
+    private static SFTPActionService CreateService(Mock<ISFTPRepository> repository)
+    {
+        Mock<IUserContextService> userContext = new();
+        userContext
+            .Setup(item => item.GetCurrentUserId())
+            .Returns("test-user");
+
+        return new(
             Mock.Of<ILogger<SFTPActionService>>(),
             repository.Object,
-            Mock.Of<ISFTPUploadSender>());
+            Mock.Of<ISFTPUploadSender>(),
+            Mock.Of<ISFTPDistributionJobRepository>(),
+            userContext.Object,
+            Mock.Of<ISFTPActionAuditLogRepository>());
+    }
 
     private static SFTPConnection CreateConnection() =>
         new()

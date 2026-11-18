@@ -167,6 +167,7 @@ public sealed class UnitOfWorkTests
             new SFTPConnectionAuthCodeRepository(context, transactionSettings),
             new UserOrganizationRepository(context, transactionSettings),
             new AuditLogRepository(context),
-            new UserRepository(context, transactionSettings));
+            new UserRepository(context, transactionSettings),
+            new SFTPActionAuditLogRepository(context, transactionSettings));
     }
 }

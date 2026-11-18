@@ -7,6 +7,7 @@ using Infrastructure.Interface.Repository;
 using Infrastructure.Models;
 using Infrastructure.Models.DTO;
 using Infrastructure.Models.Enums;
+using Microsoft.Extensions.Configuration;
 using Moq;
 
 namespace Test;
@@ -44,7 +45,8 @@ public sealed class SFTPConnectionServiceTests
             .ReturnsAsync(1);
         SFTPConnectionService service = new(
             unitOfWork.Object,
-            Mock.Of<ICryptoService>());
+            Mock.Of<ICryptoService>(),
+            Mock.Of<IConfiguration>());
 
         MutationEnvelope<SFTPConnectionAuthCode> result =
             await service.GenerateVerificationCodeAsync(organizationId, userId);
@@ -166,7 +168,8 @@ public sealed class SFTPConnectionServiceTests
         ICryptoService cryptoService) =>
         new(
             unitOfWork.Object,
-            cryptoService);
+            cryptoService,
+            Mock.Of<IConfiguration>());
 
     private static Mock<IUnitOfWork> CreateUnitOfWork(Mock<ISFTPConnectionRepository> repository)
     {
