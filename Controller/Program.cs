@@ -162,6 +162,10 @@ builder.Services.AddScoped<ISFTPActionService, SFTPActionService>();
 builder.Services.AddScoped<IAuthorizationHandler, EmailVerifiedHandler>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, VerifiedEmailResultHandler>();
 #endregion
+#region GlobalExceptionHandler
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+#endregion
 #region FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<SFTPConnectionCreateRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
@@ -366,6 +370,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseExceptionHandler();
 app.UseCors(CorsPolicyName);
 app.UseRouting();
 app.UseRateLimiter();

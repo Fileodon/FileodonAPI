@@ -1,4 +1,3 @@
-using System;
 using Controller.Extensions;
 using Controller.Middleware.Attribute;
 using Infrastructure.Models;

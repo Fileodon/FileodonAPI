@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Controller.DTO.SFTPAction;
 using Controller.Extensions;
 using Controller.Middleware.Attribute;
