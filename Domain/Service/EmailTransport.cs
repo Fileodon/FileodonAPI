@@ -26,7 +26,7 @@ public class EmailTransport : IEmailTransport
         int port = Convert.ToInt32(_configuration["SMTP:PORT"] ?? throw new InvalidOperationException("SMTP:PORT is not configured."));
         string username = _configuration["SMTP:USER"] ?? throw new InvalidOperationException("SMTP:USER is not configured.");
         string password = _configuration["SMTP:PASSWORD"] ?? throw new InvalidOperationException("SMTP:PASSWORD is not configured.");
-        bool? useStartTls = bool.TryParse(_configuration["SMTP:USE_STARTTLS"], out bool result) ? result : null;
+        bool? useStartTls = bool.TryParse(_configuration["SMTP:STARTTLS"], out bool result) ? result : null;
 
         try
         {
@@ -66,7 +66,7 @@ public class EmailTransport : IEmailTransport
                 true => SecureSocketOptions.StartTls,
                 false => SecureSocketOptions.SslOnConnect,
                 null => SecureSocketOptions.None,
-            };            
+            };
             Console.WriteLine(socketOptions);
             await client.ConnectAsync(host, port, socketOptions, cancellationToken);
             await client.AuthenticateAsync(username, password, cancellationToken);
