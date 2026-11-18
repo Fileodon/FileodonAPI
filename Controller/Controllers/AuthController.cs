@@ -10,6 +10,7 @@ namespace Controller.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [ServiceFilter(typeof(Controller.Middleware.Attribute.ExceptionHandlerAttribute))]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

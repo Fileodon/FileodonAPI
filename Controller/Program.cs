@@ -7,6 +7,7 @@ using System.Threading.Channels;
 using Controller.Controllers.Authorization;
 using Controller.Extensions;
 using Controller.Middleware;
+using Controller.Middleware.Attribute;
 using Controller.Utility;
 using Controller.Validators.SFTPConnectionModels;
 using Domain.Interface;
@@ -131,6 +132,7 @@ builder.Services.AddHttpContextAccessor();
 
 #region Standard Services
 builder.Services.AddScoped<RepositoryTransactionSettings>();
+builder.Services.AddScoped<ExceptionHandlerAttribute>();
 builder.Services.AddScoped<IRepositoryTransactionSettings>(services =>
     services.GetRequiredService<RepositoryTransactionSettings>());
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
