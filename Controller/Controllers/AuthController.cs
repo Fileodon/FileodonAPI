@@ -222,6 +222,7 @@ namespace Controller.Controllers
             return Ok("Email confirmed successfully.");
         }
 
+        // Return 127.0.0.1 on localhost
         // https://stackoverflow.com/questions/72188657/how-to-get-client-ip-in-net-core-6-web-api
         [HttpGet("ip")]
         [AllowAnonymous]
@@ -263,8 +264,6 @@ namespace Controller.Controllers
             }
             return Ok(await user.ToBasicUserInformationResponse());
         }
-
-
 
         private void SetRefreshTokenCookie(string refreshToken, DateTimeOffset expiresAt)
         {
