@@ -292,6 +292,7 @@ namespace Controller.Controllers
         [ProducesResponseType(typeof(string), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
+        [AllowAnonymous]
         public async Task<IActionResult> GetPAMPublicKey()
         {
             if (!User.TryGetClaimValue("id", out var userId) || userId is null)
