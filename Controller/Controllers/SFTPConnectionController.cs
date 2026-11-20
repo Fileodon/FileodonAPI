@@ -295,11 +295,6 @@ namespace Controller.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetPAMPublicKey()
         {
-            if (!User.TryGetClaimValue("id", out var userId) || userId is null)
-            {
-                return Unauthorized("User ID claim is missing.");
-            }
-
             string? publicKey = await _sFTPConnectionService.GetPAMPublicKeyAsync();
 
             if (publicKey is null)
