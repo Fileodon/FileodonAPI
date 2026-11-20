@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers
 {
-    [Route("organization/{organizationid}/[controller]/{sftpconnectionid}")]
+    [Route("api/organization/{organizationid}/[controller]/{sftpconnectionid}")]
     [ApiController]
     [Authorize]
     [RequireVerifiedEmail]
@@ -93,7 +93,7 @@ namespace Controller.Controllers
             }
         }
 
-        [HttpPost("/organization/{organizationid}/[controller]/distribute")]
+        [HttpPost("~/api/organization/{organizationid}/[controller]/distribute")]
         [Consumes("multipart/form-data")]
         [RequestFormLimits(MultipartBodyLengthLimit = uploadLimit)]
         [RequestSizeLimit(uploadLimit)]
@@ -156,7 +156,7 @@ namespace Controller.Controllers
             }
         }
 
-        [HttpGet("/organization/{organizationid}/[controller]/distribute/{jobId:guid}")]
+        [HttpGet("~/api/organization/{organizationid}/[controller]/distribute/{jobId:guid}")]
         [ProducesResponseType(typeof(SFTPActionDistributeResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
