@@ -175,15 +175,6 @@ builder.Services.AddOpenApi(options =>
 {
     options.AddFluentValidationRules();
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        if (builder.Environment.IsDevelopment())
-        {
-            document.Servers = [new OpenApiServer { Url = "/api" }];
-        }
-
-        return Task.CompletedTask;
-    });
     options.AddOperationTransformer<PollStatusExamplesOperationTransformer>();
     options.AddSchemaTransformer((schema, context, ct) =>
     {
@@ -332,35 +323,10 @@ if (!Database.CanConnectToDb(app))
 
 Database.ApplyMigrations(app);
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    // UsePathBase only adds an alternative url, not replacing
-    app.UsePathBase("/api");
-    // Enforce that /api is the base path from the request
-    app.Use(async (context, next) =>
-    {
-        if (context.Request.PathBase != "/api" && context.Request.PathBase != "")
-        {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-            return;
-        }
-
-        await next();
-    });
-}
-
 app.MapOpenApi();
 app.UseSwaggerUI(options =>
 {
-    if (app.Environment.IsDevelopment())
-    {
-        options.SwaggerEndpoint("/api/openapi/v1.json", "v1");
-    }
-    else
-    {
-        options.SwaggerEndpoint("/openapi/v1.json", "v1");
-    }
+    options.SwaggerEndpoint("/openapi/v1.json", "v1");
     options.RoutePrefix = string.Empty;
 });
 

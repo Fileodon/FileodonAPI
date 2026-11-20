@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Controller.Controllers;
 
 [Authorize]
-[Route("[controller]")]
+[Route("api/[controller]")]
 [ApiController]
 [RequireVerifiedEmail]
 public class AuditLogController : ControllerBase

@@ -8,7 +8,7 @@ namespace Controller.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("/organization/{organizationId}/[controller]")]
+[Route("api/organization/{organizationId}/[controller]")]
 [RequireVerifiedEmail]
 public class RoleController : ControllerBase
 {

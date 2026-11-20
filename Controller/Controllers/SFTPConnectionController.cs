@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers
 {
-    [Route("organization/{organizationid}/[controller]")]
+    [Route("api/organization/{organizationid}/[controller]")]
     [Authorize]
     [ApiController]
     [RequireVerifiedEmail]
@@ -193,7 +193,7 @@ namespace Controller.Controllers
         }
 
         // Fjerner {orgid} fra url
-        [HttpPost("~/organization/[controller]")]
+        [HttpPost("~/api/organization/[controller]")]
         [ProducesResponseType(typeof(SFTPConnectionCreateResponse), 200)]
         [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
         [ProducesResponseType(401)]
@@ -288,7 +288,7 @@ namespace Controller.Controllers
             return Ok(result.Select(conn => conn.ToDetailedGetResponseDTO()));
         }
 
-        [HttpGet("~/organization/[controller]/pam/publickey")]
+        [HttpGet("~/api/organization/[controller]/pam/publickey")]
         [ProducesResponseType(typeof(string), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]

@@ -11,7 +11,7 @@ namespace Controller.Controllers;
 
 [Authorize]
 [RequireVerifiedEmail]
-[Route("[controller]")]
+[Route("api/[controller]")]
 [ApiController]
 public class OrganizationController : ControllerBase
 {
