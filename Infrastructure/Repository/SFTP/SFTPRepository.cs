@@ -193,16 +193,18 @@ public sealed class SFTPRepository : ISFTPRepository
             4096);
 
         string sftpCommand =
-            $"sftp -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null " +
+            $"sftp -vvv -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null " +
             "-oBatchMode=no -oPubkeyAuthentication=no " +
             "-oKbdInteractiveAuthentication=yes -oPasswordAuthentication=yes " +
             "-oPreferredAuthentications=password,keyboard-interactive " +
             $"-P {destinationConnection.Port ?? 22} fileodon@{QuoteShell(destinationConnection.Host)}";
         shell.WriteLine(sftpCommand);
-        await ReadUntilAsync(shell, "password:", cancellationToken);
-        System.Console.WriteLine(pamToken);
+        await ReadUntilAnyAsync(
+            shell,
+            ["password:", "password ", "keyboard-interactive"],
+            cancellationToken);
         shell.WriteLine(pamToken);
-        await ReadUntilAsync(shell, "sftp>", cancellationToken);
+        await ReadUntilAsync(shell, "sftp>", cancellationToken, TimeSpan.FromMinutes(10));
 
         for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
         {
@@ -211,7 +213,11 @@ public sealed class SFTPRepository : ISFTPRepository
             string sourcePath = Path.Combine(parent.RemotePath, fileName).Replace("\\", "/");
             string destinationPath = Path.Combine(destination.RemotePath, fileName).Replace("\\", "/");
             shell.WriteLine($"put {QuoteShell(sourcePath)} {QuoteShell(destinationPath)}");
-            string output = await ReadUntilAsync(shell, "sftp>", cancellationToken);
+            string output = await ReadUntilAsync(
+                shell,
+                "sftp>",
+                cancellationToken,
+                TimeSpan.FromMinutes(10));
             if (output.Contains("Failure", StringComparison.OrdinalIgnoreCase) ||
                 output.Contains("Couldn't", StringComparison.OrdinalIgnoreCase) ||
                 output.Contains("not found", StringComparison.OrdinalIgnoreCase))
@@ -239,10 +245,24 @@ public sealed class SFTPRepository : ISFTPRepository
     private static async Task<string> ReadUntilAsync(
         ShellStream shell,
         string expected,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
+    {
+        return await ReadUntilAnyAsync(
+            shell,
+            [expected],
+            cancellationToken,
+            timeout);
+    }
+
+    private static async Task<string> ReadUntilAnyAsync(
+        ShellStream shell,
+        IReadOnlyCollection<string> expectedValues,
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
     {
         StringBuilder output = new();
-        DateTime deadline = DateTime.UtcNow.AddMinutes(2);
+        DateTime deadline = DateTime.UtcNow.Add(timeout ?? TimeSpan.FromMinutes(10));
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -251,9 +271,12 @@ public sealed class SFTPRepository : ISFTPRepository
                 string chunk = shell.Read();
                 output.Append(chunk);
                 string text = output.ToString();
-                if (text.Contains(expected, StringComparison.OrdinalIgnoreCase))
+                foreach (string expected in expectedValues)
                 {
-                    return text;
+                    if (text.Contains(expected, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return text;
+                    }
                 }
 
                 if (text.Contains("command not found", StringComparison.OrdinalIgnoreCase) ||
@@ -273,7 +296,8 @@ public sealed class SFTPRepository : ISFTPRepository
         }
 
         throw new TimeoutException(
-            $"Timed out waiting for the remote SFTP shell prompt '{expected}'. " +
+            $"Timed out waiting for one of the remote SFTP shell prompts " +
+            $"'{string.Join(", ", expectedValues)}'. " +
             $"Remote output: {output}");
     }
 
