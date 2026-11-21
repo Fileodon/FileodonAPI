@@ -198,11 +198,8 @@ public sealed class SFTPRepository : ISFTPRepository
             "-oKbdInteractiveAuthentication=yes -oPasswordAuthentication=yes " +
             "-oPreferredAuthentications=password,keyboard-interactive " +
             $"-P {destinationConnection.Port ?? 22} fileodon@{QuoteShell(destinationConnection.Host)}";
-        shell.WriteLine(sftpCommand);
-        await ReadUntilAnyAsync(
-            shell,
-            ["password:", "password ", "keyboard-interactive"],
-            cancellationToken);
+        shell.WriteLine($"exec {sftpCommand}");
+        await ReadForPasswordPromptAsync(shell, cancellationToken);
         shell.WriteLine(pamToken);
         await ReadUntilAsync(shell, "sftp>", cancellationToken, TimeSpan.FromMinutes(10));
 
@@ -253,6 +250,54 @@ public sealed class SFTPRepository : ISFTPRepository
             [expected],
             cancellationToken,
             timeout);
+    }
+
+    private static async Task<string> ReadForPasswordPromptAsync(
+        ShellStream shell,
+        CancellationToken cancellationToken)
+    {
+        StringBuilder output = new();
+        DateTime deadline = DateTime.UtcNow.AddMinutes(10);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!shell.DataAvailable)
+            {
+                await Task.Delay(50, cancellationToken);
+                continue;
+            }
+
+            string chunk = shell.Read();
+            output.Append(chunk);
+            string text = output.ToString();
+
+            foreach (string line in text.Replace("\r\n", "\n", StringComparison.Ordinal)
+                         .Replace('\r', '\n')
+                         .Split('\n'))
+            {
+                string trimmed = line.Trim();
+                if (trimmed.Contains("password:", StringComparison.OrdinalIgnoreCase) &&
+                    !trimmed.StartsWith("sftp ", StringComparison.OrdinalIgnoreCase) &&
+                    !trimmed.Contains("PasswordAuthentication", StringComparison.OrdinalIgnoreCase))
+                {
+                    return text;
+                }
+            }
+
+            if (text.Contains("connection timed out", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("connection refused", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("could not resolve hostname", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("no route to host", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("permission denied", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"The parent server could not start the remote SFTP transfer: {text}");
+            }
+        }
+
+        throw new TimeoutException(
+            $"Timed out waiting for the remote SFTP password prompt. Remote output: {output}");
     }
 
     private static async Task<string> ReadUntilAnyAsync(
