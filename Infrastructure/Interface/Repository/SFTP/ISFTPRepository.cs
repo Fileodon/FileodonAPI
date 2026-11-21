@@ -14,13 +14,13 @@ public interface ISFTPRepository
         IReadOnlyList<SFTPDistributionFile> files,
         Action<int, long> progress,
         CancellationToken cancellationToken);
-    Task UploadDistributionFromParentAsync(
+    Task UploadDistributionViaIntermediaryAsync(
         SFTPConnection parentConnection,
         SFTPDistributionDestination parent,
         SFTPConnection destinationConnection,
         SFTPDistributionDestination destination,
         IReadOnlyList<SFTPDistributionFile> files,
-        string pamToken,
+        string intermediaryToken,
         Action<int, long> progress,
         CancellationToken cancellationToken);
     public Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken);

@@ -13,7 +13,7 @@ namespace Infrastructure.Worker;
 public sealed class SFTPDistributionWorker(
     IServiceScopeFactory scopeFactory,
     ISFTPRepository sftpRepository,
-    ISFTPPamTokenService pamTokenService,
+    ISFTPIntermediaryTokenService intermediaryTokenService,
     ILogger<SFTPDistributionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -145,7 +145,7 @@ public sealed class SFTPDistributionWorker(
                             }
                         };
 
-                        if (parent is null)
+                        if (destination.Depth == 0)
                         {
                             await sftpRepository.UploadDistributionAsync(
                                 connections[destination.SftpConnectionId],
@@ -156,16 +156,22 @@ public sealed class SFTPDistributionWorker(
                         }
                         else
                         {
-                            string pamToken = pamTokenService.CreateToken(
+                            if (parent is null)
+                            {
+                                throw new InvalidOperationException(
+                                    $"Distribution destination {destination.SftpConnectionId} has depth {destination.Depth} but no parent.");
+                            }
+
+                            string intermediaryToken = intermediaryTokenService.CreateToken(
                                 connections[destination.SftpConnectionId],
                                 workItem.JobId);
-                            await sftpRepository.UploadDistributionFromParentAsync(
+                            await sftpRepository.UploadDistributionViaIntermediaryAsync(
                                 connections[parent.SftpConnectionId],
                                 parent,
                                 connections[destination.SftpConnectionId],
                                 destination,
                                 workItem.Files,
-                                pamToken,
+                                intermediaryToken,
                                 progress,
                                 cancellationToken);
                         }
