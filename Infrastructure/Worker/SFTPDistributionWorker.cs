@@ -78,6 +78,21 @@ public sealed class SFTPDistributionWorker(
             throw new InvalidOperationException("One or more SFTP destinations could not be resolved.");
         }
 
+        foreach (SFTPDistributionDestination destination in destinations)
+        {
+            SFTPConnection connection = connections[destination.SftpConnectionId];
+            if (connection.Status != SFTPConnectionStatus.Accepted)
+            {
+                throw new InvalidOperationException(
+                    $"SFTP connection {connection.Id} ({connection.Host}) is not accepted and cannot be used for distribution.");
+            }
+            if (string.IsNullOrWhiteSpace(connection.PrivateKey))
+            {
+                throw new InvalidOperationException(
+                    $"SFTP connection {connection.Id} ({connection.Host}) does not have a private key.");
+            }
+        }
+
         object progressLock = new();
         Dictionary<int, long[]> uploadedByFile = destinations.ToDictionary(
             destination => destination.SftpConnectionId,

@@ -703,7 +703,11 @@ public sealed class SFTPRepository : ISFTPRepository
 
     private IntermediarySftpEndpoint CreateIntermediaryEndpoint(SFTPConnection connection)
     {
-        ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
+        if (string.IsNullOrWhiteSpace(connection.PrivateKey))
+        {
+            throw new InvalidOperationException(
+                $"SFTP connection {connection.Id} ({connection.Host}) does not have a private key.");
+        }
         byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
         string pem = _cryptoService.ConvertPrivateKeyToPem(decryptedKey);
         return new IntermediarySftpEndpoint(
@@ -715,7 +719,11 @@ public sealed class SFTPRepository : ISFTPRepository
 
     private SftpClient CreateSftpClient(SFTPConnection connection)
     {
-        ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
+        if (string.IsNullOrWhiteSpace(connection.PrivateKey))
+        {
+            throw new InvalidOperationException(
+                $"SFTP connection {connection.Id} ({connection.Host}) does not have a private key.");
+        }
         byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
         string pem = _cryptoService.ConvertPrivateKeyToPem(decryptedKey);
         using var keyStream = new MemoryStream(Encoding.UTF8.GetBytes(pem));
