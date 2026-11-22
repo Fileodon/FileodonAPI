@@ -238,7 +238,7 @@ public sealed class SFTPRepository : ISFTPRepository
             CreateIntermediaryEndpoint(destinationConnection),
             transferFiles);
 
-        int intermediaryPort = _configuration.GetValue<int?>("SFTPIntermediary:Port") ?? 5096;
+        int intermediaryPort = destinationConnection.IntermediaryPort;
         string baseUrl = $"http://{destinationConnection.Host}:{intermediaryPort}";
 
         using HttpClient client = new();

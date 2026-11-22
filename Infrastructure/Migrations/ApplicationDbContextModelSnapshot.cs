@@ -372,6 +372,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("port");
 
+                    b.Property<int>("IntermediaryPort")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5096)
+                        .HasColumnName("intermediary_port");
+
                     b.Property<string>("PrivateKey")
                         .HasColumnType("text")
                         .HasColumnName("private_key");

@@ -139,7 +139,7 @@ The most useful local settings are:
 | `CORS__ALLOWED_HOSTS` | Comma-separated frontend origins |
 | `SMTP__*` | SMTP settings for confirmation and reset emails |
 | `SFTPPamJwt__KeyId` | Identifier for the SFTP PAM signing key |
-| `SFTPIntermediary__Port` | Distribution listener port on destination SFTP servers (default `5096`) |
+| `SFTPIntermediary__Port` | Legacy fallback distribution listener port (new connections store this port per SFTP connection) |
 
 Use environment variables or a local secrets provider for credentials. Do not put
 passwords, tokens, or private keys in source control.
