@@ -1,13 +1,14 @@
 using Controller.DTO.AuditLog;
 using Controller.Middleware.Attribute;
 using Domain.Interface;
+using Infrastructure.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Controller.Controllers;
 
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/organization/{organizationId}/[controller]")]
 [ApiController]
 [RequireVerifiedEmail]
 public class AuditLogController : ControllerBase
@@ -19,7 +20,8 @@ public class AuditLogController : ControllerBase
         _service = service;
     }
 
-    [HttpGet("all/{organizationId}")]
+    [HttpGet("all")]
+    [Permission(PermissionFlags.AuditLogRead)]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAuditLogs(int organizationId, [FromQuery] string? filter)
     {
@@ -38,7 +40,8 @@ public class AuditLogController : ControllerBase
         return Ok(dto);
     }
 
-    [HttpGet("organization/{organizationId}")]
+    [HttpGet]
+    [Permission(PermissionFlags.AuditLogRead)]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOrganizationAuditLogs(int organizationId)
     {
@@ -48,7 +51,9 @@ public class AuditLogController : ControllerBase
         );
         return Ok(dto);
     }
-    [HttpGet("sftpConnection/{sftpConnectionId}")]
+
+    [HttpGet("sftpConnection/{sftpConnectionId}")]        
+    [Permission(PermissionFlags.AuditLogRead)]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSFTPConnectionAuditLogs(int sftpConnectionId)
     {
@@ -59,6 +64,7 @@ public class AuditLogController : ControllerBase
         return Ok(dto);
     }
     [HttpGet("role/{roleId}")]
+    [Permission(PermissionFlags.AuditLogRead)]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRoleAuditLogs(string roleId)
     {
@@ -70,6 +76,7 @@ public class AuditLogController : ControllerBase
     }
 
     [HttpGet("userOrganization/{userOrganizationId}")]
+    [Permission(PermissionFlags.AuditLogRead)]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserOrganizationAuditLogs(int userOrganizationId)
     {
@@ -81,6 +88,7 @@ public class AuditLogController : ControllerBase
     }
 
     [HttpGet("sftpAction/{sftpConnectionId}")]
+    [Permission(PermissionFlags.AuditLogRead)]
     [ProducesResponseType(typeof(GetAllAuditLogsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSFTPActionAuditLogs(int sftpConnectionId)
     {
