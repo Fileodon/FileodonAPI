@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Security.Cryptography;
 using Infrastructure.Interface;
 using Infrastructure.Models;
@@ -8,9 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Service;
 
-public sealed class SFTPPamTokenService(IConfiguration configuration) : ISFTPPamTokenService
+public sealed class SFTPIntermediaryTokenService(IConfiguration configuration) : ISFTPIntermediaryTokenService
 {
-    public string CreateToken(SFTPConnection connection, Guid jobId)
+    public string CreateToken(SFTPConnection destinationConnection, Guid jobId)
     {
         string privateKeyPath = configuration["SFTPPamJwt:PrivateKeyPath"]
             ?? throw new InvalidOperationException(
@@ -27,7 +26,7 @@ public sealed class SFTPPamTokenService(IConfiguration configuration) : ISFTPPam
                 ex);
         }
 
-        DateTime expiresAt = DateTime.UtcNow.AddMinutes(2);
+        DateTime expiresAt = DateTime.UtcNow.AddMinutes(30);
         ECDsaSecurityKey signingKey = new(ecdsa)
         {
             KeyId = configuration["SFTPPamJwt:KeyId"] ?? "fileodon-es256-v1",
@@ -41,7 +40,7 @@ public sealed class SFTPPamTokenService(IConfiguration configuration) : ISFTPPam
             SecurityAlgorithms.EcdsaSha256);
         JwtSecurityToken token = new(
             issuer: "Fileodon Master Server",
-            audience: Dns.GetHostEntry(connection.Host).HostName.Split('.')[0],
+            audience: destinationConnection.Host,
             notBefore: DateTime.UtcNow,
             expires: expiresAt,
             signingCredentials: credentials);

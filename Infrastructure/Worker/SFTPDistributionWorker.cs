@@ -13,7 +13,7 @@ namespace Infrastructure.Worker;
 public sealed class SFTPDistributionWorker(
     IServiceScopeFactory scopeFactory,
     ISFTPRepository sftpRepository,
-    ISFTPPamTokenService pamTokenService,
+    ISFTPIntermediaryTokenService intermediaryTokenService,
     ILogger<SFTPDistributionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -76,6 +76,21 @@ public sealed class SFTPDistributionWorker(
         if (connections.Count != destinations.Count)
         {
             throw new InvalidOperationException("One or more SFTP destinations could not be resolved.");
+        }
+
+        foreach (SFTPDistributionDestination destination in destinations)
+        {
+            SFTPConnection connection = connections[destination.SftpConnectionId];
+            if (connection.Status != SFTPConnectionStatus.Accepted)
+            {
+                throw new InvalidOperationException(
+                    $"SFTP connection {connection.Id} ({connection.Host}) is not accepted and cannot be used for distribution.");
+            }
+            if (string.IsNullOrWhiteSpace(connection.PrivateKey))
+            {
+                throw new InvalidOperationException(
+                    $"SFTP connection {connection.Id} ({connection.Host}) does not have a private key.");
+            }
         }
 
         object progressLock = new();
@@ -145,7 +160,7 @@ public sealed class SFTPDistributionWorker(
                             }
                         };
 
-                        if (parent is null)
+                        if (destination.Depth == 0)
                         {
                             await sftpRepository.UploadDistributionAsync(
                                 connections[destination.SftpConnectionId],
@@ -156,16 +171,22 @@ public sealed class SFTPDistributionWorker(
                         }
                         else
                         {
-                            string pamToken = pamTokenService.CreateToken(
+                            if (parent is null)
+                            {
+                                throw new InvalidOperationException(
+                                    $"Distribution destination {destination.SftpConnectionId} has depth {destination.Depth} but no parent.");
+                            }
+
+                            string intermediaryToken = intermediaryTokenService.CreateToken(
                                 connections[destination.SftpConnectionId],
                                 workItem.JobId);
-                            await sftpRepository.UploadDistributionFromParentAsync(
+                            await sftpRepository.UploadDistributionViaIntermediaryAsync(
                                 connections[parent.SftpConnectionId],
                                 parent,
                                 connections[destination.SftpConnectionId],
                                 destination,
                                 workItem.Files,
-                                pamToken,
+                                intermediaryToken,
                                 progress,
                                 cancellationToken);
                         }

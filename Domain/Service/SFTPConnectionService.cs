@@ -47,7 +47,7 @@ public class SFTPConnectionService : ISFTPConnectionService
         }
     }
 
-    public async Task<MutationEnvelope<SFTPConnection>> AddSFTPConnectionAsync(string authCode, int organizationId, string? displayName, string host, int? port)
+    public async Task<MutationEnvelope<SFTPConnection>> AddSFTPConnectionAsync(string authCode, int organizationId, string? displayName, string host, int? port, int intermediaryPort)
     {
         await _unitOfWork.BeginTransactionAsync();
         try
@@ -58,6 +58,7 @@ public class SFTPConnectionService : ISFTPConnectionService
                 OrganizationId = organizationId,
                 Host = host,
                 Port = port,
+                IntermediaryPort = intermediaryPort,
                 Status = SFTPConnectionStatus.Pending,
             };
 
@@ -200,7 +201,7 @@ public class SFTPConnectionService : ISFTPConnectionService
         }
     }
 
-    public async Task<MutationEnvelope<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName, int? port)
+    public async Task<MutationEnvelope<SFTPConnection>> UpdateSFTPConnectionAsync(int sFTPConnectionId, int organizationId, string userId, string displayName, int? port, int? intermediaryPort)
     {
         SFTPConnection? sFTPConnection = await _unitOfWork.SFTPConnectionRepository.GetSFTPConnectionByIdAsync(sFTPConnectionId, organizationId, userId);
 
@@ -214,6 +215,9 @@ public class SFTPConnectionService : ISFTPConnectionService
         {
             sFTPConnection.DisplayName = displayName;
             sFTPConnection.Port = (port == null || port == 0) ? sFTPConnection.Port : port;
+            sFTPConnection.IntermediaryPort = intermediaryPort is null or 0
+                ? sFTPConnection.IntermediaryPort
+                : intermediaryPort.Value;
             SFTPConnection updatedConnection = await _unitOfWork.SFTPConnectionRepository.UpdateAsync(sFTPConnection);
 
             await _unitOfWork.SaveChangesAsync();

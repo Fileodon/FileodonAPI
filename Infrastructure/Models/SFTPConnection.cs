@@ -11,6 +11,7 @@ public partial class SFTPConnection : IAuditAble
     public virtual Organization Organization { get; set; } = null!;
     public required string Host { get; set; }
     public int? Port { get; set; }
+    public int IntermediaryPort { get; set; } = 5096;
     public SFTPConnectionStatus Status { get; set; }
     public string? PublicKey { get; set; }
     public string? PrivateKey { get; set; }

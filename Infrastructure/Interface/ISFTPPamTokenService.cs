@@ -2,7 +2,7 @@ using Infrastructure.Models;
 
 namespace Infrastructure.Interface;
 
-public interface ISFTPPamTokenService
+public interface ISFTPIntermediaryTokenService
 {
-    string CreateToken(SFTPConnection connection, Guid jobId);
+    string CreateToken(SFTPConnection destinationConnection, Guid jobId);
 }

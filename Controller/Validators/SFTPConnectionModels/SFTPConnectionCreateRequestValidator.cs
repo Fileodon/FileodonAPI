@@ -23,6 +23,9 @@ public class SFTPConnectionCreateRequestValidator : AbstractValidator<SFTPConnec
                 context.AddFailure("Port must be between 1 and 65535.");
             }
         });
+        RuleFor(x => x.IntermediaryPort)
+            .InclusiveBetween(1, 65535)
+            .WithMessage("IntermediaryPort must be between 1 and 65535.");
     }
 
     private bool BeAValidHostOrIp(string host)

@@ -216,7 +216,7 @@ builder.Services.AddSingleton<ISFTPUploadJobStore, SFTPUploadJobStore>();
 builder.Services.AddSingleton<ISFTPUploadQueue, SFTPUploadQueue>();
 builder.Services.AddScoped<ISFTPUploadSender, SFTPUploadSender>();
 builder.Services.AddSingleton<ISFTPRepository, SFTPRepository>();
-builder.Services.AddSingleton<ISFTPPamTokenService, SFTPPamTokenService>();
+builder.Services.AddSingleton<ISFTPIntermediaryTokenService, SFTPIntermediaryTokenService>();
 builder.Services.AddHostedService<SFTPUploadWorker>();
 builder.Services.AddHostedService<SFTPDistributionWorker>();
 #endregion
