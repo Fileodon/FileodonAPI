@@ -2,7 +2,8 @@ namespace Controller.DTO.SFTPConnection;
 
 public record SFTPConnectionUpdateResponse(
     string? DisplayName
-, int? port);
+, int? port,
+    int intermediaryPort);
 
 public static class SFTPConnectionUpdateResponseExtensions
 {
@@ -10,7 +11,8 @@ public static class SFTPConnectionUpdateResponseExtensions
     {
         return new SFTPConnectionUpdateResponse(
             sftpConnection.DisplayName,
-            sftpConnection.Port
+            sftpConnection.Port,
+            sftpConnection.IntermediaryPort
         );
     }
 }

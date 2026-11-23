@@ -147,6 +147,9 @@ public class ApplicationDbContext : IdentityDbContext<User, AspNetRole, string>
             entity.Property(connection => connection.Port)
                 .HasColumnName("port");
 
+            entity.Property(connection => connection.IntermediaryPort)
+                .HasColumnName("intermediary_port");
+
             entity.Property(connection => connection.Status)
                 .HasColumnName("status");
 

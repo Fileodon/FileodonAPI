@@ -117,6 +117,7 @@ namespace Controller.Controllers
             IEnumerable<SFTPConnection> accessibleConnections =
                 await _sftpConnectionService.GetOrganizationSFTPConnectionsAsync(organizationid, userId);
             Dictionary<int, SFTPConnection> connectionsById = accessibleConnections
+                .Where(connection => connection.Status == SFTPConnectionStatus.Accepted)
                 .ToDictionary(connection => connection.Id);
             if (locations.Any(location => !connectionsById.ContainsKey(location.SftpConnectionId)))
             {

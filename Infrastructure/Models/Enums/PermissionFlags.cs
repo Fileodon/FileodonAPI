@@ -32,9 +32,14 @@ public enum PermissionFlags : long
     SftpActionCreate = 1L << 22, // Upload files, create directories, etc.
     SftpActionDelete = 1L << 23, // Delete files, remove directories, etc.
     SftpActionExecute = 1L << 24, // Execute scripts or commands on the SFTP server.
-
+    AuditLogRead = 1L << 25,
+    AuditLogUpdate = 1L << 26,
+    AuditLogCreate = 1L << 27,
+    AuditLogDelete = 1L << 28,
+    AuditLogExecute = 1L << 29,
     All = OrganizationRead | OrganizationUpdate | OrganizationCreate | OrganizationDelete | OrganizationExecute |
           SftpConnectionRead | SftpConnectionUpdate | SftpConnectionCreate | SftpConnectionDelete | SftpConnectionExecute |
           UserOrganizationRead | UserOrganizationUpdate | UserOrganizationCreate | UserOrganizationDelete | UserOrganizationExecute |
-          RoleRead | RoleUpdate | RoleCreate | RoleDelete | RoleExecute | SftpActionRead | SftpActionUpdate | SftpActionCreate | SftpActionDelete | SftpActionExecute
+          RoleRead | RoleUpdate | RoleCreate | RoleDelete | RoleExecute | SftpActionRead | SftpActionUpdate | SftpActionCreate | SftpActionDelete | SftpActionExecute |
+          AuditLogRead | AuditLogUpdate | AuditLogCreate | AuditLogDelete | AuditLogExecute
 }

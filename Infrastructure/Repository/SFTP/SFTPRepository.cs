@@ -1,4 +1,7 @@
 using System.Text;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
 using Infrastructure.Interface;
 using Infrastructure.Interface.Repository.SFTP;
 using Infrastructure.Models;
@@ -11,20 +14,59 @@ using Renci.SshNet.Sftp;
 
 namespace Infrastructure.Repository.SFTP;
 
+public sealed record IntermediarySftpEndpoint(
+    string Host,
+    int Port,
+    string Username,
+    string PrivateKeyPem);
+
+public sealed record IntermediaryTransferFile(
+    string SourceRemotePath,
+    string DestinationRemotePath,
+    long Length);
+
+public sealed record IntermediaryTransferRequest(
+    IntermediarySftpEndpoint Source,
+    IntermediarySftpEndpoint Destination,
+    IReadOnlyList<IntermediaryTransferFile> Files);
+
+public sealed record IntermediaryTransferFileProgress(
+    string SourceRemotePath,
+    string DestinationRemotePath,
+    long TotalBytes,
+    long UploadedBytes,
+    bool Completed,
+    string? Error);
+
+public sealed record IntermediaryTransferJobSnapshot(
+    Guid JobId,
+    string Status,
+    int TotalFiles,
+    long TotalBytes,
+    long UploadedBytes,
+    double ProgressPercentage,
+    IReadOnlyList<IntermediaryTransferFileProgress> Files,
+    string? Error,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? CompletedAt);
+
 public sealed class SFTPRepository : ISFTPRepository
 {
     private readonly ICryptoService _cryptoService;
     private readonly ISFTPUploadJobStore _jobStore;
     private readonly ILogger<SFTPRepository> _logger;
+    private readonly IConfiguration _configuration;
 
     public SFTPRepository(
         ICryptoService cryptoService,
         ISFTPUploadJobStore jobStore,
-        ILogger<SFTPRepository> logger)
+        ILogger<SFTPRepository> logger,
+        IConfiguration configuration)
     {
         _cryptoService = cryptoService;
         _jobStore = jobStore;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<SFTPActionExistsResult> FileExistsAsync(SFTPConnection connection, string remoteFilePath, CancellationToken cancellationToken)
@@ -172,113 +214,89 @@ public sealed class SFTPRepository : ISFTPRepository
         }
     }
 
-    public async Task UploadDistributionFromParentAsync(
+    public async Task UploadDistributionViaIntermediaryAsync(
         SFTPConnection parentConnection,
         SFTPDistributionDestination parent,
         SFTPConnection destinationConnection,
         SFTPDistributionDestination destination,
         IReadOnlyList<SFTPDistributionFile> files,
-        string pamToken,
+        string intermediaryToken,
         Action<int, long> progress,
         CancellationToken cancellationToken)
     {
-        using SshClient parentClient = CreateSshClient(parentConnection);
-        parentClient.Connect();
-        using ShellStream shell = parentClient.CreateShellStream(
-            "sftp-distribution",
-            120,
-            40,
-            1024,
-            768,
-            4096);
-
-        string sftpCommand =
-            $"sftp -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null " +
-            "-oBatchMode=no -oPubkeyAuthentication=no " +
-            "-oKbdInteractiveAuthentication=yes -oPasswordAuthentication=yes " +
-            "-oPreferredAuthentications=password,keyboard-interactive " +
-            $"-P {destinationConnection.Port ?? 22} fileodon@{QuoteShell(destinationConnection.Host)}";
-        shell.WriteLine(sftpCommand);
-        await ReadUntilAsync(shell, "password:", cancellationToken);
-        System.Console.WriteLine(pamToken);
-        shell.WriteLine(pamToken);
-        await ReadUntilAsync(shell, "sftp>", cancellationToken);
-
-        for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
+        var transferFiles = files.Select(file =>
         {
-            SFTPDistributionFile file = files[fileIndex];
             string fileName = Path.GetFileName(file.RemotePath);
-            string sourcePath = Path.Combine(parent.RemotePath, fileName).Replace("\\", "/");
-            string destinationPath = Path.Combine(destination.RemotePath, fileName).Replace("\\", "/");
-            shell.WriteLine($"put {QuoteShell(sourcePath)} {QuoteShell(destinationPath)}");
-            string output = await ReadUntilAsync(shell, "sftp>", cancellationToken);
-            if (output.Contains("Failure", StringComparison.OrdinalIgnoreCase) ||
-                output.Contains("Couldn't", StringComparison.OrdinalIgnoreCase) ||
-                output.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            return new IntermediaryTransferFile(
+                Path.Combine(parent.RemotePath, fileName).Replace("\\", "/"),
+                Path.Combine(destination.RemotePath, fileName).Replace("\\", "/"),
+                file.Length);
+        }).ToArray();
+
+        var request = new IntermediaryTransferRequest(
+            CreateIntermediaryEndpoint(parentConnection),
+            CreateIntermediaryEndpoint(destinationConnection),
+            transferFiles);
+
+        int intermediaryPort = destinationConnection.IntermediaryPort;
+        string baseUrl = $"http://{destinationConnection.Host}:{intermediaryPort}";
+
+        using HttpClient client = new();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", intermediaryToken);
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync(
+            $"{baseUrl}/api/transfers",
+            request,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        IntermediaryTransferJobSnapshot? job =
+            await response.Content.ReadFromJsonAsync<IntermediaryTransferJobSnapshot>(
+                cancellationToken: cancellationToken);
+        if (job is null)
+        {
+            throw new InvalidOperationException("The SFTP intermediary returned an invalid job response.");
+        }
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            using HttpResponseMessage pollResponse = await client.GetAsync(
+                $"{baseUrl}/api/transfers/{job.JobId}",
+                cancellationToken);
+            pollResponse.EnsureSuccessStatusCode();
+            job = await pollResponse.Content.ReadFromJsonAsync<IntermediaryTransferJobSnapshot>(
+                cancellationToken: cancellationToken);
+            if (job is null)
+            {
+                throw new InvalidOperationException("The SFTP intermediary returned an invalid progress response.");
+            }
+
+            for (int fileIndex = 0; fileIndex < job.Files.Count; fileIndex++)
+            {
+                progress(fileIndex, job.Files[fileIndex].UploadedBytes);
+            }
+
+            if (job.Status == "Completed")
+            {
+                for (int fileIndex = 0; fileIndex < files.Count; fileIndex++)
+                {
+                    progress(fileIndex, files[fileIndex].Length);
+                }
+                return;
+            }
+            if (job.Status == "Failed")
             {
                 throw new InvalidOperationException(
-                    $"Parent server failed to transfer '{sourcePath}' to '{destinationPath}': {output}");
+                    job.Error ?? "The SFTP intermediary failed to complete the transfer.");
             }
 
-            progress(fileIndex, file.Length);
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
 
-        shell.WriteLine("bye");
+        throw new OperationCanceledException(cancellationToken);
     }
 
-    private SshClient CreateSshClient(SFTPConnection connection)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
-        byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
-        string pem = _cryptoService.ConvertPrivateKeyToPem(decryptedKey);
-        using MemoryStream keyStream = new(Encoding.UTF8.GetBytes(pem));
-        PrivateKeyFile privateKey = new(keyStream);
-        return new SshClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
-    }
-
-    private static async Task<string> ReadUntilAsync(
-        ShellStream shell,
-        string expected,
-        CancellationToken cancellationToken)
-    {
-        StringBuilder output = new();
-        DateTime deadline = DateTime.UtcNow.AddMinutes(2);
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (shell.DataAvailable)
-            {
-                string chunk = shell.Read();
-                output.Append(chunk);
-                string text = output.ToString();
-                if (text.Contains(expected, StringComparison.OrdinalIgnoreCase))
-                {
-                    return text;
-                }
-
-                if (text.Contains("command not found", StringComparison.OrdinalIgnoreCase) ||
-                    text.Contains("could not resolve hostname", StringComparison.OrdinalIgnoreCase) ||
-                    text.Contains("connection refused", StringComparison.OrdinalIgnoreCase) ||
-                    text.Contains("permission denied", StringComparison.OrdinalIgnoreCase) ||
-                    text.Contains("allows sftp connections only"))
-                {
-                    throw new InvalidOperationException(
-                        $"The parent server could not start the remote SFTP transfer: {text}");
-                }
-            }
-            else
-            {
-                await Task.Delay(50, cancellationToken);
-            }
-        }
-
-        throw new TimeoutException(
-            $"Timed out waiting for the remote SFTP shell prompt '{expected}'. " +
-            $"Remote output: {output}");
-    }
-
-    private static string QuoteShell(string value) =>
-        $"'{value.Replace("'", "'\\''")}'";
 
     public async Task<SFTPActionListResult> ListFilesAsync(SFTPConnection connection, string remoteDirectoryPath, CancellationToken cancellationToken)
     {
@@ -683,24 +701,34 @@ public sealed class SFTPRepository : ISFTPRepository
         return DeleteFailure(StatusCode.Failure, remotePath, $"An unexpected SFTP error occurred: {exception.Message}", deletedItems);
     }
 
-    private SftpClient CreateSftpClient(SFTPConnection connection, string? pamToken = null)
+    private IntermediarySftpEndpoint CreateIntermediaryEndpoint(SFTPConnection connection)
     {
-        ArgumentException.ThrowIfNullOrEmpty(connection.PrivateKey);
+        if (string.IsNullOrWhiteSpace(connection.PrivateKey))
+        {
+            throw new InvalidOperationException(
+                $"SFTP connection {connection.Id} ({connection.Host}) does not have a private key.");
+        }
+        byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
+        string pem = _cryptoService.ConvertPrivateKeyToPem(decryptedKey);
+        return new IntermediarySftpEndpoint(
+            connection.Host,
+            connection.Port ?? 22,
+            "fileodon",
+            pem);
+    }
+
+    private SftpClient CreateSftpClient(SFTPConnection connection)
+    {
+        if (string.IsNullOrWhiteSpace(connection.PrivateKey))
+        {
+            throw new InvalidOperationException(
+                $"SFTP connection {connection.Id} ({connection.Host}) does not have a private key.");
+        }
         byte[] decryptedKey = _cryptoService.Decrypt(Convert.FromBase64String(connection.PrivateKey));
         string pem = _cryptoService.ConvertPrivateKeyToPem(decryptedKey);
         using var keyStream = new MemoryStream(Encoding.UTF8.GetBytes(pem));
         PrivateKeyFile privateKey = new(keyStream);
 
-        if (pamToken is null)
-        {
-            return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
-        }
-        ConnectionInfo connectionInfo = new(
-            connection.Host,
-            connection.Port ?? 22,
-            "fileodon",
-            new PrivateKeyAuthenticationMethod("fileodon", privateKey),
-            new PasswordAuthenticationMethod("fileodon", pamToken));
-        return new SftpClient(connectionInfo);
+        return new SftpClient(connection.Host, connection.Port ?? 22, "fileodon", privateKey);
     }
 }

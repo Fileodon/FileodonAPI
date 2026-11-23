@@ -6,6 +6,7 @@ public record SFTPConnectionCreateResponse(
     string? DisplayName,
     string Host,
     int? Port,
+    int IntermediaryPort,
     string Status,
     string PublicKey
 );
@@ -20,6 +21,7 @@ public static class SFTPConnectionCreateResponseExtensions
             sftpConnection.DisplayName,
             sftpConnection.Host,
             sftpConnection.Port,
+            sftpConnection.IntermediaryPort,
             sftpConnection.Status.ToString(),
             sftpConnection.PublicKey ?? string.Empty
         );

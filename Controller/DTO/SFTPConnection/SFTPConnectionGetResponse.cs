@@ -13,6 +13,7 @@ public record DetailedSFTPConnectionGetResponse : BaseSFTPConnectionGetResponse
 {
     public required string Host { get; init; }
     public int? Port { get; init; }
+    public required int IntermediaryPort { get; init; }
     public string? PublicKey { get; init; }
 }
 
@@ -36,6 +37,7 @@ public static class SFTPConnectionGetResponseExtensions
             DisplayName = sftpConnection.DisplayName,
             Host = sftpConnection.Host,
             Port = sftpConnection.Port,
+            IntermediaryPort = sftpConnection.IntermediaryPort,
             Status = sftpConnection.Status,
             PublicKey = sftpConnection.PublicKey
         };
